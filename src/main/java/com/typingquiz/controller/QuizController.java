@@ -1,0 +1,123 @@
+package com.typingquiz.controller;
+
+import com.typingquiz.dto.AnswerDTO;
+import com.typingquiz.dto.QuizDTO;
+import com.typingquiz.dto.QuizResponseDTO;
+import com.typingquiz.entity.Answer;
+import com.typingquiz.entity.Quiz;
+import com.typingquiz.service.QuizService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 测验控制器
+ * 提供测验相关的REST API端点
+ */
+@RestController
+@RequestMapping("/api/quizzes")
+@CrossOrigin(origins = "*")
+public class QuizController {
+
+    private final QuizService quizService;
+
+    @Autowired
+    public QuizController(QuizService quizService) {
+        this.quizService = quizService;
+    }
+
+    /**
+     * 创建测验
+     * POST /api/quizzes
+     */
+    @PostMapping
+    public ResponseEntity<QuizResponseDTO> createQuiz(@RequestBody QuizDTO quizDTO) {
+        try {
+            Quiz quiz = quizService.createQuiz(quizDTO);
+            QuizResponseDTO response = quizService.toResponseDTO(quiz);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * 获取测验详情
+     * GET /api/quizzes/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<QuizResponseDTO> getQuiz(@PathVariable Long id) {
+        try {
+            Quiz quiz = quizService.getQuizById(id);
+            QuizResponseDTO response = quizService.toResponseDTO(quiz);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 获取所有测验
+     * GET /api/quizzes
+     */
+    @GetMapping
+    public ResponseEntity<List<QuizResponseDTO>> getAllQuizzes() {
+        List<Quiz> quizzes = quizService.getAllQuizzes();
+        List<QuizResponseDTO> response = quizzes.stream()
+                .map(quizService::toResponseDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 获取测验的所有答案
+     * GET /api/quizzes/{id}/answers
+     */
+    @GetMapping("/{id}/answers")
+    public ResponseEntity<List<AnswerDTO>> getQuizAnswers(@PathVariable Long id) {
+        try {
+            List<Answer> answers = quizService.getQuizAnswers(id);
+            List<AnswerDTO> response = quizService.toAnswerDTOList(answers);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 更新测验
+     * PUT /api/quizzes/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<QuizResponseDTO> updateQuiz(
+            @PathVariable Long id, 
+            @RequestBody QuizDTO quizDTO) {
+        try {
+            Quiz quiz = quizService.updateQuiz(id, quizDTO);
+            QuizResponseDTO response = quizService.toResponseDTO(quiz);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * 删除测验
+     * DELETE /api/quizzes/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteQuiz(@PathVariable Long id) {
+        try {
+            quizService.deleteQuiz(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+}

@@ -1,0 +1,51 @@
+package com.typingquiz.controller;
+
+import com.typingquiz.dto.ValidationRequest;
+import com.typingquiz.dto.ValidationResponse;
+import com.typingquiz.entity.Answer;
+import com.typingquiz.service.AnswerService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 答案控制器
+ * 提供答案验证和查询的REST API端点
+ */
+@RestController
+@RequestMapping("/api/answers")
+@CrossOrigin(origins = "*")
+public class AnswerController {
+
+    private final AnswerService answerService;
+
+    @Autowired
+    public AnswerController(AnswerService answerService) {
+        this.answerService = answerService;
+    }
+
+    /**
+     * 验证答案
+     * POST /api/answers/validate
+     */
+    @PostMapping("/validate")
+    public ResponseEntity<ValidationResponse> validateAnswer(@RequestBody ValidationRequest request) {
+        ValidationResponse response = answerService.validateAnswer(
+            request.getQuizId(),
+            request.getInput()
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 搜索答案
+     * GET /api/answers/search?content=xxx
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<Answer>> searchAnswers(@RequestParam String content) {
+        List<Answer> answers = answerService.findAnswersByContent(content);
+        return ResponseEntity.ok(answers);
+    }
+}
