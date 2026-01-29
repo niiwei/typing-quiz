@@ -14,7 +14,7 @@
     
     <groupId>com.typingquiz</groupId>
     <artifactId>typing-quiz</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
     <name>typing-quiz</name>
     <description>JetPunk风格打字测验应用</description>
     

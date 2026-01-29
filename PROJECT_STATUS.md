@@ -1,7 +1,7 @@
 # Typing Quiz 项目状态
 
 ## 项目概述
-JetPunk风格打字测验Web应用 - 已完成核心功能实现
+JetPunk风格打字测验Web应用 - 当前版本: v1.1.0
 
 ## 已完成的功能
 
