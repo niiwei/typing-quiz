@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Quiz - 打字测验</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link">首页</a>
+            <a href="quizzes.html" class="nav-link">测验列表</a>
+            <a href="manage.html" class="nav-link">管理测验</a>
+            <a href="database.html" class="nav-link">数据库管理</a>
+        </div>
+    </nav>
+
+    <div id="quiz-container">
+        <!-- 测验信息 -->
+        <div id="quiz-header">
+            <h1 id="quiz-title">加载中...</h1>
+            <p id="quiz-description"></p>
+        </div>
+
+        <!-- 计时器和得分 -->
+        <div id="quiz-stats">
+            <div id="timer">
+                <span class="label">时间:</span>
+                <span id="time-display">--:--</span>
+            </div>
+            <div id="score">
+                <span class="label">得分:</span>
+                <span id="score-display">0/0</span>
+            </div>
+        </div>
+
+        <!-- 输入框 -->
+        <div id="input-section">
+            <input type="text" 
+                   id="answer-input" 
+                   placeholder="输入答案..." 
+                   autocomplete="off"
+                   spellcheck="false" />
+            <button id="give-up-btn" class="give-up-btn" onclick="giveUp()">放弃</button>
+            <div id="feedback-message"></div>
+        </div>
+
+        <!-- 答案显示区 -->
+        <div id="answers-grid">
+            <!-- 动态生成答案格子 -->
+        </div>
+
+        <!-- 填空题显示区 -->
+        <div id="fill-blank-section" style="display: none;">
+            <div id="fill-blank-question" class="fill-blank-question"></div>
+            <div id="fill-blank-text" class="fill-blank-text"></div>
+        </div>
+
+        <!-- 结果面板 -->
+        <div id="results-panel" style="display: none;">
+            <h2>测验完成!</h2>
+            <div id="final-stats"></div>
+            <div id="missed-answers-section">
+                <h3>未答出的答案:</h3>
+                <div id="missed-answers"></div>
+            </div>
+            <button id="restart-btn">重新开始</button>
+        </div>
+    </div>
+
+    <script src="js/timer.js?v=20260130"></script>
+    <script src="js/ui-renderer.js?v=20260130"></script>
+    <script src="js/quiz-controller.js?v=20260130"></script>
+    <script src="js/main.js?v=20260130"></script>
+</body>
+</html>
