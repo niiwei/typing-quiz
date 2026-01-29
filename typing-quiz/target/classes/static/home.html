@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Quiz - 打字测验</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .home-container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            font-size: 1.5em;
+            color: #666;
+            margin-bottom: 50px;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .menu-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .menu-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        
+        .menu-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .menu-desc {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .features {
+            margin-top: 60px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .features h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            text-align: left;
+        }
+        
+        .feature-item {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="quiz-container">
+        <div class="home-container">
+            <div class="logo">🎮</div>
+            <h1>Typing Quiz</h1>
+            <p class="subtitle">JetPunk风格打字测验</p>
+            
+            <div class="menu-grid">
+                <a href="quizzes.html" class="menu-card">
+                    <div class="menu-icon">📋</div>
+                    <div class="menu-title">开始测验</div>
+                    <div class="menu-desc">选择测验并开始答题</div>
+                </a>
+                
+                <a href="manage.html" class="menu-card">
+                    <div class="menu-icon">⚙️</div>
+                    <div class="menu-title">管理测验</div>
+                    <div class="menu-desc">创建、编辑、删除测验</div>
+                </a>
+                
+                <a href="database.html" class="menu-card">
+                    <div class="menu-icon">🗄️</div>
+                    <div class="menu-title">数据库管理</div>
+                    <div class="menu-desc">查询和检索测验数据</div>
+                </a>
+            </div>
+            
+            <div class="features">
+                <h3>✨ 特色功能</h3>
+                <div class="feature-list">
+                    <div class="feature-item">✅ 即时答案匹配</div>
+                    <div class="feature-item">✅ 大小写不敏感</div>
+                    <div class="feature-item">✅ 无序答题</div>
+                    <div class="feature-item">✅ 时间限制</div>
+                    <div class="feature-item">✅ 详细统计</div>
+                    <div class="feature-item">✅ 数据持久化</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

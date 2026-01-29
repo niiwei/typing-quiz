@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测验列表 - Typing Quiz</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <style>
+        .quiz-list {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .quiz-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        .quiz-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .quiz-card p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .quiz-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link">首页</a>
+            <a href="quizzes.html" class="nav-link active">测验列表</a>
+            <a href="manage.html" class="nav-link">管理测验</a>
+            <a href="database.html" class="nav-link">数据库管理</a>
+        </div>
+    </nav>
+
+    <div id="quiz-container">
+        <h1 style="text-align: center; margin-bottom: 30px;">选择测验</h1>
+        <div class="quiz-list" id="quiz-list">
+            <p style="text-align: center;">加载中...</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadQuizzes() {
+            try {
+                const response = await fetch('/api/quizzes');
+                const quizzes = await response.json();
+                
+                const listContainer = document.getElementById('quiz-list');
+                listContainer.innerHTML = '';
+                
+                if (quizzes.length === 0) {
+                    listContainer.innerHTML = '<p style="text-align: center;">暂无测验</p>';
+                    return;
+                }
+                
+                quizzes.forEach(quiz => {
+                    const card = document.createElement('div');
+                    card.className = 'quiz-card';
+                    card.onclick = () => {
+                        window.location.href = `index.html?id=${quiz.id}`;
+                    };
+                    
+                    card.innerHTML = `
+                        <h3>${quiz.title}</h3>
+                        <p>${quiz.description || '暂无描述'}</p>
+                        <div class="quiz-meta">
+                            <span>答案数: ${quiz.totalAnswers}</span>
+                            <span>时间限制: ${quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制'}</span>
+                        </div>
+                    `;
+                    
+                    listContainer.appendChild(card);
+                });
+            } catch (error) {
+                console.error('加载测验列表失败:', error);
+                document.getElementById('quiz-list').innerHTML = 
+                    '<p style="text-align: center; color: red;">加载失败,请刷新重试</p>';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadQuizzes);
+    </script>
+</body>
+</html>
