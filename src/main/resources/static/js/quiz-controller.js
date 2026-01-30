@@ -14,6 +14,13 @@ class QuizController {
         this.quizType = 'TYPING'; // TYPING or FILL_BLANK
         this.fillBlankQuiz = null;
         this.filledBlanks = new Map(); // blankIndex -> userAnswer
+
+        // 分组答题模式
+        this.groupMode = false;
+        this.groupId = null;
+        this.groupQuizzes = []; // 分组中的所有测验
+        this.currentQuizIndex = 0; // 当前测验索引
+        this.groupResults = []; // 存储各测验的结果
     }
 
     /**
@@ -21,17 +28,86 @@ class QuizController {
      */
     async init() {
         try {
-            await this.loadQuiz();
+            // 检查是否是分组模式
+            this.checkGroupMode();
+
+            if (this.groupMode) {
+                await this.loadGroupQuizzes();
+            } else {
+                await this.loadQuiz();
+            }
+
             this.setupEventListeners();
             this.startTimer();
             this.isQuizActive = true;
-            
+
             // 聚焦输入框
             document.getElementById('answer-input').focus();
         } catch (error) {
             console.error('初始化失败:', error);
             alert('加载测验失败,请刷新页面重试');
         }
+    }
+
+    /**
+     * 检查是否是分组模式
+     */
+    checkGroupMode() {
+        const params = new URLSearchParams(window.location.search);
+        this.groupId = params.get('groupId');
+        this.groupMode = !!this.groupId;
+    }
+
+    /**
+     * 加载分组测验列表
+     */
+    async loadGroupQuizzes() {
+        const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`);
+        if (!response.ok) {
+            throw new Error('加载分组测验失败');
+        }
+        this.groupQuizzes = await response.json();
+
+        if (this.groupQuizzes.length === 0) {
+            throw new Error('该分组中没有测验');
+        }
+
+        // 加载第一个测验
+        this.currentQuizIndex = 0;
+        await this.loadQuizById(this.groupQuizzes[0].id);
+    }
+
+    /**
+     * 根据ID加载测验
+     */
+    async loadQuizById(quizId) {
+        this.quizId = quizId;
+        this.quiz = null;
+        this.answers = [];
+        this.foundAnswers = new Set();
+        this.fillBlankQuiz = null;
+        this.filledBlanks = new Map();
+
+        const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`);
+        if (!quizResponse.ok) {
+            throw new Error('测验不存在');
+        }
+        this.quiz = await quizResponse.json();
+        this.quizType = this.quiz.quizType || 'TYPING';
+
+        if (this.quizType === 'FILL_BLANK') {
+            await this.loadFillBlankQuiz();
+        } else {
+            const answersResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}/answers`);
+            if (!answersResponse.ok) {
+                throw new Error('加载答案失败');
+            }
+            this.answers = await answersResponse.json();
+        }
+
+        this.renderQuizInfo();
+        this.renderQuizTypeUI();
+        this.renderGroupProgress();
     }
 
     /**
@@ -214,11 +290,38 @@ class QuizController {
     }
 
     /**
+     * 渲染分组进度
+     */
+    renderGroupProgress() {
+        if (!this.groupMode || this.groupQuizzes.length <= 1) return;
+
+        let progressHTML = `
+            <div id="group-progress" class="group-progress">
+                <div class="group-progress-info">
+                    <span>分组进度: ${this.currentQuizIndex + 1} / ${this.groupQuizzes.length}</span>
+                    <span class="current-quiz-name">${this.quiz.title}</span>
+                </div>
+                <div class="group-nav-hint">
+                    按 ← → 切换测验
+                </div>
+            </div>
+        `;
+
+        // 添加到页面顶部
+        const header = document.getElementById('quiz-header');
+        const existingProgress = document.getElementById('group-progress');
+        if (existingProgress) {
+            existingProgress.remove();
+        }
+        header.insertAdjacentHTML('afterend', progressHTML);
+    }
+
+    /**
      * 设置事件监听器
      */
     setupEventListeners() {
         const input = document.getElementById('answer-input');
-        
+
         // 监听输入事件(实时检查)
         input.addEventListener('input', (e) => {
             if (this.isQuizActive) {
@@ -230,6 +333,65 @@ class QuizController {
         document.getElementById('restart-btn').addEventListener('click', () => {
             location.reload();
         });
+
+        // 分组模式：键盘导航
+        if (this.groupMode) {
+            document.addEventListener('keydown', (e) => {
+                if (!this.isQuizActive) return;
+
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.navigatePrevQuiz();
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.navigateNextQuiz();
+                }
+            });
+        }
+    }
+
+    /**
+     * 切换到上一个测验
+     */
+    navigatePrevQuiz() {
+        if (this.currentQuizIndex > 0) {
+            this.saveCurrentQuizResult();
+            this.currentQuizIndex--;
+            this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
+        }
+    }
+
+    /**
+     * 切换到下一个测验
+     */
+    navigateNextQuiz() {
+        if (this.currentQuizIndex < this.groupQuizzes.length - 1) {
+            this.saveCurrentQuizResult();
+            this.currentQuizIndex++;
+            this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
+        }
+    }
+
+    /**
+     * 保存当前测验结果
+     */
+    saveCurrentQuizResult() {
+        const result = {
+            quizId: this.quizId,
+            quizTitle: this.quiz.title,
+            found: this.quizType === 'FILL_BLANK' ? this.filledBlanks.size : this.foundAnswers.size,
+            total: this.quizType === 'FILL_BLANK'
+                ? (this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0)
+                : this.answers.length
+        };
+
+        // 更新或添加结果
+        const existingIndex = this.groupResults.findIndex(r => r.quizId === this.quizId);
+        if (existingIndex >= 0) {
+            this.groupResults[existingIndex] = result;
+        } else {
+            this.groupResults.push(result);
+        }
     }
 
     /**
@@ -315,7 +477,7 @@ class QuizController {
      */
     endQuiz(isGiveUp = false) {
         this.isQuizActive = false;
-        
+
         if (this.timer) {
             this.timer.stop();
         }
@@ -361,7 +523,7 @@ class QuizController {
                 });
                 // 重新渲染填空题显示
                 this.renderFillBlankQuiz();
-                
+
                 // 所有空格都是"未答出"的（因为是放弃）
                 missedAnswers = this.fillBlankQuiz.blanks.map((blank, index) => ({
                     id: index,
@@ -387,15 +549,64 @@ class QuizController {
             missedAnswers = this.answers.filter(
                 answer => !this.foundAnswers.has(answer.id)
             );
-            
+
             // 如果是放弃，在答案网格中显示所有答案
             if (isGiveUp) {
                 UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
             }
         }
 
+        // 保存当前测验结果（分组模式）
+        if (this.groupMode) {
+            this.saveCurrentQuizResult();
+        }
+
         // 显示结果
         UIRenderer.showResults(stats, missedAnswers);
+
+        // 分组模式：显示分组结果汇总
+        if (this.groupMode) {
+            this.showGroupResultsSummary();
+        }
+    }
+
+    /**
+     * 显示分组结果汇总
+     */
+    showGroupResultsSummary() {
+        const resultsPanel = document.getElementById('results-panel');
+
+        let summaryHTML = `
+            <div class="group-results-summary">
+                <h3>📊 分组测验结果汇总</h3>
+        `;
+
+        let totalFound = 0;
+        let totalQuestions = 0;
+
+        this.groupResults.forEach(result => {
+            totalFound += result.found;
+            totalQuestions += result.total;
+            const accuracy = result.total > 0 ? Math.round((result.found / result.total) * 100) : 0;
+            summaryHTML += `
+                <div class="group-result-item">
+                    <span class="quiz-name">${result.quizTitle}</span>
+                    <span class="quiz-score">${result.found}/${result.total} (${accuracy}%)</span>
+                </div>
+            `;
+        });
+
+        // 添加总分
+        const overallAccuracy = totalQuestions > 0 ? Math.round((totalFound / totalQuestions) * 100) : 0;
+        summaryHTML += `
+                <div class="group-result-item" style="background: #667eea; color: white; margin-top: 15px;">
+                    <span class="quiz-name" style="color: white;">总分</span>
+                    <span class="quiz-score" style="color: white;">${totalFound}/${totalQuestions} (${overallAccuracy}%)</span>
+                </div>
+            </div>
+        `;
+
+        resultsPanel.insertAdjacentHTML('beforeend', summaryHTML);
     }
 
     /**

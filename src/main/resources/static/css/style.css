@@ -336,3 +336,99 @@ body {
 .fill-blank-placeholder.missed:hover {
     background: #dc3545;
 }
+
+/* 分组答题模式样式 */
+.group-progress {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.group-progress-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.group-progress-info span:first-child {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.current-quiz-name {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+.group-nav-hint {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+}
+
+/* 分组结果汇总 */
+.group-results-summary {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.group-results-summary h3 {
+    color: #48bb78;
+    margin-bottom: 15px;
+}
+
+.group-result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.group-result-item .quiz-name {
+    color: #333;
+    font-weight: 500;
+}
+
+.group-result-item .quiz-score {
+    color: #48bb78;
+    font-weight: bold;
+}
+
+/* 分组模式下的导航提示 */
+.group-nav-arrows {
+    position: fixed;
+    bottom: 50%;
+    transform: translateY(50%);
+    font-size: 3em;
+    color: #667eea;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.group-mode:hover .group-nav-arrows {
+    opacity: 0.5;
+}
+
+.nav-arrow-left {
+    left: 20px;
+}
+
+.nav-arrow-right {
+    right: 20px;
+}

@@ -11,7 +11,19 @@
             max-width: 800px;
             margin: 0 auto;
         }
-        
+
+        .section-title {
+            color: #667eea;
+            font-size: 1.2em;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .section-title:first-child {
+            margin-top: 0;
+        }
+
         .quiz-card {
             background: white;
             border-radius: 10px;
@@ -21,27 +33,72 @@
             cursor: pointer;
             transition: transform 0.2s;
         }
-        
+
         .quiz-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
-        
+
         .quiz-card h3 {
             color: #667eea;
             margin-bottom: 10px;
         }
-        
+
         .quiz-card p {
             color: #666;
             margin-bottom: 10px;
         }
-        
+
         .quiz-meta {
             display: flex;
             justify-content: space-between;
             font-size: 0.9em;
             color: #999;
+        }
+
+        .group-card {
+            border-left: 4px solid #48bb78;
+        }
+
+        .group-card h3 {
+            color: #48bb78;
+        }
+
+        .group-quiz-count {
+            display: inline-block;
+            background: #48bb78;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .mode-toggle {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .mode-btn:hover {
+            background: #667eea;
+            color: white;
         }
     </style>
 </head>
@@ -58,51 +115,125 @@
     </nav>
 
     <div id="quiz-container">
-        <h1 style="text-align: center; margin-bottom: 30px;">选择测验</h1>
+        <h1 style="text-align: center; margin-bottom: 10px;">选择测验</h1>
+
+        <!-- 答题模式切换 -->
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="single-mode-btn" onclick="switchMode('single')">单个测验</button>
+            <button class="mode-btn" id="group-mode-btn" onclick="switchMode('group')">分组测验</button>
+        </div>
+
         <div class="quiz-list" id="quiz-list">
             <p style="text-align: center;">加载中...</p>
         </div>
     </div>
 
     <script>
+        let currentMode = 'single';
+        let allQuizzes = [];
+        let allGroups = [];
+
         async function loadQuizzes() {
             try {
-                const response = await fetch('/api/quizzes');
-                const quizzes = await response.json();
-                
-                const listContainer = document.getElementById('quiz-list');
-                listContainer.innerHTML = '';
-                
-                if (quizzes.length === 0) {
-                    listContainer.innerHTML = '<p style="text-align: center;">暂无测验</p>';
-                    return;
-                }
-                
-                quizzes.forEach(quiz => {
-                    const card = document.createElement('div');
-                    card.className = 'quiz-card';
-                    card.onclick = () => {
-                        window.location.href = `index.html?id=${quiz.id}`;
-                    };
-                    
-                    card.innerHTML = `
-                        <h3>${quiz.title}</h3>
-                        <p>${quiz.description || '暂无描述'}</p>
-                        <div class="quiz-meta">
-                            <span>答案数: ${quiz.totalAnswers}</span>
-                            <span>时间限制: ${quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制'}</span>
-                        </div>
-                    `;
-                    
-                    listContainer.appendChild(card);
-                });
+                // 并行加载测验和分组
+                const [quizzesRes, groupsRes] = await Promise.all([
+                    fetch('/api/quizzes'),
+                    fetch('/api/groups')
+                ]);
+
+                allQuizzes = await quizzesRes.json();
+                allGroups = await groupsRes.json();
+
+                renderQuizList();
             } catch (error) {
-                console.error('加载测验列表失败:', error);
-                document.getElementById('quiz-list').innerHTML = 
+                console.error('加载数据失败:', error);
+                document.getElementById('quiz-list').innerHTML =
                     '<p style="text-align: center; color: red;">加载失败,请刷新重试</p>';
             }
         }
-        
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('single-mode-btn').classList.toggle('active', mode === 'single');
+            document.getElementById('group-mode-btn').classList.toggle('active', mode === 'group');
+            renderQuizList();
+        }
+
+        function renderQuizList() {
+            const listContainer = document.getElementById('quiz-list');
+            listContainer.innerHTML = '';
+
+            if (currentMode === 'single') {
+                renderSingleMode(listContainer);
+            } else {
+                renderGroupMode(listContainer);
+            }
+        }
+
+        function renderSingleMode(container) {
+            if (allQuizzes.length === 0) {
+                container.innerHTML = '<p style="text-align: center;">暂无测验</p>';
+                return;
+            }
+
+            allQuizzes.forEach(quiz => {
+                const card = createQuizCard(quiz, false);
+                container.appendChild(card);
+            });
+        }
+
+        function renderGroupMode(container) {
+            if (allGroups.length === 0) {
+                container.innerHTML = '<p style="text-align: center;">暂无测验分组</p>';
+                return;
+            }
+
+            allGroups.forEach(group => {
+                const card = document.createElement('div');
+                card.className = 'quiz-card group-card';
+                card.onclick = () => startGroupQuiz(group.id);
+
+                const quizCount = group.quizIds ? group.quizIds.length : 0;
+
+                card.innerHTML = `
+                    <h3>${group.name} <span class="group-quiz-count">${quizCount} 个测验</span></h3>
+                    <p>${group.description || '点击开始分组测验'}</p>
+                    <div class="quiz-meta">
+                        <span>使用左右箭头在测验间切换</span>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function createQuizCard(quiz, isGroup = false) {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            card.onclick = () => {
+                if (isGroup) {
+                    window.location.href = `index.html?id=${quiz.id}&groupMode=true`;
+                } else {
+                    window.location.href = `index.html?id=${quiz.id}`;
+                }
+            };
+
+            card.innerHTML = `
+                <h3>${quiz.title}</h3>
+                <p>${quiz.description || '暂无描述'}</p>
+                <div class="quiz-meta">
+                    <span>答案数: ${quiz.totalAnswers}</span>
+                    <span>时间限制: ${quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制'}</span>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function startGroupQuiz(groupId) {
+            window.location.href = `index.html?groupId=${groupId}`;
+        }
+
         document.addEventListener('DOMContentLoaded', loadQuizzes);
     </script>
 </body>

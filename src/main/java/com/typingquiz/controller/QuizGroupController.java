@@ -79,4 +79,30 @@ public class QuizGroupController {
     public QuizGroupDTO removeQuizFromGroup(@PathVariable Long groupId, @PathVariable Long quizId) {
         return groupService.toDTO(groupService.removeQuizFromGroup(groupId, quizId));
     }
+
+    /**
+     * 获取分组内的所有测验（用于分组答题）
+     * GET /api/groups/{groupId}/quizzes
+     */
+    @GetMapping("/{groupId}/quizzes")
+    public ResponseEntity<List<com.typingquiz.dto.QuizResponseDTO>> getGroupQuizzes(@PathVariable Long groupId) {
+        try {
+            QuizGroup group = groupService.getGroupById(groupId);
+            List<com.typingquiz.dto.QuizResponseDTO> quizzes = group.getQuizzes().stream()
+                    .map(quiz -> {
+                        com.typingquiz.dto.QuizResponseDTO dto = new com.typingquiz.dto.QuizResponseDTO();
+                        dto.setId(quiz.getId());
+                        dto.setTitle(quiz.getTitle());
+                        dto.setDescription(quiz.getDescription());
+                        dto.setTimeLimit(quiz.getTimeLimit());
+                        dto.setQuizType(quiz.getQuizType());
+                        dto.setTotalAnswers(quiz.getAnswers().size());
+                        return dto;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(quizzes);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
