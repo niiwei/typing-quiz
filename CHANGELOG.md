@@ -75,6 +75,38 @@
 
 ---
 
+### 问题修复
+
+#### 填空题导出功能修复 ✅
+
+**问题描述**
+导出填空题时，`fillBlankQuiz` 字段为空JSON对象，无法正常保存和导入填空题数据。
+
+**修复内容**
+- 更新 `ImportExportController.convertToDTO()` 方法
+- 添加 `FillBlankQuizRepository` 依赖注入
+- 导出时查询并包含完整的填空题信息（fullText、displayText、blanks等）
+- 解析 `blanksInfo` JSON字段为结构化数据
+
+**导出格式示例**
+```json
+{
+  "title": "水果测验",
+  "quizType": "FILL_BLANK",
+  "fillBlankQuiz": {
+    "fullText": "我爱吃苹果和香蕉",
+    "displayText": "我爱吃___和___",
+    "blanksCount": 2,
+    "blanks": [
+      {"startIndex": 4, "endIndex": 6, "correctAnswer": "苹果"},
+      {"startIndex": 9, "endIndex": 11, "correctAnswer": "香蕉"}
+    ]
+  }
+}
+```
+
+---
+
 ## [v1.0.0] - 2025-01-10
 
 ### 基础功能

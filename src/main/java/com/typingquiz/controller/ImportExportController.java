@@ -1,9 +1,13 @@
 package com.typingquiz.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.typingquiz.dto.FillBlankQuizDTO;
 import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.entity.Answer;
+import com.typingquiz.entity.FillBlankQuiz;
 import com.typingquiz.entity.Quiz;
+import com.typingquiz.entity.QuizType;
+import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -25,11 +29,13 @@ import java.util.stream.Collectors;
 public class ImportExportController {
 
     private final QuizService quizService;
+    private final FillBlankQuizRepository fillBlankQuizRepository;
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public ImportExportController(QuizService quizService, ObjectMapper objectMapper) {
+    public ImportExportController(QuizService quizService, FillBlankQuizRepository fillBlankQuizRepository, ObjectMapper objectMapper) {
         this.quizService = quizService;
+        this.fillBlankQuizRepository = fillBlankQuizRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -114,12 +120,40 @@ public class ImportExportController {
         dto.setTitle(quiz.getTitle());
         dto.setDescription(quiz.getDescription());
         dto.setTimeLimit(quiz.getTimeLimit());
-        
+        dto.setQuizType(quiz.getQuizType());
+
+        // 导出打字题答案
         List<String> answers = quiz.getAnswers().stream()
                 .map(Answer::getContent)
                 .collect(Collectors.toList());
         dto.setAnswers(answers);
-        
+
+        // 导出填空题信息
+        if (quiz.getQuizType() == QuizType.FILL_BLANK) {
+            fillBlankQuizRepository.findByQuizId(quiz.getId()).ifPresent(fillBlankQuiz -> {
+                FillBlankQuizDTO fillBlankDTO = new FillBlankQuizDTO();
+                fillBlankDTO.setId(fillBlankQuiz.getId());
+                fillBlankDTO.setQuizId(fillBlankQuiz.getQuizId());
+                fillBlankDTO.setFullText(fillBlankQuiz.getFullText());
+                fillBlankDTO.setDisplayText(fillBlankQuiz.getDisplayText());
+                fillBlankDTO.setBlanksCount(fillBlankQuiz.getBlanksCount());
+
+                // 解析blanksInfo JSON为BlankInfo列表
+                try {
+                    List<FillBlankQuizDTO.BlankInfo> blanks = objectMapper.readValue(
+                            fillBlankQuiz.getBlanksInfo(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, FillBlankQuizDTO.BlankInfo.class)
+                    );
+                    fillBlankDTO.setBlanks(blanks);
+                } catch (Exception e) {
+                    // 解析失败时使用空列表
+                    fillBlankDTO.setBlanks(new ArrayList<>());
+                }
+
+                dto.setFillBlankQuiz(fillBlankDTO);
+            });
+        }
+
         return dto;
     }
 
