@@ -8,7 +8,7 @@ import java.util.List;
  * 用于创建测验的请求
  */
 public class QuizDTO {
-    
+
     private String title;
     private String description;
     private Integer timeLimit;
@@ -82,5 +82,15 @@ public class QuizDTO {
 
     public void setFillBlankQuiz(FillBlankQuizDTO fillBlankQuiz) {
         this.fillBlankQuiz = fillBlankQuiz;
+    }
+
+    /**
+     * 获取包含注释的答案列表（用于导出）
+     */
+    public List<AnswerCreateDTO> getAnswersWithComments() {
+        if (answerList != null && !answerList.isEmpty()) {
+            return answerList;
+        }
+        return null;
     }
 }

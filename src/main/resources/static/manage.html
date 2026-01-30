@@ -258,18 +258,22 @@
                 
                 <!-- 打字题答案列表 -->
                 <div id="typing-answers-section" class="form-group">
-                    <label>答案列表 (每行一个)</label>
-                    <textarea id="quiz-answers" placeholder="北京&#10;东京&#10;首尔"></textarea>
+                    <label>答案列表 (每行一个，注释用##分隔)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                        <button type="button" class="btn btn-secondary" onclick="wrapAnswerWithComment()" style="padding: 5px 15px; font-size: 0.9em;">📝 注释选中文字</button>
+                    </div>
+                    <textarea id="quiz-answers" placeholder="北京##首都&#10;东京##首都&#10;首尔"></textarea>
                 </div>
                 
                 <!-- 填空题编辑区域 -->
                 <div id="fill-blank-section" style="display: none;">
                     <div class="form-group">
-                        <label>完整文本 (选中文字后点击"挖空"按钮，或手动用[]包围)</label>
+                        <label>完整文本 (选中文字后点击按钮，或手动用[]包围，注释用##包围)</label>
                         <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                             <button type="button" class="btn btn-secondary" onclick="wrapSelectionWithBrackets()" style="padding: 5px 15px; font-size: 0.9em;">🔍 挖空选中文字</button>
+                            <button type="button" class="btn btn-secondary" onclick="wrapSelectionWithComment()" style="padding: 5px 15px; font-size: 0.9em;">📝 注释选中文字</button>
                         </div>
-                        <textarea id="fill-blank-full-text" placeholder="例如: 中国的首都是[北京]，日本的首都[东京]" style="min-height: 80px;"></textarea>
+                        <textarea id="fill-blank-full-text" placeholder="例如: 中国的首都是[北京##首都]，日本的首都[东京##首都]" style="min-height: 80px;"></textarea>
                     </div>
                     <div class="form-group">
                         <label>预览 (挖空后的文本)</label>

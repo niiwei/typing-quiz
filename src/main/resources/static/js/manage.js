@@ -292,6 +292,31 @@ function generateFillBlanks() {
 }
 
 /**
+ * 注释选中文字（用 ## 包围，用于打字题）
+ */
+function wrapAnswerWithComment() {
+    const textarea = document.getElementById('quiz-answers');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    if (start === end) {
+        alert('请先选中要添加注释的文字');
+        return;
+    }
+
+    const selectedText = text.substring(start, end);
+    // 用 ## 包围选中文字
+    const newText = text.substring(0, start) + '##' + selectedText + '##' + text.substring(end);
+    textarea.value = newText;
+
+    // 重新设置光标位置
+    textarea.focus();
+    textarea.selectionStart = start + 2;
+    textarea.selectionEnd = end + 2;
+}
+
+/**
  * 选中文字后用[]包围（挖空功能）
  */
 function wrapSelectionWithBrackets() {
@@ -307,17 +332,44 @@ function wrapSelectionWithBrackets() {
     const text = textarea.value;
     const selectedText = text.substring(start, end);
 
-    // 用[]包围选中的文字
     const newText = text.substring(0, start) + '[' + selectedText + ']' + text.substring(end);
     textarea.value = newText;
 
-    // 重新生成预览
-    generateFillBlanks();
-
-    // 恢复光标位置到插入的文字后面
+    // 重新设置光标位置
     textarea.focus();
-    textarea.selectionStart = start + selectedText.length + 2;
-    textarea.selectionEnd = start + selectedText.length + 2;
+    textarea.selectionStart = start + 1;
+    textarea.selectionEnd = end + 1;
+
+    // 更新预览
+    generateFillBlanks();
+}
+
+/**
+ * 注释选中文字（用 ## 包围）
+ */
+function wrapSelectionWithComment() {
+    const textarea = document.getElementById('fill-blank-full-text');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    if (start === end) {
+        alert('请先选中要添加注释的文字');
+        return;
+    }
+
+    const selectedText = text.substring(start, end);
+    // 用 ## 包围选中文字
+    const newText = text.substring(0, start) + '##' + selectedText + '##' + text.substring(end);
+    textarea.value = newText;
+
+    // 重新设置光标位置
+    textarea.focus();
+    textarea.selectionStart = start + 2;
+    textarea.selectionEnd = end + 2;
+
+    // 更新预览
+    generateFillBlanks();
 }
 
 /**
@@ -349,7 +401,13 @@ async function editQuiz(id) {
             // 打字题
             const answersResponse = await fetch(`${API_BASE}/quizzes/${id}/answers`);
             const answers = await answersResponse.json();
-            document.getElementById('quiz-answers').value = answers.map(a => a.content).join('\n');
+            // 显示答案和注释，格式：答案##注释##
+            document.getElementById('quiz-answers').value = answers.map(a => {
+                if (a.comment) {
+                    return `${a.content}##${a.comment}##`;
+                }
+                return a.content;
+            }).join('\n');
             document.getElementById('fill-blank-full-text').value = '';
             document.getElementById('fill-blank-preview').innerHTML = '';
         }
@@ -389,23 +447,26 @@ async function saveQuiz() {
             alert('请输入完整文本');
             return;
         }
-        
-        // 解析填空标记 [答案#注释]，支持注释
+
+        // 解析填空标记 [答案##注释##]，支持 ## 语法
         const blankRegex = /\[([^\]]+)\]/g;
         const blanks = [];
         let match;
         while ((match = blankRegex.exec(fullText)) !== null) {
-            // 解析答案和注释（格式: 答案#注释）
+            // 解析答案和注释（格式: 答案##注释##）
             const fullMatch = match[1];
-            const hashIndex = fullMatch.indexOf('#');
-            let correctAnswer = fullMatch;
+            const commentRegex = /^(.+?)##(.+?)##$/;
+            const commentMatch = fullMatch.match(commentRegex);
+            let correctAnswer;
             let comment = null;
-            
-            if (hashIndex > 0) {
-                correctAnswer = fullMatch.substring(0, hashIndex).trim();
-                comment = fullMatch.substring(hashIndex + 1).trim();
+
+            if (commentMatch) {
+                correctAnswer = commentMatch[1].trim();
+                comment = commentMatch[2].trim();
+            } else {
+                correctAnswer = fullMatch;
             }
-            
+
             blanks.push({
                 startIndex: match.index,
                 endIndex: match.index + match[0].length,
@@ -413,19 +474,19 @@ async function saveQuiz() {
                 comment: comment
             });
         }
-        
+
         if (blanks.length === 0) {
             alert('请用[]包围需要填空的内容，如: 中国的首都是[北京]');
             return;
         }
-        
+
         // 生成显示文本（用___替换挖空部分，保留注释在原位置）
         let displayText = fullText;
         blanks.forEach(blank => {
             const placeholderHTML = '<span class="fill-blank-placeholder" data-blank-index="' + blanks.indexOf(blank) + '">___</span>';
             displayText = displayText.substring(0, blank.startIndex) + placeholderHTML + displayText.substring(blank.endIndex);
         });
-        
+
         quizData.fillBlankQuiz = {
             fullText: fullText,
             displayText: displayText,
@@ -444,12 +505,19 @@ async function saveQuiz() {
             return;
         }
         
-        // 解析答案中的注释（格式: 答案#注释）
+        // 解析答案中的注释（格式: 答案##注释##）
         const parsedAnswers = answers.map(answer => {
-            const parts = answer.split('#');
+            const commentRegex = /^(.+?)##(.+?)##$/;
+            const commentMatch = answer.match(commentRegex);
+            if (commentMatch) {
+                return {
+                    content: commentMatch[1].trim(),
+                    comment: commentMatch[2].trim()
+                };
+            }
             return {
-                content: parts[0].trim(),
-                comment: parts.length > 1 ? parts.slice(1).join('#').trim() : null
+                content: answer,
+                comment: null
             };
         });
         

@@ -1,6 +1,7 @@
 package com.typingquiz.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.typingquiz.dto.AnswerCreateDTO;
 import com.typingquiz.dto.FillBlankQuizDTO;
 import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.entity.Answer;
@@ -127,6 +128,12 @@ public class ImportExportController {
                 .map(Answer::getContent)
                 .collect(Collectors.toList());
         dto.setAnswers(answers);
+
+        // 导出包含注释的答案列表
+        List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
+                .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
+                .collect(Collectors.toList());
+        dto.setAnswerList(answerList);
 
         // 导出填空题信息
         if (quiz.getQuizType() == QuizType.FILL_BLANK) {

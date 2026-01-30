@@ -221,8 +221,10 @@ class QuizController {
             // 检查这个空格是否在放弃前就已经答出了
             const isOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
             const correctAnswer = item.correctAnswer || '';
-            const answerLength = correctAnswer.length;
-            const boxWidth = Math.max(answerLength + 2, 4);
+            const comment = item.comment || '';
+            // 宽度根据答案+注释长度计算
+            const textLength = (correctAnswer + comment).length;
+            const boxWidth = Math.max(textLength + 2, 4);
 
             let displayAnswer;
             let bgColor;
@@ -237,11 +239,14 @@ class QuizController {
                 bgColor = '#dc3545';
             }
 
+            // 添加注释显示
+            const commentHTML = comment ? `<span class="fill-blank-comment">#${comment}</span>` : '';
+
             const placeholderHTML = '<div class="fill-blank-placeholder" ' +
                 'data-blank-index="' + item.originalIndex + '" ' +
                 'onclick="controller.focusFillBlankInput()" ' +
                 'style="width:' + boxWidth + 'em;position:relative;text-align:center;background:' + bgColor + '">' +
-                displayAnswer +
+                displayAnswer + commentHTML +
                 '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,0.5);"></span>' +
                 '</div>';
 
@@ -388,8 +393,11 @@ class QuizController {
         sortedBlanks.forEach(item => {
             const isFilled = this.filledBlanks.has(item.originalIndex);
             const correctAnswer = item.correctAnswer || '';
-            const answerLength = correctAnswer.length;
-            const boxWidth = Math.max(answerLength + 2, 4);
+            const comment = item.comment || '';
+            // 宽度根据答案+注释长度计算
+            const displayText = isFilled ? (this.filledBlanks.get(item.originalIndex) || '') : correctAnswer;
+            const textLength = (displayText + comment).length;
+            const boxWidth = Math.max(textLength + 2, 4);
 
             let userAnswer;
             let placeholderClass;
@@ -403,11 +411,14 @@ class QuizController {
                 placeholderClass = '';
             }
 
+            // 已答题时显示注释
+            const commentHTML = (isFilled && comment) ? `<span class="fill-blank-comment">#${comment}</span>` : '';
+
             // 使用 div 元素，直接设置内联样式
             const placeholderHTML = '<div class="fill-blank-placeholder' + (placeholderClass ? ' ' + placeholderClass : '') +
                 '" data-blank-index="' + item.originalIndex +
                 '" onclick="controller.focusFillBlankInput()" style="width:' + boxWidth + 'em;position:relative;text-align:center">' +
-                userAnswer +
+                userAnswer + commentHTML +
                 '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,' + (isFilled ? '0.3' : '0.5') + ');"></span>' +
                 '</div>';
 

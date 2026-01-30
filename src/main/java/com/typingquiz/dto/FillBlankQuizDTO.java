@@ -21,6 +21,7 @@ public class FillBlankQuizDTO {
         private Integer startIndex;
         private Integer endIndex;
         private String correctAnswer;
+        private String comment;
 
         public BlankInfo() {
         }
@@ -53,6 +54,14 @@ public class FillBlankQuizDTO {
 
         public void setCorrectAnswer(String correctAnswer) {
             this.correctAnswer = correctAnswer;
+        }
+
+        public String getComment() {
+            return comment;
+        }
+
+        public void setComment(String comment) {
+            this.comment = comment;
         }
     }
 

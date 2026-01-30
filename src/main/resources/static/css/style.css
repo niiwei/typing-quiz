@@ -333,6 +333,12 @@ body {
     height: 2em;
 }
 
+.fill-blank-comment {
+    font-size: 0.8em;
+    opacity: 0.8;
+    margin-left: 4px;
+}
+
 .fill-blank-placeholder.filled {
     background: #28a745;
     color: white;
