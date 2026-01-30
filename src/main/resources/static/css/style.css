@@ -291,28 +291,46 @@ body {
 }
 
 .fill-blank-text {
-    font-size: 1.6em;
-    line-height: 2.2;
-    padding: 30px;
+    font-size: 1.2em;
+    line-height: 2;
+    padding: 20px;
     background: #f8f9fa;
     border-radius: 15px;
     margin-bottom: 20px;
-    text-align: center;
+    text-align: left;
     color: #333;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+#fill-blank-text br {
+    line-height: 2;
+}
+
+#fill-blank-text .manual-break {
+    display: block;
+    height: 1.2em;
 }
 
 .fill-blank-placeholder {
-    display: inline-block;
-    min-width: 80px;
-    padding: 5px 15px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: baseline;
+    padding: 3px 4px;
     background: #6c757d;
     color: white;
-    border-radius: 8px;
-    margin: 0 5px;
-    text-align: center;
+    border-radius: 6px;
+    margin: 0 3px;
     font-weight: bold;
+    font-size: 0.9em;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 2em;
+    height: 2em;
 }
 
 .fill-blank-placeholder.filled {
@@ -321,7 +339,7 @@ body {
 }
 
 .fill-blank-placeholder.missed {
-    background: #dc3545;
+    background: #dc3545 !important;
     color: white;
 }
 

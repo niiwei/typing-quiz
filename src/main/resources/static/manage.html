@@ -265,7 +265,10 @@
                 <!-- 填空题编辑区域 -->
                 <div id="fill-blank-section" style="display: none;">
                     <div class="form-group">
-                        <label>完整文本 (将被挖空的部分用[]包围)</label>
+                        <label>完整文本 (选中文字后点击"挖空"按钮，或手动用[]包围)</label>
+                        <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                            <button type="button" class="btn btn-secondary" onclick="wrapSelectionWithBrackets()" style="padding: 5px 15px; font-size: 0.9em;">🔍 挖空选中文字</button>
+                        </div>
                         <textarea id="fill-blank-full-text" placeholder="例如: 中国的首都是[北京]，日本的首都[东京]" style="min-height: 80px;"></textarea>
                     </div>
                     <div class="form-group">

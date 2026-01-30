@@ -174,8 +174,18 @@ class QuizController {
 
         // 先渲染测验UI（显示题目和答案网格）
         this.renderQuizInfo();
-        if (this.answers && this.answers.length > 0) {
-            this.renderQuizTypeUI();
+
+        if (this.quizType === 'FILL_BLANK') {
+            // 填空题：放弃时重新渲染，让未答题显示红色框
+            if (isGiveUp) {
+                this.renderFillBlankQuizForGiveUp();
+            } else {
+                this.renderQuizTypeUI();
+            }
+        } else {
+            if (this.answers && this.answers.length > 0) {
+                this.renderQuizTypeUI();
+            }
         }
 
         // 显示结果面板
@@ -187,6 +197,59 @@ class QuizController {
         }
 
         this.renderGroupProgress();
+    }
+
+    /**
+     * 放弃时渲染填空题，让未答题显示红色框
+     */
+    renderFillBlankQuizForGiveUp(originallyFilledIndices = new Set()) {
+        const questionEl = document.getElementById('fill-blank-question');
+        const textEl = document.getElementById('fill-blank-text');
+
+        if (!this.fillBlankQuiz) return;
+
+        questionEl.textContent = '题目: ' + (this.quiz.title || '填空题');
+
+        const blanks = this.fillBlankQuiz.blanks || [];
+        let result = this.fillBlankQuiz.fullText;
+
+        // 按 startIndex 降序排序
+        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
+            .sort((a, b) => b.startIndex - a.startIndex);
+
+        sortedBlanks.forEach(item => {
+            // 检查这个空格是否在放弃前就已经答出了
+            const isOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
+            const correctAnswer = item.correctAnswer || '';
+            const answerLength = correctAnswer.length;
+            const boxWidth = Math.max(answerLength + 2, 4);
+
+            let displayAnswer;
+            let bgColor;
+
+            if (isOriginallyFilled) {
+                // 原本就答出的：显示用户答案，绿色框
+                displayAnswer = this.filledBlanks.get(item.originalIndex);
+                bgColor = '#28a745';
+            } else {
+                // 未答出的：显示正确答案，红色框
+                displayAnswer = correctAnswer;
+                bgColor = '#dc3545';
+            }
+
+            const placeholderHTML = '<div class="fill-blank-placeholder" ' +
+                'data-blank-index="' + item.originalIndex + '" ' +
+                'onclick="controller.focusFillBlankInput()" ' +
+                'style="width:' + boxWidth + 'em;position:relative;text-align:center;background:' + bgColor + '">' +
+                displayAnswer +
+                '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,0.5);"></span>' +
+                '</div>';
+
+            result = result.substring(0, item.startIndex) + placeholderHTML + result.substring(item.endIndex);
+        });
+
+        result = result.replace(/\n/g, '<div class="manual-break"></div>');
+        textEl.innerHTML = result;
     }
 
     /**
@@ -308,7 +371,7 @@ class QuizController {
     renderFillBlankQuiz() {
         const questionEl = document.getElementById('fill-blank-question');
         const textEl = document.getElementById('fill-blank-text');
-        
+
         if (!this.fillBlankQuiz) return;
 
         // 渲染题目区域
@@ -317,23 +380,43 @@ class QuizController {
         // 按位置从后往前处理，避免索引偏移问题
         const blanks = this.fillBlankQuiz.blanks || [];
         let result = this.fillBlankQuiz.fullText;
-        
+
         // 按 startIndex 降序排序（从后往前替换）
         const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
             .sort((a, b) => b.startIndex - a.startIndex);
-        
+
         sortedBlanks.forEach(item => {
             const isFilled = this.filledBlanks.has(item.originalIndex);
-            const userAnswer = this.filledBlanks.get(item.originalIndex) || '___';
-            
-            const placeholderClass = isFilled ? 'filled' : 'missed';
-            const placeholderHTML = '<span class="fill-blank-placeholder ' + placeholderClass + 
-                '" data-blank-index="' + item.originalIndex + 
-                '" onclick="controller.focusFillBlankInput()">' + userAnswer + '</span>';
-            
+            const correctAnswer = item.correctAnswer || '';
+            const answerLength = correctAnswer.length;
+            const boxWidth = Math.max(answerLength + 2, 4);
+
+            let userAnswer;
+            let placeholderClass;
+
+            if (isFilled) {
+                userAnswer = this.filledBlanks.get(item.originalIndex);
+                placeholderClass = 'filled';
+            } else {
+                // 未答题时使用横线，横线长度随框宽度变化
+                userAnswer = '';
+                placeholderClass = '';
+            }
+
+            // 使用 div 元素，直接设置内联样式
+            const placeholderHTML = '<div class="fill-blank-placeholder' + (placeholderClass ? ' ' + placeholderClass : '') +
+                '" data-blank-index="' + item.originalIndex +
+                '" onclick="controller.focusFillBlankInput()" style="width:' + boxWidth + 'em;position:relative;text-align:center">' +
+                userAnswer +
+                '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,' + (isFilled ? '0.3' : '0.5') + ');"></span>' +
+                '</div>';
+
             result = result.substring(0, item.startIndex) + placeholderHTML + result.substring(item.endIndex);
         });
-        
+
+        // 将换行符替换为带额外间距的 div
+        result = result.replace(/\n/g, '<div class="manual-break"></div>');
+
         textEl.innerHTML = result;
     }
 
@@ -699,12 +782,15 @@ class QuizController {
         if (this.quizType === 'FILL_BLANK') {
             // 如果是放弃，显示所有正确答案
             if (isGiveUp) {
+                // 保存原本已填写的空格索引
+                const originallyFilledIndices = new Set(this.filledBlanks.keys());
+
                 // 填充所有空格
                 this.fillBlankQuiz.blanks.forEach((blank, index) => {
                     this.filledBlanks.set(index, blank.correctAnswer);
                 });
-                // 重新渲染填空题显示
-                this.renderFillBlankQuiz();
+                // 重新渲染填空题显示（使用放弃专用方法，让未答题显示红色框）
+                this.renderFillBlankQuizForGiveUp(originallyFilledIndices);
 
                 // 所有空格都是"未答出"的（因为是放弃）
                 missedAnswers = this.fillBlankQuiz.blanks.map((blank, index) => ({

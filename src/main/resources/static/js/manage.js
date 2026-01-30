@@ -276,19 +276,48 @@ function generateFillBlanks() {
         document.getElementById('fill-blank-preview').innerHTML = '<span style="color: #999;">请先输入完整文本</span>';
         return;
     }
-    
+
     // 使用正则表达式匹配 [答案] 格式
     const blankRegex = /\[([^\]]+)\]/g;
     const matches = [...fullText.matchAll(blankRegex)];
-    
+
     if (matches.length === 0) {
         document.getElementById('fill-blank-preview').innerHTML = '<span style="color: #999;">未找到填空标记，请用[]包围答案，如: 中国的首都是[北京]</span>';
         return;
     }
-    
+
     // 生成预览文本
     let previewText = fullText.replace(blankRegex, '___');
     document.getElementById('fill-blank-preview').innerHTML = previewText;
+}
+
+/**
+ * 选中文字后用[]包围（挖空功能）
+ */
+function wrapSelectionWithBrackets() {
+    const textarea = document.getElementById('fill-blank-full-text');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start === end) {
+        alert('请先选中要挖空的文字');
+        return;
+    }
+
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+
+    // 用[]包围选中的文字
+    const newText = text.substring(0, start) + '[' + selectedText + ']' + text.substring(end);
+    textarea.value = newText;
+
+    // 重新生成预览
+    generateFillBlanks();
+
+    // 恢复光标位置到插入的文字后面
+    textarea.focus();
+    textarea.selectionStart = start + selectedText.length + 2;
+    textarea.selectionEnd = start + selectedText.length + 2;
 }
 
 /**
