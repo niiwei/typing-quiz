@@ -16,7 +16,7 @@ class TimerModule {
      */
     start() {
         this.startTime = Date.now();
-        
+
         this.interval = setInterval(() => {
             this.elapsed = Math.floor((Date.now() - this.startTime) / 1000);
             this.updateDisplay();

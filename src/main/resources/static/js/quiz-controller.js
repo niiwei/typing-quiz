@@ -81,6 +81,12 @@ class QuizController {
      * 根据ID加载测验
      */
     async loadQuizById(quizId) {
+        // 停止之前的计时器
+        if (this.timer) {
+            this.timer.stop();
+            this.timer = null;
+        }
+
         this.quizId = quizId;
         this.quiz = null;
         this.answers = [];
@@ -105,9 +111,59 @@ class QuizController {
             this.answers = await answersResponse.json();
         }
 
+        // 重置UI状态
+        this.resetQuizUI();
+
         this.renderQuizInfo();
         this.renderQuizTypeUI();
         this.renderGroupProgress();
+
+        // 启动新计时器
+        this.startTimer();
+    }
+
+    /**
+     * 重置测验UI状态
+     */
+    resetQuizUI() {
+        // 启用输入框和放弃按钮
+        const answerInput = document.getElementById('answer-input');
+        const giveUpBtn = document.getElementById('give-up-btn');
+        const inputSection = document.getElementById('input-section');
+
+        if (answerInput) {
+            answerInput.disabled = false;
+            answerInput.value = '';
+        }
+
+        if (giveUpBtn) {
+            giveUpBtn.disabled = false;
+        }
+
+        // 显示输入区域（UIRenderer.showResults会隐藏它）
+        if (inputSection) {
+            inputSection.style.display = '';
+        }
+
+        // 隐藏结果面板
+        const resultsPanel = document.getElementById('results-panel');
+        if (resultsPanel) {
+            resultsPanel.style.display = 'none';
+        }
+
+        const feedbackMsg = document.getElementById('feedback-message');
+        if (feedbackMsg) {
+            feedbackMsg.textContent = '';
+            feedbackMsg.className = '';
+        }
+
+        // 启用填空题输入框
+        document.querySelectorAll('.fill-blank-input').forEach(input => {
+            input.disabled = false;
+        });
+
+        // 重置测验状态
+        this.isQuizActive = true;
     }
 
     /**
@@ -337,7 +393,10 @@ class QuizController {
         // 分组模式：键盘导航
         if (this.groupMode) {
             document.addEventListener('keydown', (e) => {
-                if (!this.isQuizActive) return;
+                // 分组模式下，即使测验结束也允许切换
+                if (!this.groupMode) {
+                    if (!this.isQuizActive) return;
+                }
 
                 if (e.key === 'ArrowLeft') {
                     e.preventDefault();
@@ -358,6 +417,8 @@ class QuizController {
             this.saveCurrentQuizResult();
             this.currentQuizIndex--;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
+            // 重置测验状态
+            this.isQuizActive = true;
         }
     }
 
@@ -369,6 +430,8 @@ class QuizController {
             this.saveCurrentQuizResult();
             this.currentQuizIndex++;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
+            // 重置测验状态
+            this.isQuizActive = true;
         }
     }
 
