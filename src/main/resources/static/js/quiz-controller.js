@@ -20,7 +20,7 @@ class QuizController {
         this.groupId = null;
         this.groupQuizzes = []; // 分组中的所有测验
         this.currentQuizIndex = 0; // 当前测验索引
-        this.groupResults = []; // 存储各测验的结果
+        this.groupProgress = new Map(); // 存储各测验的进度 {quizId -> {foundAnswers, filledBlanks, completed}}
     }
 
     /**
@@ -114,12 +114,79 @@ class QuizController {
         // 重置UI状态
         this.resetQuizUI();
 
+        // 恢复分组进度（如果有）
+        if (this.groupMode) {
+            const { completed, isGiveUp } = this.restoreQuizProgress(quizId);
+            if (completed) {
+                // 如果已完成，显示结果面板
+                this.showCompletedQuizResult(isGiveUp);
+                return;
+            }
+        }
+
         this.renderQuizInfo();
         this.renderQuizTypeUI();
         this.renderGroupProgress();
 
         // 启动新计时器
         this.startTimer();
+    }
+
+    /**
+     * 显示已完成测验的结果
+     */
+    showCompletedQuizResult(isGiveUp = false) {
+        // 计算统计
+        let found, total, missedAnswers = [];
+        if (this.quizType === 'FILL_BLANK') {
+            found = this.filledBlanks.size;
+            total = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
+
+            if (isGiveUp && this.fillBlankQuiz && this.fillBlankQuiz.blanks) {
+                // 放弃时显示所有正确答案
+                missedAnswers = this.fillBlankQuiz.blanks.map((blank, index) => ({
+                    id: index,
+                    content: blank.correctAnswer,
+                    displayContent: blank.correctAnswer,
+                    comment: blank.comment
+                }));
+            }
+        } else {
+            found = this.foundAnswers.size;
+            total = this.answers ? this.answers.length : 0;
+
+            if (isGiveUp && this.answers) {
+                // 放弃时显示所有未答出的答案
+                missedAnswers = this.answers.filter(
+                    answer => !this.foundAnswers.has(answer.id)
+                );
+            }
+        }
+
+        const stats = {
+            found: found,
+            total: total,
+            accuracy: total > 0 ? Math.round((found / total) * 100) : 0,
+            timeElapsed: 0,
+            quizType: this.quizType,
+            isGiveUp: isGiveUp
+        };
+
+        // 先渲染测验UI（显示题目和答案网格）
+        this.renderQuizInfo();
+        if (this.answers && this.answers.length > 0) {
+            this.renderQuizTypeUI();
+        }
+
+        // 显示结果面板
+        UIRenderer.showResults(stats, missedAnswers);
+
+        // 放弃时在答案网格中显示所有答案
+        if (isGiveUp && this.quizType === 'TYPING' && this.answers) {
+            UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
+        }
+
+        this.renderGroupProgress();
     }
 
     /**
@@ -414,11 +481,12 @@ class QuizController {
      */
     navigatePrevQuiz() {
         if (this.currentQuizIndex > 0) {
-            this.saveCurrentQuizResult();
+            // 如果当前测验未完成才保存进度
+            if (!this.isQuizCompleted()) {
+                this.saveCurrentQuizProgress();
+            }
             this.currentQuizIndex--;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
-            // 重置测验状态
-            this.isQuizActive = true;
         }
     }
 
@@ -427,34 +495,85 @@ class QuizController {
      */
     navigateNextQuiz() {
         if (this.currentQuizIndex < this.groupQuizzes.length - 1) {
-            this.saveCurrentQuizResult();
+            // 如果当前测验未完成才保存进度
+            if (!this.isQuizCompleted()) {
+                this.saveCurrentQuizProgress();
+            }
             this.currentQuizIndex++;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
-            // 重置测验状态
-            this.isQuizActive = true;
         }
     }
 
     /**
-     * 保存当前测验结果
+     * 检查当前测验是否已完成
      */
-    saveCurrentQuizResult() {
-        const result = {
+    isQuizCompleted() {
+        const progress = this.groupProgress.get(this.quizId);
+        return progress && progress.completed;
+    }
+
+    /**
+     * 保存当前测验进度
+     */
+    saveCurrentQuizProgress() {
+        const totalAnswers = this.answers ? this.answers.length : 0;
+        const totalBlanks = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
+
+        const progress = {
             quizId: this.quizId,
             quizTitle: this.quiz.title,
-            found: this.quizType === 'FILL_BLANK' ? this.filledBlanks.size : this.foundAnswers.size,
-            total: this.quizType === 'FILL_BLANK'
-                ? (this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0)
-                : this.answers.length
+            quizType: this.quizType,
+            foundAnswers: Array.from(this.foundAnswers), // 保存已找到的答案ID
+            filledBlanks: Object.fromEntries(this.filledBlanks), // 保存填空题进度
+            completed: (totalAnswers > 0 && this.foundAnswers.size === totalAnswers) ||
+                      (totalBlanks > 0 && this.filledBlanks.size === totalBlanks),
+            isGiveUp: false
         };
 
-        // 更新或添加结果
-        const existingIndex = this.groupResults.findIndex(r => r.quizId === this.quizId);
-        if (existingIndex >= 0) {
-            this.groupResults[existingIndex] = result;
-        } else {
-            this.groupResults.push(result);
+        console.log('保存当前进度:', progress);
+        // 保存或更新进度
+        this.groupProgress.set(this.quizId, progress);
+    }
+
+    /**
+     * 保存放弃状态
+     */
+    saveGiveUpProgress() {
+        const progress = {
+            quizId: this.quizId,
+            quizTitle: this.quiz.title,
+            quizType: this.quizType,
+            foundAnswers: Array.from(this.foundAnswers),
+            filledBlanks: Object.fromEntries(this.filledBlanks),
+            completed: true,
+            isGiveUp: true
+        };
+
+        console.log('保存放弃状态:', progress);
+        this.groupProgress.set(this.quizId, progress);
+    }
+
+    /**
+     * 恢复测验进度
+     */
+    restoreQuizProgress(quizId) {
+        const progress = this.groupProgress.get(quizId);
+        console.log('restoreQuizProgress:', quizId, progress);
+
+        if (!progress) return { completed: false, isGiveUp: false };
+
+        // 恢复打字题进度
+        if (progress.foundAnswers && progress.foundAnswers.length > 0) {
+            this.foundAnswers = new Set(progress.foundAnswers);
         }
+
+        // 恢复填空题进度
+        if (progress.filledBlanks && progress.filledBlanks.size > 0) {
+            this.filledBlanks = new Map(progress.filledBlanks);
+        }
+
+        console.log('恢复结果:', { completed: progress.completed, isGiveUp: progress.isGiveUp });
+        return { completed: progress.completed, isGiveUp: progress.isGiveUp };
     }
 
     /**
@@ -619,9 +738,13 @@ class QuizController {
             }
         }
 
-        // 保存当前测验结果（分组模式）
+        // 保存当前测验进度（分组模式）
         if (this.groupMode) {
-            this.saveCurrentQuizResult();
+            if (isGiveUp) {
+                this.saveGiveUpProgress();
+            } else {
+                this.saveCurrentQuizProgress();
+            }
         }
 
         // 显示结果
@@ -647,14 +770,19 @@ class QuizController {
         let totalFound = 0;
         let totalQuestions = 0;
 
-        this.groupResults.forEach(result => {
-            totalFound += result.found;
-            totalQuestions += result.total;
-            const accuracy = result.total > 0 ? Math.round((result.found / result.total) * 100) : 0;
+        this.groupProgress.forEach((progress, quizId) => {
+            const found = progress.foundAnswers ? progress.foundAnswers.length : 0;
+            const total = progress.quizType === 'FILL_BLANK'
+                ? (progress.filledBlanks ? progress.filledBlanks.size : 0)
+                : this.groupQuizzes.find(q => q.id === quizId)?.totalAnswers || 0;
+
+            totalFound += found;
+            totalQuestions += total;
+            const accuracy = total > 0 ? Math.round((found / total) * 100) : 0;
             summaryHTML += `
                 <div class="group-result-item">
-                    <span class="quiz-name">${result.quizTitle}</span>
-                    <span class="quiz-score">${result.found}/${result.total} (${accuracy}%)</span>
+                    <span class="quiz-name">${progress.quizTitle}</span>
+                    <span class="quiz-score">${found}/${total} (${accuracy}%)</span>
                 </div>
             `;
         });
