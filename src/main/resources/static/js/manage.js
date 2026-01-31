@@ -51,12 +51,26 @@ async function loadQuizzes() {
         // 保存数据用于筛选
         window.allQuizzes = quizzes;
         window.quizGroupMap = quizGroupMap;
-        
+        window.allGroups = groups;
+
+        populateGroupFilter(groups);
         renderQuizTable(quizzes);
     } catch (error) {
         console.error('加载测验失败:', error);
         alert('加载测验失败,请刷新重试');
     }
+}
+
+/**
+ * 填充分组筛选器
+ */
+function populateGroupFilter(groups) {
+    const groupFilter = document.getElementById('quiz-group-filter');
+    if (!groupFilter) return;
+    groupFilter.innerHTML = '<option value="all">全部分组</option>';
+    groups.forEach(group => {
+        groupFilter.innerHTML += `<option value="${group.id}">${group.name}</option>`;
+    });
 }
 
 /**
@@ -100,16 +114,30 @@ function renderQuizTable(quizzes) {
  * 筛选测验
  */
 function filterQuizzes() {
-    const filter = document.getElementById('quiz-type-filter').value;
-    
+    const typeFilter = document.getElementById('quiz-type-filter').value;
+    const groupFilter = document.getElementById('quiz-group-filter')
+        ? document.getElementById('quiz-group-filter').value
+        : 'all';
+
     if (!window.allQuizzes) return;
-    
-    if (filter === 'all') {
-        renderQuizTable(window.allQuizzes);
-    } else {
-        const filtered = window.allQuizzes.filter(quiz => quiz.quizType === filter);
-        renderQuizTable(filtered);
+
+    let filtered = window.allQuizzes;
+
+    if (groupFilter !== 'all') {
+        const groupId = parseInt(groupFilter, 10);
+        const group = (window.allGroups || []).find(g => g.id === groupId);
+        if (group && group.quizIds) {
+            filtered = filtered.filter(quiz => group.quizIds.includes(quiz.id));
+        } else {
+            filtered = [];
+        }
     }
+
+    if (typeFilter !== 'all') {
+        filtered = filtered.filter(quiz => quiz.quizType === typeFilter);
+    }
+
+    renderQuizTable(filtered);
 }
 
 /**

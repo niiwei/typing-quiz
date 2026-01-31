@@ -15,12 +15,216 @@ class QuizController {
         this.fillBlankQuiz = null;
         this.filledBlanks = new Map(); // blankIndex -> userAnswer
 
-        // 分组答题模式
         this.groupMode = false;
         this.groupId = null;
         this.groupQuizzes = []; // 分组中的所有测验
         this.currentQuizIndex = 0; // 当前测验索引
         this.groupProgress = new Map(); // 存储各测验的进度 {quizId -> {foundAnswers, filledBlanks, completed}}
+        this.groupScores = new Map();
+    }
+
+    ensureFillBlankMeasureEl(textEl) {
+        if (!this._fillBlankMeasureEl) {
+            const el = document.createElement('span');
+            el.className = 'fill-blank-placeholder';
+            el.style.position = 'absolute';
+            el.style.visibility = 'hidden';
+            el.style.left = '-99999px';
+            el.style.top = '-99999px';
+            el.style.pointerEvents = 'none';
+            el.innerHTML = '<span class="fill-blank-main"></span><span class="fill-blank-comment"></span>';
+            this._fillBlankMeasureEl = el;
+            this._fillBlankMeasureMainEl = el.querySelector('.fill-blank-main');
+            this._fillBlankMeasureCommentEl = el.querySelector('.fill-blank-comment');
+        }
+
+        if (textEl && this._fillBlankMeasureEl.parentElement !== textEl) {
+            textEl.appendChild(this._fillBlankMeasureEl);
+        }
+
+        const style = window.getComputedStyle(this._fillBlankMeasureEl);
+        this._fillBlankMeasureMarginLeft = parseFloat(style.marginLeft || '0');
+        this._fillBlankMeasureMarginRight = parseFloat(style.marginRight || '0');
+        const commentStyle = window.getComputedStyle(this._fillBlankMeasureCommentEl);
+        this._fillBlankMeasureCommentMarginLeft = parseFloat(commentStyle.marginLeft || '0');
+    }
+
+    measureFillBlankBoxWidthPx(textEl, mainText, commentText, includeHash = false) {
+        this.ensureFillBlankMeasureEl(textEl);
+        const main = mainText || '';
+        const comment = commentText ? (includeHash ? ('#' + commentText) : commentText) : '';
+        this._fillBlankMeasureMainEl.textContent = main;
+        if (comment) {
+            this._fillBlankMeasureCommentEl.textContent = comment;
+            this._fillBlankMeasureCommentEl.style.display = '';
+        } else {
+            this._fillBlankMeasureCommentEl.textContent = '';
+            this._fillBlankMeasureCommentEl.style.display = 'none';
+        }
+        let width = this._fillBlankMeasureEl.getBoundingClientRect().width;
+        if (comment) {
+            width += this._fillBlankMeasureCommentMarginLeft || 0;
+        }
+        return Math.ceil(width + 2);
+    }
+
+    measureFillBlankBoxOuterWidthPx(textEl, mainText, commentText, includeHash = false) {
+        const innerWidth = this.measureFillBlankBoxWidthPx(textEl, mainText, commentText, includeHash);
+        return innerWidth + this._fillBlankMeasureMarginLeft + this._fillBlankMeasureMarginRight;
+    }
+
+    replaceFillBlankWrappers(textEl) {
+        if (!textEl) return;
+        const wrappers = Array.from(textEl.querySelectorAll('.fill-blank-wrapper'));
+        if (wrappers.length === 0) return;
+
+        const textRect = textEl.getBoundingClientRect();
+        const style = window.getComputedStyle(textEl);
+        const paddingRight = parseFloat(style.paddingRight || '0');
+        const paddingLeft = parseFloat(style.paddingLeft || '0');
+        const containerLeft = textRect.left + paddingLeft;
+        const containerRight = textRect.right - paddingRight;
+        const fullLineWidth = Math.max(0, containerRight - containerLeft);
+
+        wrappers.forEach(wrapper => {
+            const blankIndex = parseInt(wrapper.getAttribute('data-blank-index') || '0', 10);
+            const isFilled = wrapper.getAttribute('data-filled') === '1';
+            const mode = wrapper.getAttribute('data-mode') || 'play';
+            const state = wrapper.getAttribute('data-state') || '';
+
+            const answerText = decodeURIComponent(wrapper.getAttribute('data-answer') || '');
+            const correctText = decodeURIComponent(wrapper.getAttribute('data-correct') || '');
+            const comment = decodeURIComponent(wrapper.getAttribute('data-comment') || '');
+
+            const isEmptyPlay = mode === 'play' && !isFilled;
+            const baseText = (isEmptyPlay ? correctText : (isFilled ? answerText : correctText)) || '';
+            const commentToShow = (mode === 'giveup') ? comment : (isFilled ? comment : '');
+
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const availableFirst = Math.max(0, containerRight - wrapperRect.left);
+            const minOuterWidth = this.measureFillBlankBoxOuterWidthPx(textEl, '一', '');
+
+            const frag = document.createDocumentFragment();
+            let mainIndex = 0;
+            let commentIndex = 0;
+            let isFirst = true;
+            let isFirstSegment = true;
+
+            while (mainIndex < baseText.length || commentIndex < commentToShow.length) {
+                const avail = isFirst
+                    ? (availableFirst >= minOuterWidth ? availableFirst : fullLineWidth)
+                    : fullLineWidth;
+
+                let mainChunk = '';
+                let commentChunk = '';
+                let includeHash = false;
+
+                if (mainIndex < baseText.length) {
+                    let low = 1;
+                    let high = baseText.length - mainIndex;
+                    let best = 1;
+                    while (low <= high) {
+                        const mid = Math.floor((low + high) / 2);
+                        const part = baseText.slice(mainIndex, mainIndex + mid);
+                        const width = this.measureFillBlankBoxOuterWidthPx(textEl, part, '', false);
+                        if (width <= avail || avail === 0) {
+                            best = mid;
+                            low = mid + 1;
+                        } else {
+                            high = mid - 1;
+                        }
+                    }
+
+                    mainChunk = baseText.slice(mainIndex, mainIndex + best);
+                    mainIndex += best;
+
+                    if (mainIndex >= baseText.length && commentToShow.length > 0) {
+                        includeHash = commentIndex === 0;
+                        let lowC = 1;
+                        let highC = commentToShow.length - commentIndex;
+                        let bestC = 0;
+                        while (lowC <= highC) {
+                            const midC = Math.floor((lowC + highC) / 2);
+                            const partC = commentToShow.slice(commentIndex, commentIndex + midC);
+                            const width = this.measureFillBlankBoxOuterWidthPx(textEl, mainChunk, partC, includeHash);
+                            if (width <= avail || avail === 0) {
+                                bestC = midC;
+                                lowC = midC + 1;
+                            } else {
+                                highC = midC - 1;
+                            }
+                        }
+
+                        if (bestC > 0) {
+                            commentChunk = commentToShow.slice(commentIndex, commentIndex + bestC);
+                            commentIndex += bestC;
+                        }
+                    }
+                } else {
+                    includeHash = commentIndex === 0;
+                    let lowC = 1;
+                    let highC = commentToShow.length - commentIndex;
+                    let bestC = 1;
+                    while (lowC <= highC) {
+                        const midC = Math.floor((lowC + highC) / 2);
+                        const partC = commentToShow.slice(commentIndex, commentIndex + midC);
+                        const width = this.measureFillBlankBoxOuterWidthPx(textEl, '', partC, includeHash);
+                        if (width <= avail || avail === 0) {
+                            bestC = midC;
+                            lowC = midC + 1;
+                        } else {
+                            highC = midC - 1;
+                        }
+                    }
+
+                    commentChunk = commentToShow.slice(commentIndex, commentIndex + bestC);
+                    commentIndex += bestC;
+                }
+
+                const span = document.createElement('span');
+                span.className = 'fill-blank-placeholder';
+                if (state) {
+                    span.classList.add(state);
+                } else if (mode === 'play' && isFilled) {
+                    span.classList.add('filled');
+                }
+
+                span.setAttribute('data-blank-index', String(blankIndex));
+                span.onclick = () => this.focusFillBlankInput();
+
+                const widthPx = this.measureFillBlankBoxWidthPx(textEl, mainChunk, commentChunk, includeHash);
+                span.style.width = widthPx + 'px';
+                span.textContent = isEmptyPlay ? '' : mainChunk;
+
+                if (commentChunk) {
+                    const c = document.createElement('span');
+                    c.className = 'fill-blank-comment';
+                    c.textContent = (includeHash ? '#' : '') + commentChunk;
+                    span.appendChild(c);
+                }
+
+                const underline = document.createElement('span');
+                underline.className = 'fill-blank-underline';
+                underline.style.position = 'absolute';
+                underline.style.bottom = '3px';
+                underline.style.left = '4px';
+                underline.style.right = '4px';
+                underline.style.borderBottom = `2px solid rgba(255,255,255,${(mode === 'play' && isFilled) || mode === 'giveup' ? '0.3' : '0.5'})`;
+                span.appendChild(underline);
+
+                if (!isFirstSegment) {
+                    const br = document.createElement('br');
+                    br.className = 'fill-blank-segment-break';
+                    frag.appendChild(br);
+                }
+
+                frag.appendChild(span);
+                isFirst = false;
+                isFirstSegment = false;
+            }
+
+            wrapper.replaceWith(frag);
+        });
     }
 
     /**
@@ -222,39 +426,25 @@ class QuizController {
             const isOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
             const correctAnswer = item.correctAnswer || '';
             const comment = item.comment || '';
-            // 宽度根据答案+注释长度计算
-            const textLength = (correctAnswer + comment).length;
-            const boxWidth = Math.max(textLength + 2, 4);
-
-            let displayAnswer;
-            let bgColor;
-
-            if (isOriginallyFilled) {
-                // 原本就答出的：显示用户答案，绿色框
-                displayAnswer = this.filledBlanks.get(item.originalIndex);
-                bgColor = '#28a745';
-            } else {
-                // 未答出的：显示正确答案，红色框
-                displayAnswer = correctAnswer;
-                bgColor = '#dc3545';
-            }
-
-            // 添加注释显示
-            const commentHTML = comment ? `<span class="fill-blank-comment">#${comment}</span>` : '';
-
-            const placeholderHTML = '<div class="fill-blank-placeholder" ' +
+            const displayAnswer = isOriginallyFilled
+                ? (this.filledBlanks.get(item.originalIndex) || '')
+                : correctAnswer;
+            const state = isOriginallyFilled ? 'filled' : 'missed';
+            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
+                'data-mode="giveup" ' +
+                'data-state="' + state + '" ' +
+                'data-filled="1" ' +
                 'data-blank-index="' + item.originalIndex + '" ' +
-                'onclick="controller.focusFillBlankInput()" ' +
-                'style="width:' + boxWidth + 'em;position:relative;text-align:center;background:' + bgColor + '">' +
-                displayAnswer + commentHTML +
-                '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,0.5);"></span>' +
-                '</div>';
+                'data-answer="' + encodeURIComponent(displayAnswer) + '" ' +
+                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
+                'data-comment="' + encodeURIComponent(comment) + '"></span>';
 
-            result = result.substring(0, item.startIndex) + placeholderHTML + result.substring(item.endIndex);
+            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
         });
 
         result = result.replace(/\n/g, '<div class="manual-break"></div>');
         textEl.innerHTML = result;
+        this.replaceFillBlankWrappers(textEl);
     }
 
     /**
@@ -394,41 +584,24 @@ class QuizController {
             const isFilled = this.filledBlanks.has(item.originalIndex);
             const correctAnswer = item.correctAnswer || '';
             const comment = item.comment || '';
-            // 宽度根据答案+注释长度计算
-            const displayText = isFilled ? (this.filledBlanks.get(item.originalIndex) || '') : correctAnswer;
-            const textLength = (displayText + comment).length;
-            const boxWidth = Math.max(textLength + 2, 4);
+            const userAnswer = isFilled ? (this.filledBlanks.get(item.originalIndex) || '') : '';
 
-            let userAnswer;
-            let placeholderClass;
+            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
+                'data-mode="play" ' +
+                'data-filled="' + (isFilled ? '1' : '0') + '" ' +
+                'data-blank-index="' + item.originalIndex + '" ' +
+                'data-answer="' + encodeURIComponent(userAnswer) + '" ' +
+                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
+                'data-comment="' + encodeURIComponent(comment) + '"></span>';
 
-            if (isFilled) {
-                userAnswer = this.filledBlanks.get(item.originalIndex);
-                placeholderClass = 'filled';
-            } else {
-                // 未答题时使用横线，横线长度随框宽度变化
-                userAnswer = '';
-                placeholderClass = '';
-            }
-
-            // 已答题时显示注释
-            const commentHTML = (isFilled && comment) ? `<span class="fill-blank-comment">#${comment}</span>` : '';
-
-            // 使用 div 元素，直接设置内联样式
-            const placeholderHTML = '<div class="fill-blank-placeholder' + (placeholderClass ? ' ' + placeholderClass : '') +
-                '" data-blank-index="' + item.originalIndex +
-                '" onclick="controller.focusFillBlankInput()" style="width:' + boxWidth + 'em;position:relative;text-align:center">' +
-                userAnswer + commentHTML +
-                '<span class="fill-blank-underline" style="position:absolute;bottom:3px;left:4px;right:4px;border-bottom:2px solid rgba(255,255,255,' + (isFilled ? '0.3' : '0.5') + ');"></span>' +
-                '</div>';
-
-            result = result.substring(0, item.startIndex) + placeholderHTML + result.substring(item.endIndex);
+            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
         });
 
         // 将换行符替换为带额外间距的 div
         result = result.replace(/\n/g, '<div class="manual-break"></div>');
 
         textEl.innerHTML = result;
+        this.replaceFillBlankWrappers(textEl);
     }
 
     /**

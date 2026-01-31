@@ -216,6 +216,9 @@
         <div class="header">
             <h2>所有测验</h2>
             <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="quiz-group-filter" onchange="filterQuizzes()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="all">全部分组</option>
+                </select>
                 <select id="quiz-type-filter" onchange="filterQuizzes()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
                     <option value="all">全部类型</option>
                     <option value="TYPING">打字题</option>
