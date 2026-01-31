@@ -17,23 +17,72 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadQuizzes() {
     try {
+        // 获取测验列表
         const response = await fetch(`${API_BASE}/quizzes`);
         const quizzes = await response.json();
+        
+        // 获取分组列表
+        const groupsResponse = await fetch(`${API_BASE}/groups`);
+        const groups = await groupsResponse.json();
+        
+        // 构建分组映射 (groupId -> groupName)
+        const groupMap = {};
+        groups.forEach(group => {
+            groupMap[group.id] = group.name;
+        });
+        
+        // 构建测验到分组的映射 (quizId -> groupName)
+        const quizGroupMap = {};
+        groups.forEach(group => {
+            if (group.quizIds) {
+                group.quizIds.forEach(quizId => {
+                    quizGroupMap[quizId] = group.name;
+                });
+            }
+        });
         
         const tbody = document.getElementById('quiz-list');
         
         if (quizzes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">暂无测验</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无测验</td></tr>';
             return;
         }
         
-        tbody.innerHTML = quizzes.map(quiz => `
+        // 保存数据用于筛选
+        window.allQuizzes = quizzes;
+        window.quizGroupMap = quizGroupMap;
+        
+        renderQuizTable(quizzes);
+    } catch (error) {
+        console.error('加载测验失败:', error);
+        alert('加载测验失败,请刷新重试');
+    }
+}
+
+/**
+ * 渲染测验表格
+ */
+function renderQuizTable(quizzes) {
+    const tbody = document.getElementById('quiz-list');
+    
+    if (quizzes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无测验</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = quizzes.map(quiz => {
+        const typeText = quiz.quizType === 'FILL_BLANK' ? '填空题' : '打字题';
+        const groupName = window.quizGroupMap[quiz.id] || '-';
+        const timeLimit = quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制';
+        
+        return `
             <tr>
                 <td>${quiz.id}</td>
                 <td>${quiz.title}</td>
-                <td>${quiz.description || '-'}</td>
+                <td><span class="quiz-type-badge">${typeText}</span></td>
+                <td>${groupName}</td>
                 <td>${quiz.totalAnswers}</td>
-                <td>${quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制'}</td>
+                <td>${timeLimit}</td>
                 <td>${formatDate(quiz.createdAt)}</td>
                 <td>
                     <div class="actions">
@@ -43,10 +92,23 @@ async function loadQuizzes() {
                     </div>
                 </td>
             </tr>
-        `).join('');
-    } catch (error) {
-        console.error('加载测验失败:', error);
-        alert('加载测验失败,请刷新重试');
+        `;
+    }).join('');
+}
+
+/**
+ * 筛选测验
+ */
+function filterQuizzes() {
+    const filter = document.getElementById('quiz-type-filter').value;
+    
+    if (!window.allQuizzes) return;
+    
+    if (filter === 'all') {
+        renderQuizTable(window.allQuizzes);
+    } else {
+        const filtered = window.allQuizzes.filter(quiz => quiz.quizType === filter);
+        renderQuizTable(filtered);
     }
 }
 

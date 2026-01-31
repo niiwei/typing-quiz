@@ -89,6 +89,19 @@
             gap: 10px;
         }
         
+        .quiz-type-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .quiz-type-badge:only-child {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -202,6 +215,13 @@
 
         <div class="header">
             <h2>所有测验</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="quiz-type-filter" onchange="filterQuizzes()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="all">全部类型</option>
+                    <option value="TYPING">打字题</option>
+                    <option value="FILL_BLANK">填空题</option>
+                </select>
+            </div>
         </div>
 
         <div class="quiz-table">
@@ -210,7 +230,8 @@
                     <tr>
                         <th>ID</th>
                         <th>标题</th>
-                        <th>描述</th>
+                        <th>类型</th>
+                        <th>分组</th>
                         <th>答案数</th>
                         <th>时间限制</th>
                         <th>创建时间</th>
@@ -219,7 +240,7 @@
                 </thead>
                 <tbody id="quiz-list">
                     <tr>
-                        <td colspan="7" style="text-align: center;">加载中...</td>
+                        <td colspan="8" style="text-align: center;">加载中...</td>
                     </tr>
                 </tbody>
             </table>
