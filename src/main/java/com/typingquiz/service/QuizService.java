@@ -7,7 +7,9 @@ import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.dto.QuizResponseDTO;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
+import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizType;
+import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.repository.QuizRepository;
@@ -30,16 +32,19 @@ public class QuizService {
     private final AnswerRepository answerRepository;
     private final FillBlankQuizRepository fillBlankQuizRepository;
     private final FillBlankQuizService fillBlankQuizService;
+    private final QuizGroupRepository quizGroupRepository;
 
     @Autowired
     public QuizService(QuizRepository quizRepository, 
                         AnswerRepository answerRepository,
                         FillBlankQuizRepository fillBlankQuizRepository,
-                        FillBlankQuizService fillBlankQuizService) {
+                        FillBlankQuizService fillBlankQuizService,
+                        QuizGroupRepository quizGroupRepository) {
         this.quizRepository = quizRepository;
         this.answerRepository = answerRepository;
         this.fillBlankQuizRepository = fillBlankQuizRepository;
         this.fillBlankQuizService = fillBlankQuizService;
+        this.quizGroupRepository = quizGroupRepository;
     }
 
     /**
@@ -96,6 +101,22 @@ public class QuizService {
                 }
             }
             quiz = quizRepository.save(quiz);
+        }
+
+        // 处理分组信息
+        if (quizDTO.getGroups() != null && !quizDTO.getGroups().isEmpty()) {
+            for (String groupName : quizDTO.getGroups()) {
+                if (groupName == null || groupName.trim().isEmpty()) continue;
+
+                QuizGroup group = quizGroupRepository.findByName(groupName.trim())
+                        .orElseGet(() -> {
+                            QuizGroup newGroup = new QuizGroup(groupName.trim(), "");
+                            return quizGroupRepository.save(newGroup);
+                        });
+                
+                group.addQuiz(quiz);
+                quizGroupRepository.save(group);
+            }
         }
 
         return quiz;

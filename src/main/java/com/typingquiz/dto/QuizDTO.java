@@ -16,6 +16,7 @@ public class QuizDTO {
     private List<AnswerCreateDTO> answerList;
     private QuizType quizType;
     private FillBlankQuizDTO fillBlankQuiz;
+    private List<String> groups;
 
     public QuizDTO() {
     }
@@ -82,6 +83,14 @@ public class QuizDTO {
 
     public void setFillBlankQuiz(FillBlankQuizDTO fillBlankQuiz) {
         this.fillBlankQuiz = fillBlankQuiz;
+    }
+
+    public List<String> getGroups() {
+        return groups;
+    }
+
+    public void setGroups(List<String> groups) {
+        this.groups = groups;
     }
 
     /**

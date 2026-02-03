@@ -7,8 +7,10 @@ import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.FillBlankQuiz;
 import com.typingquiz.entity.Quiz;
+import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizType;
 import com.typingquiz.repository.FillBlankQuizRepository;
+import com.typingquiz.service.QuizGroupService;
 import com.typingquiz.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -32,12 +34,14 @@ public class ImportExportController {
     private final QuizService quizService;
     private final FillBlankQuizRepository fillBlankQuizRepository;
     private final ObjectMapper objectMapper;
+    private final QuizGroupService quizGroupService;
 
     @Autowired
-    public ImportExportController(QuizService quizService, FillBlankQuizRepository fillBlankQuizRepository, ObjectMapper objectMapper) {
+    public ImportExportController(QuizService quizService, FillBlankQuizRepository fillBlankQuizRepository, ObjectMapper objectMapper, QuizGroupService quizGroupService) {
         this.quizService = quizService;
         this.fillBlankQuizRepository = fillBlankQuizRepository;
         this.objectMapper = objectMapper;
+        this.quizGroupService = quizGroupService;
     }
 
     /**
@@ -76,6 +80,32 @@ public class ImportExportController {
                         "attachment; filename=\"all_quizzes.json\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dtos);
+    }
+
+    /**
+     * 导出指定分组下的所有测验为JSON
+     * GET /api/import-export/group/{groupId}/export
+     */
+    @GetMapping("/group/{groupId}/export")
+    public ResponseEntity<List<QuizDTO>> exportQuizzesByGroup(@PathVariable Long groupId) {
+        try {
+            QuizGroup group = quizGroupService.getGroupById(groupId);
+            List<Quiz> quizzes = group.getQuizzes();
+            List<QuizDTO> dtos = quizzes.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
+
+            String safeGroupName = group.getName().replaceAll("[^a-zA-Z0-9.-]", "_");
+            String filename = "group_" + safeGroupName + ".json";
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(dtos);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**
@@ -122,6 +152,14 @@ public class ImportExportController {
         dto.setDescription(quiz.getDescription());
         dto.setTimeLimit(quiz.getTimeLimit());
         dto.setQuizType(quiz.getQuizType());
+
+        // 导出分组信息
+        if (quiz.getGroups() != null) {
+            List<String> groupNames = quiz.getGroups().stream()
+                    .map(QuizGroup::getName)
+                    .collect(Collectors.toList());
+            dto.setGroups(groupNames);
+        }
 
         // 导出打字题答案
         List<String> answers = quiz.getAnswers().stream()

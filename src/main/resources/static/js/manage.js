@@ -164,6 +164,7 @@ async function loadGroups() {
                 <td>${formatDate(group.createdAt)}</td>
                 <td>
                     <div class="actions">
+                        <button class="btn btn-secondary" onclick="exportGroup(${group.id})">导出</button>
                         <button class="btn btn-warning" onclick="editGroup(${group.id})">编辑</button>
                         <button class="btn btn-danger" onclick="deleteGroup(${group.id})">删除</button>
                     </div>
@@ -812,5 +813,48 @@ async function handleFileImport(event) {
     } catch (error) {
         console.error('导入失败:', error);
         alert('导入失败: ' + error.message);
+    }
+}
+
+/**
+ * 导出指定分组的所有测验
+ */
+async function exportGroup(groupId) {
+    try {
+        const response = await fetch(`${API_BASE}/import-export/group/${groupId}/export`);
+        if (!response.ok) {
+            throw new Error('分组不存在或导出失败');
+        }
+
+        const data = await response.json();
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = `group_${groupId}_export.json`;
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
+            if (filenameMatch.length > 1) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        if (data.length === 0) {
+            alert('该分组下没有可导出的测验');
+            return;
+        }
+
+        // 创建下载链接
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        alert(`成功导出 ${data.length} 个测验`);
+    } catch (error) {
+        console.error('导出分组失败:', error);
+        alert('导出分组失败: ' + error.message);
     }
 }
