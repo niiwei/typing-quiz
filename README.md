@@ -282,6 +282,91 @@ spring.h2.console.enabled=true
 ### 备份数据
 复制 `data/` 文件夹即可备份所有测验数据
 
+## 云服务器部署指南
+
+### 常见问题与解决方案
+
+#### 问题1: Dockerfile 找不到
+**错误信息:**
+```
+ERROR: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+```
+
+**原因:** 执行 `docker build` 时当前目录不是项目根目录。
+
+**解决方案:**
+1. 执行 `pwd` 确认当前目录
+2. 确保目录包含 `Dockerfile`、`pom.xml` 和 `src/` 文件夹
+3. 如果在错误的子目录，执行 `cd ..` 返回上级目录
+
+#### 问题2: Git 推送失败 - 大文件限制
+**错误信息:**
+```
+error: GH001: Large files detected. You may want to try Git Large File Storage.
+```
+
+**原因:** 提交了大文件（如 `tools/` 目录下的开发工具）。
+
+**解决方案:**
+1. 本地执行 `git rm -r --cached tools/` 移除大文件
+2. 执行 `git commit -m "chore: remove large tools directory"` 提交更改
+3. 执行 `git push` 推送到 GitHub
+
+**预防措施:** 确保 `.gitignore` 包含以下内容:
+```
+# 开发工具
+tools/
+```
+
+#### 问题3: 构建速度慢 - 每次都下载依赖
+**原因:** Docker 多阶段构建会重复下载 Maven 依赖。
+
+**优化方案:** 修改 `Dockerfile` 利用缓存层:
+```dockerfile
+# 先复制依赖文件
+COPY pom.xml .
+# 下载依赖（利用缓存）
+RUN mvn dependency -B
+# 再复制代码并构建
+COPY src ./src
+RUN mvn package -DskipTests
+```
+
+### 部署步骤
+
+1. **SSH 连接到服务器:**
+   ```bash
+   ssh root@47.102.147.127
+   ```
+
+2. **进入项目目录:**
+   ```bash
+   cd /app/typing-quiz
+   ```
+
+3. **拉取最新代码:**
+   ```bash
+   git pull
+   ```
+
+4. **构建并部署:**
+   ```bash
+   docker build -t typing-quiz-app .
+   docker rm -f typing-quiz-app
+   docker run -d -p 8080:8080 --name typing-quiz-app -v ./data:/app/data typing-quiz-app
+   ```
+
+5. **验证部署:**
+   访问 http://47.102.147.127:8080
+
+### 目录结构说明
+
+服务器上可能存在多个 `typing-quiz` 目录:
+- `/app/typing-quiz` - 项目根目录（包含 Dockerfile）
+- `/app/typing-quiz/typing-quiz` - 空目录或数据目录
+
+执行 `ls -la` 确认目录结构后再操作。
+
 ## 许可证
 
 MIT License

@@ -126,7 +126,7 @@ public class QuizService {
      * 根据ID获取测验详情
      */
     public Quiz getQuizById(Long id) {
-        return quizRepository.findById(id)
+        return quizRepository.findByIdWithAnswers(id)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
     }
 
@@ -134,7 +134,7 @@ public class QuizService {
      * 获取所有测验
      */
     public List<Quiz> getAllQuizzes() {
-        return quizRepository.findAll();
+        return quizRepository.findAllWithAnswers();
     }
 
     /**
