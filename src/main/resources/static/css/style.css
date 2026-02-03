@@ -7,10 +7,24 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: radial-gradient(circle at 15% 10%, #f6e7f7 0%, #dbeafe 35%, #d1fae5 65%, #fef3c7 100%);
     min-height: 100vh;
     padding: 0;
     margin: 0;
+    position: relative;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
+        radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.18), transparent 55%),
+        linear-gradient(120deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0));
+    pointer-events: none;
+    z-index: 0;
 }
 
 #quiz-container {
@@ -21,6 +35,8 @@ body {
     max-width: 900px;
     width: 100%;
     margin: 20px auto;
+    position: relative;
+    z-index: 1;
 }
 
 /* 测验信息 */
