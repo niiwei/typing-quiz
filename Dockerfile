@@ -7,6 +7,6 @@ RUN mvn clean package -DskipTests
 # Stage 2: Create the final image
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-COPY --from=build /app/target/typing-quiz-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/typing-quiz-1.1.0.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
