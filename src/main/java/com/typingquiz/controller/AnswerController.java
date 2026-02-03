@@ -4,7 +4,10 @@ import com.typingquiz.dto.ValidationRequest;
 import com.typingquiz.dto.ValidationResponse;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.service.AnswerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +22,8 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 public class AnswerController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AnswerController.class);
+
     private final AnswerService answerService;
 
     @Autowired
@@ -32,11 +37,20 @@ public class AnswerController {
      */
     @PostMapping("/validate")
     public ResponseEntity<ValidationResponse> validateAnswer(@RequestBody ValidationRequest request) {
-        ValidationResponse response = answerService.validateAnswer(
-            request.getQuizId(),
-            request.getInput()
-        );
-        return ResponseEntity.ok(response);
+        try {
+            ValidationResponse response = answerService.validateAnswer(
+                request.getQuizId(),
+                request.getInput()
+            );
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("验证答案失败: quizId={}, input={}",
+                    request != null ? request.getQuizId() : null,
+                    request != null ? request.getInput() : null,
+                    e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ValidationResponse(false, null, null, false));
+        }
     }
 
     /**

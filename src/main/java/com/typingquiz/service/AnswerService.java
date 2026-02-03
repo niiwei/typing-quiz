@@ -5,6 +5,8 @@ import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.QuizRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import java.util.Optional;
 @Service
 @Transactional
 public class AnswerService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AnswerService.class);
 
     private final AnswerRepository answerRepository;
     private final QuizRepository quizRepository;
@@ -36,20 +40,27 @@ public class AnswerService {
      * @return 验证结果
      */
     public ValidationResponse validateAnswer(Long quizId, String input) {
+        logger.info("验证答案: quizId={}, input={}", quizId, input);
+        
         // 验证输入
         if (input == null || input.trim().isEmpty()) {
+            logger.info("输入为空，返回无效");
             return new ValidationResponse(false, null, null, false);
         }
 
         // 标准化输入(转小写,去空格)
         String normalizedInput = normalizeContent(input);
+        logger.info("标准化输入: {}", normalizedInput);
 
         // 查询答案
         Optional<Answer> answerOpt = answerRepository
-                .findByQuizIdAndNormalizedContent(quizId, normalizedInput);
+                .findFirstByQuizIdAndNormalizedContent(quizId, normalizedInput);
+        
+        logger.info("查询结果: {}", answerOpt.isPresent() ? "找到答案" : "未找到");
 
         if (answerOpt.isPresent()) {
             Answer answer = answerOpt.get();
+            logger.info("答案ID: {}, 内容: {}", answer.getId(), answer.getContent());
             return new ValidationResponse(
                 true,
                 answer.getId(),

@@ -13,6 +13,8 @@ import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.repository.QuizRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class QuizService {
+
+    private static final Logger logger = LoggerFactory.getLogger(QuizService.class);
 
     private final QuizRepository quizRepository;
     private final AnswerRepository answerRepository;
@@ -82,6 +86,11 @@ public class QuizService {
             }
         } else {
             // 打字题：添加答案
+            logger.info("导入打字题: {}, answerList={}, answers={}", 
+                quizDTO.getTitle(), 
+                quizDTO.getAnswerList() != null ? quizDTO.getAnswerList().size() : "null",
+                quizDTO.getAnswers() != null ? quizDTO.getAnswers().size() : "null");
+            
             if (quizDTO.getAnswerList() != null && !quizDTO.getAnswerList().isEmpty()) {
                 // 新格式：包含 content 和 comment
                 for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
@@ -89,6 +98,7 @@ public class QuizService {
                         Answer answer = new Answer(answerDTO.getContent());
                         answer.setComment(answerDTO.getComment());
                         quiz.addAnswer(answer);
+                        logger.info("添加答案: {}", answerDTO.getContent());
                     }
                 }
             } else if (quizDTO.getAnswers() != null) {
@@ -97,10 +107,12 @@ public class QuizService {
                     if (answerContent != null && !answerContent.trim().isEmpty()) {
                         Answer answer = new Answer(answerContent);
                         quiz.addAnswer(answer);
+                        logger.info("添加答案: {}", answerContent);
                     }
                 }
             }
             quiz = quizRepository.save(quiz);
+            logger.info("测验已保存, ID={}, 答案数量={}", quiz.getId(), quiz.getAnswers().size());
         }
 
         // 处理分组信息

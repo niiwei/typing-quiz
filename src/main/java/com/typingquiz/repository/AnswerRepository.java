@@ -36,10 +36,10 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     List<Answer> findByContentContainingIgnoreCase(String keyword);
 
     /**
-     * 根据测验ID和标准化内容查询答案
+     * 根据测验ID和标准化内容查询答案(取第一个匹配项)
      * @param quizId 测验ID
      * @param normalizedContent 标准化后的内容(小写)
      * @return 匹配的答案(如果存在)
      */
-    Optional<Answer> findByQuizIdAndNormalizedContent(Long quizId, String normalizedContent);
+    Optional<Answer> findFirstByQuizIdAndNormalizedContent(Long quizId, String normalizedContent);
 }
