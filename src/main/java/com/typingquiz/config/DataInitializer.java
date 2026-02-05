@@ -2,7 +2,10 @@ package com.typingquiz.config;
 
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
+import com.typingquiz.entity.FillBlankQuiz;
+import com.typingquiz.entity.QuizType;
 import com.typingquiz.repository.QuizRepository;
+import com.typingquiz.repository.FillBlankQuizRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -15,10 +18,12 @@ import org.springframework.stereotype.Component;
 public class DataInitializer implements CommandLineRunner {
 
     private final QuizRepository quizRepository;
+    private final FillBlankQuizRepository fillBlankQuizRepository;
 
     @Autowired
-    public DataInitializer(QuizRepository quizRepository) {
+    public DataInitializer(QuizRepository quizRepository, FillBlankQuizRepository fillBlankQuizRepository) {
         this.quizRepository = quizRepository;
+        this.fillBlankQuizRepository = fillBlankQuizRepository;
     }
 
     @Override
@@ -60,8 +65,34 @@ public class DataInitializer implements CommandLineRunner {
 
         quizRepository.save(worldCapitals);
 
-        System.out.println("示例数据初始化完成!");
         System.out.println("创建测验: " + worldCapitals.getTitle());
         System.out.println("答案数量: " + worldCapitals.getAnswers().size());
+
+        // 创建"古诗词填空"测验（填空题示例）
+        Quiz poetryQuiz = new Quiz(
+            "古诗词填空",
+            "根据提示填写古诗词中的缺失部分",
+            300  // 5分钟
+        );
+        poetryQuiz.setQuizType(QuizType.FILL_BLANK);
+        Quiz savedPoetryQuiz = quizRepository.save(poetryQuiz);
+
+        // 填空题信息
+        String fullText = "床前明月光，疑是地上霜。举头望明月，低头思故乡。";
+        String displayText = "床前明月光，疑是地上霜。举头望明月，低头思故乡。";
+        String blanksInfo = "[{\"startIndex\":0,\"endIndex\":2,\"correctAnswer\":\"床前\"},{\"startIndex\":6,\"endIndex\":8,\"correctAnswer\":\"明月光\"},{\"startIndex\":12,\"endIndex\":14,\"correctAnswer\":\"疑是\"},{\"startIndex\":18,\"endIndex\":20,\"correctAnswer\":\"地上霜\"},{\"startIndex\":24,\"endIndex\":26,\"correctAnswer\":\"举头\"},{\"startIndex\":30,\"endIndex\":32,\"correctAnswer\":\"望明月\"},{\"startIndex\":36,\"endIndex\":38,\"correctAnswer\":\"低头\"},{\"startIndex\":42,\"endIndex\":44,\"correctAnswer\":\"思故乡\"}]";
+
+        FillBlankQuiz fillBlankQuiz = new FillBlankQuiz(
+            savedPoetryQuiz.getId(),
+            fullText,
+            blanksInfo,
+            displayText,
+            8
+        );
+        fillBlankQuizRepository.save(fillBlankQuiz);
+
+        System.out.println("示例数据初始化完成!");
+        System.out.println("创建测验: " + poetryQuiz.getTitle());
+        System.out.println("填空题数量: 8");
     }
 }
