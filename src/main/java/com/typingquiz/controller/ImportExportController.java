@@ -1,15 +1,8 @@
 package com.typingquiz.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.typingquiz.dto.AnswerCreateDTO;
-import com.typingquiz.dto.FillBlankQuizDTO;
 import com.typingquiz.dto.QuizDTO;
-import com.typingquiz.entity.Answer;
-import com.typingquiz.entity.FillBlankQuiz;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.entity.QuizGroup;
-import com.typingquiz.entity.QuizType;
-import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.service.QuizGroupService;
 import com.typingquiz.service.QuizService;
 import com.typingquiz.util.JwtUtil;
@@ -33,31 +26,21 @@ import java.util.stream.Collectors;
 public class ImportExportController {
 
     private final QuizService quizService;
-    private final FillBlankQuizRepository fillBlankQuizRepository;
-    private final ObjectMapper objectMapper;
     private final QuizGroupService quizGroupService;
 
     @Autowired
-    public ImportExportController(QuizService quizService, FillBlankQuizRepository fillBlankQuizRepository, ObjectMapper objectMapper, QuizGroupService quizGroupService) {
+    public ImportExportController(QuizService quizService, QuizGroupService quizGroupService) {
         this.quizService = quizService;
-        this.fillBlankQuizRepository = fillBlankQuizRepository;
-        this.objectMapper = objectMapper;
         this.quizGroupService = quizGroupService;
     }
 
-    /**
-     * 导出单个测验为JSON
-     * GET /api/import-export/quiz/{id}/export
-     */
     @GetMapping("/quiz/{id}/export")
     public ResponseEntity<QuizDTO> exportQuiz(@PathVariable Long id) {
         try {
             Quiz quiz = quizService.getQuizById(id);
-            QuizDTO dto = convertToDTO(quiz);
-            
+            QuizDTO dto = quizService.convertToDTO(quiz);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, 
-                            "attachment; filename=\"quiz_" + id + ".json\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"quiz_" + id + ".json\"")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(dto);
         } catch (RuntimeException e) {
@@ -65,43 +48,30 @@ public class ImportExportController {
         }
     }
 
-    /**
-     * 导出所有测验为JSON
-     * GET /api/import-export/quizzes/export
-     */
     @GetMapping("/quizzes/export")
     public ResponseEntity<List<QuizDTO>> exportAllQuizzes() {
         List<Quiz> quizzes = quizService.getAllQuizzes();
         List<QuizDTO> dtos = quizzes.stream()
-                .map(this::convertToDTO)
+                .map(quizService::convertToDTO)
                 .collect(Collectors.toList());
-        
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, 
-                        "attachment; filename=\"all_quizzes.json\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"all_quizzes.json\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(dtos);
     }
 
-    /**
-     * 导出指定分组下的所有测验为JSON
-     * GET /api/import-export/group/{groupId}/export
-     */
     @GetMapping("/group/{groupId}/export")
     public ResponseEntity<List<QuizDTO>> exportQuizzesByGroup(@PathVariable Long groupId) {
         try {
             QuizGroup group = quizGroupService.getGroupById(groupId);
             List<Quiz> quizzes = group.getQuizzes();
             List<QuizDTO> dtos = quizzes.stream()
-                    .map(this::convertToDTO)
+                    .map(quizService::convertToDTO)
                     .collect(Collectors.toList());
-
             String safeGroupName = group.getName().replaceAll("[^a-zA-Z0-9.-]", "_");
             String filename = "group_" + safeGroupName + ".json";
-
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(dtos);
         } catch (RuntimeException e) {
@@ -109,10 +79,6 @@ public class ImportExportController {
         }
     }
 
-    /**
-     * 导入单个测验
-     * POST /api/import-export/quiz/import
-     */
     @PostMapping("/quiz/import")
     public ResponseEntity<String> importQuiz(@RequestBody QuizDTO quizDTO, HttpServletRequest request) {
         try {
@@ -120,20 +86,14 @@ public class ImportExportController {
             Quiz quiz = quizService.createQuiz(quizDTO, userId);
             return ResponseEntity.ok("测验导入成功,ID: " + quiz.getId());
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body("导入失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body("导入失败: " + e.getMessage());
         }
     }
 
-    /**
-     * 批量导入测验
-     * POST /api/import-export/quizzes/import
-     */
     @PostMapping("/quizzes/import")
     public ResponseEntity<ImportResult> importQuizzes(@RequestBody List<QuizDTO> quizDTOs, HttpServletRequest request) {
         ImportResult result = new ImportResult();
         Long userId = getUserIdFromRequest(request);
-        
         for (QuizDTO dto : quizDTOs) {
             try {
                 Quiz quiz = quizService.createQuiz(dto, userId);
@@ -142,7 +102,6 @@ public class ImportExportController {
                 result.addFailure(dto.getTitle(), e.getMessage());
             }
         }
-        
         return ResponseEntity.ok(result);
     }
 
@@ -157,68 +116,6 @@ public class ImportExportController {
         return null;
     }
 
-    /**
-     * 将Quiz实体转换为QuizDTO
-     */
-    private QuizDTO convertToDTO(Quiz quiz) {
-        QuizDTO dto = new QuizDTO();
-        dto.setTitle(quiz.getTitle());
-        dto.setDescription(quiz.getDescription());
-        dto.setTimeLimit(quiz.getTimeLimit());
-        dto.setQuizType(quiz.getQuizType());
-
-        // 导出分组信息
-        if (quiz.getGroups() != null) {
-            List<String> groupNames = quiz.getGroups().stream()
-                    .map(QuizGroup::getName)
-                    .collect(Collectors.toList());
-            dto.setGroups(groupNames);
-        }
-
-        // 导出打字题答案
-        List<String> answers = quiz.getAnswers().stream()
-                .map(Answer::getContent)
-                .collect(Collectors.toList());
-        dto.setAnswers(answers);
-
-        // 导出包含注释的答案列表
-        List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
-                .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
-                .collect(Collectors.toList());
-        dto.setAnswerList(answerList);
-
-        // 导出填空题信息
-        if (quiz.getQuizType() == QuizType.FILL_BLANK) {
-            fillBlankQuizRepository.findByQuizId(quiz.getId()).ifPresent(fillBlankQuiz -> {
-                FillBlankQuizDTO fillBlankDTO = new FillBlankQuizDTO();
-                fillBlankDTO.setId(fillBlankQuiz.getId());
-                fillBlankDTO.setQuizId(fillBlankQuiz.getQuizId());
-                fillBlankDTO.setFullText(fillBlankQuiz.getFullText());
-                fillBlankDTO.setDisplayText(fillBlankQuiz.getDisplayText());
-                fillBlankDTO.setBlanksCount(fillBlankQuiz.getBlanksCount());
-
-                // 解析blanksInfo JSON为BlankInfo列表
-                try {
-                    List<FillBlankQuizDTO.BlankInfo> blanks = objectMapper.readValue(
-                            fillBlankQuiz.getBlanksInfo(),
-                            objectMapper.getTypeFactory().constructCollectionType(List.class, FillBlankQuizDTO.BlankInfo.class)
-                    );
-                    fillBlankDTO.setBlanks(blanks);
-                } catch (Exception e) {
-                    // 解析失败时使用空列表
-                    fillBlankDTO.setBlanks(new ArrayList<>());
-                }
-
-                dto.setFillBlankQuiz(fillBlankDTO);
-            });
-        }
-
-        return dto;
-    }
-
-    /**
-     * 导入结果类
-     */
     public static class ImportResult {
         private List<SuccessItem> successes = new ArrayList<>();
         private List<FailureItem> failures = new ArrayList<>();

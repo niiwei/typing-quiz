@@ -1,5 +1,6 @@
 package com.typingquiz.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typingquiz.dto.AnswerCreateDTO;
 import com.typingquiz.dto.AnswerDTO;
 import com.typingquiz.dto.FillBlankQuizDTO;
@@ -9,9 +10,9 @@ import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizType;
-import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.FillBlankQuizRepository;
+import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.QuizRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +20,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 测验服务类
- * 处理测验相关的业务逻辑
- */
 @Service
 @Transactional
 public class QuizService {
@@ -37,18 +35,21 @@ public class QuizService {
     private final FillBlankQuizRepository fillBlankQuizRepository;
     private final FillBlankQuizService fillBlankQuizService;
     private final QuizGroupRepository quizGroupRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public QuizService(QuizRepository quizRepository, 
+    public QuizService(QuizRepository quizRepository,
                         AnswerRepository answerRepository,
                         FillBlankQuizRepository fillBlankQuizRepository,
                         FillBlankQuizService fillBlankQuizService,
-                        QuizGroupRepository quizGroupRepository) {
+                        QuizGroupRepository quizGroupRepository,
+                        ObjectMapper objectMapper) {
         this.quizRepository = quizRepository;
         this.answerRepository = answerRepository;
         this.fillBlankQuizRepository = fillBlankQuizRepository;
         this.fillBlankQuizService = fillBlankQuizService;
         this.quizGroupRepository = quizGroupRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -278,5 +279,55 @@ public class QuizService {
         return answers.stream()
                 .map(answer -> new AnswerDTO(answer.getId(), answer.getContent(), answer.getComment()))
                 .collect(Collectors.toList());
+    }
+
+    public QuizDTO convertToDTO(Quiz quiz) {
+        QuizDTO dto = new QuizDTO();
+        dto.setTitle(quiz.getTitle());
+        dto.setDescription(quiz.getDescription());
+        dto.setTimeLimit(quiz.getTimeLimit());
+        dto.setQuizType(quiz.getQuizType());
+
+        if (quiz.getGroups() != null) {
+            List<String> groupNames = quiz.getGroups().stream()
+                    .map(QuizGroup::getName)
+                    .collect(Collectors.toList());
+            dto.setGroups(groupNames);
+        }
+
+        List<String> answers = quiz.getAnswers().stream()
+                .map(Answer::getContent)
+                .collect(Collectors.toList());
+        dto.setAnswers(answers);
+
+        List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
+                .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
+                .collect(Collectors.toList());
+        dto.setAnswerList(answerList);
+
+        if (quiz.getQuizType() == QuizType.FILL_BLANK) {
+            fillBlankQuizRepository.findByQuizId(quiz.getId()).ifPresent(fillBlankQuiz -> {
+                FillBlankQuizDTO fillBlankDTO = new FillBlankQuizDTO();
+                fillBlankDTO.setId(fillBlankQuiz.getId());
+                fillBlankDTO.setQuizId(fillBlankQuiz.getQuizId());
+                fillBlankDTO.setFullText(fillBlankQuiz.getFullText());
+                fillBlankDTO.setDisplayText(fillBlankQuiz.getDisplayText());
+                fillBlankDTO.setBlanksCount(fillBlankQuiz.getBlanksCount());
+
+                try {
+                    List<FillBlankQuizDTO.BlankInfo> blanks = objectMapper.readValue(
+                            fillBlankQuiz.getBlanksInfo(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, FillBlankQuizDTO.BlankInfo.class)
+                    );
+                    fillBlankDTO.setBlanks(blanks);
+                } catch (Exception e) {
+                    fillBlankDTO.setBlanks(new ArrayList<>());
+                }
+
+                dto.setFillBlankQuiz(fillBlankDTO);
+            });
+        }
+
+        return dto;
     }
 }
