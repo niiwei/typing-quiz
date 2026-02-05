@@ -44,11 +44,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (password.length < 6) {
-            showError('密码长度至少6位');
-            return;
-        }
-
         if (password !== confirmPassword) {
             showError('两次输入的密码不一致');
             return;

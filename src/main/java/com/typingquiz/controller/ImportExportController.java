@@ -12,12 +12,13 @@ import com.typingquiz.entity.QuizType;
 import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.service.QuizGroupService;
 import com.typingquiz.service.QuizService;
+import com.typingquiz.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -113,9 +114,10 @@ public class ImportExportController {
      * POST /api/import-export/quiz/import
      */
     @PostMapping("/quiz/import")
-    public ResponseEntity<String> importQuiz(@RequestBody QuizDTO quizDTO) {
+    public ResponseEntity<String> importQuiz(@RequestBody QuizDTO quizDTO, HttpServletRequest request) {
         try {
-            Quiz quiz = quizService.createQuiz(quizDTO);
+            Long userId = getUserIdFromRequest(request);
+            Quiz quiz = quizService.createQuiz(quizDTO, userId);
             return ResponseEntity.ok("测验导入成功,ID: " + quiz.getId());
         } catch (Exception e) {
             return ResponseEntity.badRequest()
@@ -128,12 +130,13 @@ public class ImportExportController {
      * POST /api/import-export/quizzes/import
      */
     @PostMapping("/quizzes/import")
-    public ResponseEntity<ImportResult> importQuizzes(@RequestBody List<QuizDTO> quizDTOs) {
+    public ResponseEntity<ImportResult> importQuizzes(@RequestBody List<QuizDTO> quizDTOs, HttpServletRequest request) {
         ImportResult result = new ImportResult();
+        Long userId = getUserIdFromRequest(request);
         
         for (QuizDTO dto : quizDTOs) {
             try {
-                Quiz quiz = quizService.createQuiz(dto);
+                Quiz quiz = quizService.createQuiz(dto, userId);
                 result.addSuccess(quiz.getId(), dto.getTitle());
             } catch (Exception e) {
                 result.addFailure(dto.getTitle(), e.getMessage());
@@ -141,6 +144,17 @@ public class ImportExportController {
         }
         
         return ResponseEntity.ok(result);
+    }
+
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (JwtUtil.validateToken(token)) {
+                return JwtUtil.getUserIdFromToken(token);
+            }
+        }
+        return null;
     }
 
     /**

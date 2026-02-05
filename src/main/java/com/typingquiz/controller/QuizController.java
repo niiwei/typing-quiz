@@ -6,11 +6,12 @@ import com.typingquiz.dto.QuizResponseDTO;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.service.QuizService;
+import com.typingquiz.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,14 +31,26 @@ public class QuizController {
         this.quizService = quizService;
     }
 
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (JwtUtil.validateToken(token)) {
+                return JwtUtil.getUserIdFromToken(token);
+            }
+        }
+        return null;
+    }
+
     /**
      * 创建测验
      * POST /api/quizzes
      */
     @PostMapping
-    public ResponseEntity<QuizResponseDTO> createQuiz(@RequestBody QuizDTO quizDTO) {
+    public ResponseEntity<QuizResponseDTO> createQuiz(@RequestBody QuizDTO quizDTO, HttpServletRequest request) {
         try {
-            Quiz quiz = quizService.createQuiz(quizDTO);
+            Long userId = getUserIdFromRequest(request);
+            Quiz quiz = quizService.createQuiz(quizDTO, userId);
             QuizResponseDTO response = quizService.toResponseDTO(quiz);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -61,12 +74,13 @@ public class QuizController {
     }
 
     /**
-     * 获取所有测验
+     * 获取所有测验（按用户过滤）
      * GET /api/quizzes
      */
     @GetMapping
-    public ResponseEntity<List<QuizResponseDTO>> getAllQuizzes() {
-        List<Quiz> quizzes = quizService.getAllQuizzes();
+    public ResponseEntity<List<QuizResponseDTO>> getAllQuizzes(HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        List<Quiz> quizzes = quizService.getAllQuizzes(userId);
         List<QuizResponseDTO> response = quizzes.stream()
                 .map(quizService::toResponseDTO)
                 .collect(Collectors.toList());

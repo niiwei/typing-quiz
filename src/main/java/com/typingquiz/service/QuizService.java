@@ -54,7 +54,7 @@ public class QuizService {
     /**
      * 创建测验并保存答案
      */
-    public Quiz createQuiz(QuizDTO quizDTO) {
+    public Quiz createQuiz(QuizDTO quizDTO, Long userId) {
         // 验证输入
         if (quizDTO.getTitle() == null || quizDTO.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("测验标题不能为空");
@@ -70,6 +70,9 @@ public class QuizService {
             quizDTO.getDescription(),
             quizDTO.getTimeLimit()
         );
+        
+        // 绑定用户ID
+        quiz.setUserId(userId);
         
         // 设置测验类型
         QuizType quizType = quizDTO.getQuizType() != null ? quizDTO.getQuizType() : QuizType.TYPING;
@@ -143,7 +146,17 @@ public class QuizService {
     }
 
     /**
-     * 获取所有测验
+     * 获取所有测验（按用户过滤）
+     */
+    public List<Quiz> getAllQuizzes(Long userId) {
+        if (userId == null) {
+            return quizRepository.findAllWithAnswers();
+        }
+        return quizRepository.findByUserIdWithAnswers(userId);
+    }
+
+    /**
+     * 获取所有测验（管理员用，不过滤用户）
      */
     public List<Quiz> getAllQuizzes() {
         return quizRepository.findAllWithAnswers();
