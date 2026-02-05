@@ -542,6 +542,12 @@
     <script src="js/api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 未登录直接跳转到登录页
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
             const authSection = document.getElementById('authSection');
             const userSection = document.getElementById('userSection');
             const userName = document.getElementById('userName');
