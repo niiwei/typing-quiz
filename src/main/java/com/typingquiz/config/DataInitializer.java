@@ -77,22 +77,22 @@ public class DataInitializer implements CommandLineRunner {
         poetryQuiz.setQuizType(QuizType.FILL_BLANK);
         Quiz savedPoetryQuiz = quizRepository.save(poetryQuiz);
 
-        // 填空题信息
+        // 填空题信息（使用 ___ 占位符）
         String fullText = "床前明月光，疑是地上霜。举头望明月，低头思故乡。";
-        String displayText = "床前明月光，疑是地上霜。举头望明月，低头思故乡。";
-        String blanksInfo = "[{\"startIndex\":0,\"endIndex\":2,\"correctAnswer\":\"床前\"},{\"startIndex\":6,\"endIndex\":8,\"correctAnswer\":\"明月光\"},{\"startIndex\":12,\"endIndex\":14,\"correctAnswer\":\"疑是\"},{\"startIndex\":18,\"endIndex\":20,\"correctAnswer\":\"地上霜\"},{\"startIndex\":24,\"endIndex\":26,\"correctAnswer\":\"举头\"},{\"startIndex\":30,\"endIndex\":32,\"correctAnswer\":\"望明月\"},{\"startIndex\":36,\"endIndex\":38,\"correctAnswer\":\"低头\"},{\"startIndex\":42,\"endIndex\":44,\"correctAnswer\":\"思故乡\"}]";
+        String displayText = "床前___，疑是___。举头___，___思故乡。";
+        String blanksInfo = "[{\"startIndex\":0,\"endIndex\":9,\"correctAnswer\":\"明月光\",\"comment\":\"床前\"},{\"startIndex\":18,\"endIndex\":27,\"correctAnswer\":\"地上霜\",\"comment\":\"疑是\"},{\"startIndex\":36,\"endIndex\":45,\"correctAnswer\":\"望明月\",\"comment\":\"举头\"},{\"startIndex\":54,\"endIndex\":63,\"correctAnswer\":\"低头\",\"comment\":\"思故乡\"}]";
 
         FillBlankQuiz fillBlankQuiz = new FillBlankQuiz(
             savedPoetryQuiz.getId(),
             fullText,
             blanksInfo,
             displayText,
-            8
+            4
         );
         fillBlankQuizRepository.save(fillBlankQuiz);
 
         System.out.println("示例数据初始化完成!");
         System.out.println("创建测验: " + poetryQuiz.getTitle());
-        System.out.println("填空题数量: 8");
+        System.out.println("填空题数量: 4");
     }
 }
