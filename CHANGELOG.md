@@ -2,6 +2,23 @@
 
 ## [v1.5.0] - TBD
 
+### 部署说明
+
+#### Docker 网络模式
+
+**原因**: MySQL 安装在主机系统上，不是 Docker 容器
+
+**解决方案**: 使用 `--network host` 模式，让容器共享主机网络
+
+**部署命令**:
+```bash
+docker run -d --network host --name typing-quiz-app typing-quiz-app
+```
+
+**说明**: 这样容器内的 `localhost` 等于主机的 `localhost`，才能正确连接 MySQL
+
+---
+
 ### 计划更新
 
 - 待填写
