@@ -344,6 +344,68 @@
                 align-items: flex-start;
             }
 
+            .hero-auth,
+            .hero-user {
+                margin-top: 20px;
+                display: flex;
+                gap: 12px;
+            }
+
+            .auth-btn {
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-weight: 600;
+                text-decoration: none;
+                transition: all 0.3s ease;
+                font-size: 14px;
+            }
+
+            .login-btn {
+                background: rgba(99, 102, 241, 0.1);
+                border: 1px solid rgba(99, 102, 241, 0.3);
+                color: var(--home-accent-dark);
+            }
+
+            .login-btn:hover {
+                background: rgba(99, 102, 241, 0.2);
+            }
+
+            .register-btn {
+                background: var(--home-accent-dark);
+                color: white;
+                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            }
+
+            .register-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+            }
+
+            .user-greeting {
+                color: var(--home-muted);
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+            }
+
+            #userName {
+                color: var(--home-accent-dark);
+                font-weight: 600;
+                margin-left: 4px;
+            }
+
+            .logout-btn {
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                color: #EF4444;
+                cursor: pointer;
+                font-family: inherit;
+            }
+
+            .logout-btn:hover {
+                background: rgba(239, 68, 68, 0.2);
+            }
+
             .section-header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -367,6 +429,14 @@
                     <div class="hero-actions">
                         <a href="quizzes.html" class="hero-primary">立即开始测验</a>
                         <a href="manage.html" class="hero-secondary">管理我的题库</a>
+                    </div>
+                    <div id="authSection" class="hero-auth">
+                        <a href="login.html" class="auth-btn login-btn">登录</a>
+                        <a href="register.html" class="auth-btn register-btn">注册</a>
+                    </div>
+                    <div id="userSection" class="hero-user" style="display: none;">
+                        <span class="user-greeting">你好，<span id="userName"></span></span>
+                        <button onclick="Auth.logout()" class="auth-btn logout-btn">退出</button>
                     </div>
                     <div class="hero-meta">
                         <div class="hero-meta-card">
@@ -469,5 +539,23 @@
             </div>
         </section>
     </div>
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const authSection = document.getElementById('authSection');
+            const userSection = document.getElementById('userSection');
+            const userName = document.getElementById('userName');
+
+            if (Auth.isLoggedIn()) {
+                authSection.style.display = 'none';
+                userSection.style.display = 'flex';
+                const user = Auth.getUser();
+                userName.textContent = user ? user.username : '用户';
+            } else {
+                authSection.style.display = 'flex';
+                userSection.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
