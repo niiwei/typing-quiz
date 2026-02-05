@@ -32,6 +32,9 @@ public class Quiz {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "user_id")
+    private Long userId;
+
     /**
      * 关联的答案列表
      * 使用级联操作,删除测验时自动删除所有答案
@@ -121,6 +124,14 @@ public class Quiz {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public List<Answer> getAnswers() {

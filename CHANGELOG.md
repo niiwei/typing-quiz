@@ -1,5 +1,13 @@
 # Typing Quiz 更新日志
 
+## [v1.5.0] - TBD
+
+### 计划更新
+
+- 待填写
+
+---
+
 ## [v1.4.0] - 2026-02-04
 
 ### 重大更新
@@ -54,6 +62,26 @@
 
 **文档**
 - 新增 `docs/NGROK.md`: 内网穿透操作指南
+
+---
+
+#### 修复导入测验作答无效问题 ✅
+
+**问题描述**
+导入的测验在作答时返回 500 错误，无法正常匹配答案。
+
+**根因分析**
+- 导入的答案数据存在重复（同一 quizId + normalized_content 多条）
+- `findByQuizIdAndNormalizedContent` 返回多条结果，触发 `NonUniqueResultException`
+
+**解决方案**
+- `AnswerRepository.java`: 改为 `findFirstByQuizIdAndNormalizedContent` 取第一个匹配项
+- `AnswerController.java`: 添加异常处理和日志记录
+
+**涉及文件**
+- `src/main/java/com/typingquiz/repository/AnswerRepository.java`
+- `src/main/java/com/typingquiz/controller/AnswerController.java`
+- `src/main/java/com/typingquiz/service/AnswerService.java`
 
 ---
 

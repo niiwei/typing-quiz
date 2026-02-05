@@ -41,4 +41,15 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      */
     @Query("SELECT q FROM Quiz q LEFT JOIN FETCH q.answers WHERE q.id = :id")
     Optional<Quiz> findByIdWithAnswers(@Param("id") Long id);
+
+    /**
+     * 根据用户ID查询所有测验
+     */
+    List<Quiz> findByUserId(Long userId);
+
+    /**
+     * 根据用户ID查询测验及其答案
+     */
+    @Query("SELECT DISTINCT q FROM Quiz q LEFT JOIN FETCH q.answers WHERE q.userId = :userId")
+    List<Quiz> findByUserIdWithAnswers(@Param("userId") Long userId);
 }
