@@ -35,9 +35,10 @@ public class ImportExportController {
     }
 
     @GetMapping("/quiz/{id}/export")
-    public ResponseEntity<QuizDTO> exportQuiz(@PathVariable Long id) {
+    public ResponseEntity<QuizDTO> exportQuiz(@PathVariable Long id, HttpServletRequest request) {
         try {
-            Quiz quiz = quizService.getQuizById(id);
+            Long userId = getUserIdFromRequest(request);
+            Quiz quiz = quizService.getQuizById(id, userId);
             QuizDTO dto = quizService.convertToDTO(quiz);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"quiz_" + id + ".json\"")
