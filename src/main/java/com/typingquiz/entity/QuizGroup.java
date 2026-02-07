@@ -24,6 +24,12 @@ public class QuizGroup {
     private String description;
 
     /**
+     * 分组所有者ID，用于账户隔离
+     */
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    /**
      * 排序顺序,用于自定义分组显示顺序
      */
     @Column(name = "display_order")
@@ -61,6 +67,12 @@ public class QuizGroup {
         this.description = description;
     }
 
+    public QuizGroup(String name, String description, Long userId) {
+        this.name = name;
+        this.description = description;
+        this.userId = userId;
+    }
+
     // 便捷方法:添加测验
     public void addQuiz(Quiz quiz) {
         if (!quizzes.contains(quiz)) {
@@ -96,6 +108,14 @@ public class QuizGroup {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public Integer getDisplayOrder() {

@@ -6,6 +6,18 @@ const API_BASE = '/api';
 let currentQuizId = null;
 let currentGroupId = null;
 
+// 获取带 token 的请求头
+function getAuthHeaders() {
+    const headers = {
+        'Content-Type': 'application/json'
+    };
+    const token = localStorage.getItem('typingquiz_token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 // 页面加载时获取所有测验和分组
 document.addEventListener('DOMContentLoaded', () => {
     loadQuizzes();
@@ -18,11 +30,15 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadQuizzes() {
     try {
         // 获取测验列表
-        const response = await fetch(`${API_BASE}/quizzes`);
+        const response = await fetch(`${API_BASE}/quizzes`, {
+            headers: getAuthHeaders()
+        });
         const quizzes = await response.json();
         
         // 获取分组列表
-        const groupsResponse = await fetch(`${API_BASE}/groups`);
+        const groupsResponse = await fetch(`${API_BASE}/groups`, {
+            headers: getAuthHeaders()
+        });
         const groups = await groupsResponse.json();
         
         // 构建分组映射 (groupId -> groupName)
@@ -145,7 +161,9 @@ function filterQuizzes() {
  */
 async function loadGroups() {
     try {
-        const response = await fetch(`${API_BASE}/groups`);
+        const response = await fetch(`${API_BASE}/groups`, {
+            headers: getAuthHeaders()
+        });
         const groups = await response.json();
         
         const tbody = document.getElementById('group-list');
@@ -195,7 +213,9 @@ async function showGroupModal() {
 async function editGroup(id) {
     try {
         // 获取分组详情
-        const groupResponse = await fetch(`${API_BASE}/groups/${id}`);
+        const groupResponse = await fetch(`${API_BASE}/groups/${id}`, {
+            headers: getAuthHeaders()
+        });
         const group = await groupResponse.json();
         
         currentGroupId = id;
@@ -219,7 +239,9 @@ async function editGroup(id) {
  */
 async function loadQuizCheckboxes(selectedIds) {
     try {
-        const response = await fetch(`${API_BASE}/quizzes`);
+        const response = await fetch(`${API_BASE}/quizzes`, {
+            headers: getAuthHeaders()
+        });
         const quizzes = await response.json();
         
         const container = document.getElementById('quiz-checkboxes');
@@ -269,14 +291,14 @@ async function saveGroup() {
             // 更新
             response = await fetch(`${API_BASE}/groups/${currentGroupId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(groupData)
             });
         } else {
             // 创建
             response = await fetch(`${API_BASE}/groups`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(groupData)
             });
         }
@@ -305,7 +327,8 @@ async function deleteGroup(id) {
     
     try {
         const response = await fetch(`${API_BASE}/groups/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         
         if (response.ok) {
@@ -469,7 +492,9 @@ function wrapSelectionWithComment() {
 async function editQuiz(id) {
     try {
         // 获取测验详情
-        const quizResponse = await fetch(`${API_BASE}/quizzes/${id}`);
+        const quizResponse = await fetch(`${API_BASE}/quizzes/${id}`, {
+            headers: getAuthHeaders()
+        });
         const quiz = await quizResponse.json();
         
         // 填充表单
@@ -490,7 +515,9 @@ async function editQuiz(id) {
             document.getElementById('quiz-answers').value = '';
         } else {
             // 打字题
-            const answersResponse = await fetch(`${API_BASE}/quizzes/${id}/answers`);
+            const answersResponse = await fetch(`${API_BASE}/quizzes/${id}/answers`, {
+                headers: getAuthHeaders()
+            });
             const answers = await answersResponse.json();
             // 显示答案和注释，格式：答案##注释##
             document.getElementById('quiz-answers').value = answers.map(a => {
@@ -621,14 +648,14 @@ async function saveQuiz() {
             // 更新
             response = await fetch(`${API_BASE}/quizzes/${currentQuizId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(quizData)
             });
         } else {
             // 创建
             response = await fetch(`${API_BASE}/quizzes`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(quizData)
             });
         }
@@ -657,7 +684,8 @@ async function deleteQuiz(id) {
     
     try {
         const response = await fetch(`${API_BASE}/quizzes/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         
         if (response.ok) {
@@ -705,7 +733,9 @@ window.onclick = function(event) {
  */
 async function exportQuiz(id) {
     try {
-        const response = await fetch(`${API_BASE}/import-export/quiz/${id}/export`);
+        const response = await fetch(`${API_BASE}/import-export/quiz/${id}/export`, {
+            headers: getAuthHeaders()
+        });
         const data = await response.json();
         
         // 创建下载链接
@@ -729,7 +759,9 @@ async function exportQuiz(id) {
  */
 async function exportAllQuizzes() {
     try {
-        const response = await fetch(`${API_BASE}/import-export/quizzes/export`);
+        const response = await fetch(`${API_BASE}/import-export/quizzes/export`, {
+            headers: getAuthHeaders()
+        });
         const data = await response.json();
         
         if (data.length === 0) {
@@ -792,7 +824,7 @@ async function handleFileImport(event) {
         // 导入
         const response = await fetch(`${API_BASE}/import-export/quizzes/import`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(quizzes)
         });
         
@@ -821,7 +853,9 @@ async function handleFileImport(event) {
  */
 async function exportGroup(groupId) {
     try {
-        const response = await fetch(`${API_BASE}/import-export/group/${groupId}/export`);
+        const response = await fetch(`${API_BASE}/import-export/group/${groupId}/export`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) {
             throw new Error('分组不存在或导出失败');
         }

@@ -31,4 +31,9 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
      * 根据名称精确查询分组
      */
     java.util.Optional<QuizGroup> findByName(String name);
+
+    /**
+     * 根据用户ID查询所有分组
+     */
+    List<QuizGroup> findByUserIdOrderByDisplayOrderAsc(Long userId);
 }
