@@ -103,7 +103,7 @@ git push origin main
 ## 9. 标准优化迭代流程（可回滚保障）
 
 1. **计划与分支**：为每个优化项创建 Issue，基于 `main` 或 `develop` 拉取 `feature/…` 分支。
-2. **开发与自测**：小步提交，完成后运行 `./mvnw test`、`./mvnw spring-boot:run` 验证核心流程。
+2. **开发与自测**：小步提交，完成后运行 `./mvnw test`、`./mvnw spring-boot:run` 验证核心流程。**本地测试通过后再推送代码**，不在云服务器上调试本地问题。
 3. **更新文档与版本**：如需发布，更新 `pom.xml` 版本号及 README、PROJECT_STATUS.md、CHANGELOG.md。
 4. **合并与打标签**：通过 PR 合并回 `main`（或先合并 `develop`），随后在 `main` 打上语义化版本标签并推送。
 5. **构建与备份**：执行 `./mvnw clean package` 生成产物，按需备份 `data/typingquiz.mv.db`。

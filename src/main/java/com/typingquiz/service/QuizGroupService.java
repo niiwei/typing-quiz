@@ -37,7 +37,9 @@ public class QuizGroupService {
             throw new IllegalArgumentException("分组名称不能为空");
         }
 
-        QuizGroup group = new QuizGroup(dto.getName(), dto.getDescription(), userId);
+        // 如果 userId 为 null，使用默认值 0
+        Long effectiveUserId = userId != null ? userId : 0L;
+        QuizGroup group = new QuizGroup(dto.getName(), dto.getDescription(), effectiveUserId);
         if (dto.getDisplayOrder() != null) {
             group.setDisplayOrder(dto.getDisplayOrder());
         }
