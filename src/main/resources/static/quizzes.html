@@ -211,12 +211,24 @@
         let allQuizzes = [];
         let allGroups = [];
 
+        // 获取带 token 的请求头
+        function getAuthHeaders() {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            const token = localStorage.getItem('typingquiz_token');
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            return headers;
+        }
+
         async function loadQuizzes() {
             try {
                 // 并行加载测验和分组
                 const [quizzesRes, groupsRes] = await Promise.all([
-                    fetch('/api/quizzes'),
-                    fetch('/api/groups')
+                    fetch('/api/quizzes', { headers: getAuthHeaders() }),
+                    fetch('/api/groups', { headers: getAuthHeaders() })
                 ]);
 
                 allQuizzes = await quizzesRes.json();
