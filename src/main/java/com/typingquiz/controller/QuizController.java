@@ -63,9 +63,10 @@ public class QuizController {
      * GET /api/quizzes/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<QuizResponseDTO> getQuiz(@PathVariable Long id) {
+    public ResponseEntity<QuizResponseDTO> getQuiz(@PathVariable Long id, HttpServletRequest request) {
         try {
-            Quiz quiz = quizService.getQuizById(id);
+            Long userId = getUserIdFromRequest(request);
+            Quiz quiz = quizService.getQuizById(id, userId);
             QuizResponseDTO response = quizService.toResponseDTO(quiz);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -109,9 +110,11 @@ public class QuizController {
     @PutMapping("/{id}")
     public ResponseEntity<QuizResponseDTO> updateQuiz(
             @PathVariable Long id, 
-            @RequestBody QuizDTO quizDTO) {
+            @RequestBody QuizDTO quizDTO,
+            HttpServletRequest request) {
         try {
-            Quiz quiz = quizService.updateQuiz(id, quizDTO);
+            Long userId = getUserIdFromRequest(request);
+            Quiz quiz = quizService.updateQuiz(id, quizDTO, userId);
             QuizResponseDTO response = quizService.toResponseDTO(quiz);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -126,9 +129,10 @@ public class QuizController {
      * DELETE /api/quizzes/{id}
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteQuiz(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteQuiz(@PathVariable Long id, HttpServletRequest request) {
         try {
-            quizService.deleteQuiz(id);
+            Long userId = getUserIdFromRequest(request);
+            quizService.deleteQuiz(id, userId);
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();

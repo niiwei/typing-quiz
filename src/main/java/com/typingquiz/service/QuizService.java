@@ -139,11 +139,16 @@ public class QuizService {
     }
 
     /**
-     * 根据ID获取测验详情
+     * 根据ID获取测验详情（带用户验证）
      */
-    public Quiz getQuizById(Long id) {
-        return quizRepository.findByIdWithAnswers(id)
+    public Quiz getQuizById(Long id, Long userId) {
+        Quiz quiz = quizRepository.findByIdWithAnswers(id)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
+        // 验证用户身份
+        if (userId != null && !userId.equals(quiz.getUserId())) {
+            throw new RuntimeException("无权访问此测验");
+        }
+        return quiz;
     }
 
     /**
@@ -175,11 +180,15 @@ public class QuizService {
     }
 
     /**
-     * 更新测验
+     * 更新测验（带用户验证）
      */
-    public Quiz updateQuiz(Long id, QuizDTO quizDTO) {
+    public Quiz updateQuiz(Long id, QuizDTO quizDTO, Long userId) {
         Quiz quiz = quizRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
+        // 验证用户身份
+        if (userId != null && !userId.equals(quiz.getUserId())) {
+            throw new RuntimeException("无权修改此测验");
+        }
         
         // 验证输入
         if (quizDTO.getTitle() == null || quizDTO.getTitle().trim().isEmpty()) {
@@ -230,11 +239,14 @@ public class QuizService {
     }
 
     /**
-     * 删除测验
+     * 删除测验（带用户验证）
      */
-    public void deleteQuiz(Long id) {
-        if (!quizRepository.existsById(id)) {
-            throw new RuntimeException("测验不存在: ID=" + id);
+    public void deleteQuiz(Long id, Long userId) {
+        Quiz quiz = quizRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
+        // 验证用户身份
+        if (userId != null && !userId.equals(quiz.getUserId())) {
+            throw new RuntimeException("无权删除此测验");
         }
         
         // 删除关联的填空题信息
