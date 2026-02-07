@@ -63,6 +63,47 @@ docker run -d --network host --name typing-quiz-app typing-quiz-app
 
 ---
 
+## [v1.6.0] - 2026-02-08
+
+### 重大更新
+
+#### 本地开发环境连接云端 MySQL ✅
+
+**功能说明**
+实现本地项目连接云服务器 MySQL，方便开发和测试。
+
+**实现方式**
+- 使用环境变量 `MYSQL_HOST` 配置数据库地址
+- 本地开发：`MYSQL_HOST=47.102.147.127`
+- 云服务器：默认使用 `localhost`
+
+**配置修改**
+- `application.properties` 支持 `${MYSQL_HOST:localhost}` 语法
+- `start.bat` 自动设置本地环境变量
+
+---
+
+#### 账户数据隔离功能完善 ✅
+
+**功能说明**
+完善测验和分组的账户隔离，确保用户只能访问自己的数据。
+
+**实现内容**
+- **测验隔离**: 按 userId 过滤查询结果
+- **分组隔离**: 添加 `user_id` 字段，按用户查询
+- **前端修复**: `manage.js` 添加 Authorization header
+
+**修改文件**
+- `QuizController.java` - 添加用户验证
+- `QuizService.java` - 按 userId 过滤
+- `QuizGroupController.java` - 添加用户验证
+- `QuizGroupService.java` - 添加用户过滤
+- `QuizGroup.java` - 添加 userId 字段
+- `QuizGroupRepository.java` - 添加按用户查询
+- `manage.js` - 发送 Authorization header
+
+---
+
 ## [v1.4.0] - 2026-02-04
 
 ### 重大更新
