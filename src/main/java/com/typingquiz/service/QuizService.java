@@ -124,11 +124,17 @@ public class QuizService {
             for (String groupName : quizDTO.getGroups()) {
                 if (groupName == null || groupName.trim().isEmpty()) continue;
 
-                QuizGroup group = quizGroupRepository.findByName(groupName.trim())
-                        .orElseGet(() -> {
-                            QuizGroup newGroup = new QuizGroup(groupName.trim(), "");
-                            return quizGroupRepository.save(newGroup);
-                        });
+                List<QuizGroup> existingGroups = quizGroupRepository.findByNameAndUserId(groupName.trim(), userId);
+                QuizGroup group;
+                if (existingGroups.isEmpty()) {
+                    // 创建新分组
+                    group = new QuizGroup(groupName.trim(), "");
+                    group.setUserId(userId);
+                    group = quizGroupRepository.save(group);
+                } else {
+                    // 使用第一个匹配的分组（处理可能的重复数据）
+                    group = existingGroups.get(0);
+                }
                 
                 group.addQuiz(quiz);
                 quizGroupRepository.save(group);
