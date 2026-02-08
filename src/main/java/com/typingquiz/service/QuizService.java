@@ -249,6 +249,13 @@ public class QuizService {
             throw new RuntimeException("无权删除此测验");
         }
         
+        // 先移除所有分组关联（避免外键约束冲突）
+        List<QuizGroup> groups = quizGroupRepository.findByQuizzesId(id);
+        for (QuizGroup group : groups) {
+            group.getQuizzes().remove(quiz);
+            quizGroupRepository.save(group);
+        }
+
         // 删除关联的填空题信息
         if (fillBlankQuizRepository.existsByQuizId(id)) {
             fillBlankQuizRepository.deleteByQuizId(id);
