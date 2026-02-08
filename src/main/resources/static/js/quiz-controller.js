@@ -329,6 +329,24 @@ class QuizController {
     }
 
     /**
+     * 加载填空题数据
+     */
+    async loadFillBlankQuiz() {
+        try {
+            const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`, {
+                headers: this.getAuthHeaders()
+            });
+            if (!response.ok) {
+                throw new Error('加载填空题数据失败');
+            }
+            this.fillBlankQuiz = await response.json();
+        } catch (error) {
+            console.error('加载填空题失败:', error);
+            throw error;
+        }
+    }
+
+    /**
      * 根据ID加载测验
      */
     async loadQuizById(quizId) {

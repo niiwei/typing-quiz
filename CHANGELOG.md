@@ -22,6 +22,19 @@
 
 ---
 
+#### 修复填空题加载失败 
+
+**问题描述**
+打开填空题测验时显示"加载测验失败"，浏览器控制台报错 `TypeError: this.loadFillBlankQuiz is not a function`。
+
+**根因分析**
+`loadFillBlankQuiz()` 方法被 `loadQuizById()` 调用，但方法定义缺失。
+
+**解决方案**
+- `quiz-controller.js`: 添加 `loadFillBlankQuiz()` 方法，从 `/api/fill-blank/quiz/{quizId}` 获取填空题数据
+
+---
+
 #### 测验删除自动解绑分组 
 
 **功能说明**
