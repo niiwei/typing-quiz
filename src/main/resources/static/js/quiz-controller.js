@@ -305,6 +305,30 @@ class QuizController {
     }
 
     /**
+     * 重置测验UI状态
+     */
+    resetQuizUI() {
+        this.foundAnswers.clear();
+        this.filledBlanks.clear();
+        
+        // 重置输入框
+        const input = document.getElementById('answer-input');
+        if (input) {
+            input.value = '';
+            input.disabled = false;
+        }
+        
+        // 重置放弃按钮
+        const giveUpBtn = document.getElementById('give-up-btn');
+        if (giveUpBtn) {
+            giveUpBtn.disabled = false;
+        }
+        
+        // 清除反馈
+        UIRenderer.showFeedback('', '');
+    }
+
+    /**
      * 根据ID加载测验
      */
     async loadQuizById(quizId) {
