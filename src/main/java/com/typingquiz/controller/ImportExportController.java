@@ -50,8 +50,12 @@ public class ImportExportController {
     }
 
     @GetMapping("/quizzes/export")
-    public ResponseEntity<List<QuizDTO>> exportAllQuizzes() {
-        List<Quiz> quizzes = quizService.getAllQuizzes();
+    public ResponseEntity<List<QuizDTO>> exportAllQuizzes(HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<Quiz> quizzes = quizService.getAllQuizzes(userId);
         List<QuizDTO> dtos = quizzes.stream()
                 .map(quizService::convertToDTO)
                 .collect(Collectors.toList());
@@ -62,9 +66,17 @@ public class ImportExportController {
     }
 
     @GetMapping("/group/{groupId}/export")
-    public ResponseEntity<List<QuizDTO>> exportQuizzesByGroup(@PathVariable Long groupId) {
+    public ResponseEntity<List<QuizDTO>> exportQuizzesByGroup(@PathVariable Long groupId, HttpServletRequest request) {
         try {
+            Long userId = getUserIdFromRequest(request);
+            if (userId == null) {
+                return ResponseEntity.status(401).build();
+            }
             QuizGroup group = quizGroupService.getGroupById(groupId);
+            // 验证用户身份
+            if (!userId.equals(group.getUserId())) {
+                return ResponseEntity.status(403).build();
+            }
             List<Quiz> quizzes = group.getQuizzes();
             List<QuizDTO> dtos = quizzes.stream()
                     .map(quizService::convertToDTO)

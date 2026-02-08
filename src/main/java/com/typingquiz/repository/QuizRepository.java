@@ -52,4 +52,9 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      */
     @Query("SELECT DISTINCT q FROM Quiz q LEFT JOIN FETCH q.answers WHERE q.userId = :userId")
     List<Quiz> findByUserIdWithAnswers(@Param("userId") Long userId);
+
+    /**
+     * 根据用户ID统计测验数量
+     */
+    long countByUserId(Long userId);
 }

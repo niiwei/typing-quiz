@@ -59,7 +59,7 @@ public class QuizGroupService {
      */
     public List<QuizGroup> getAllGroups(Long userId) {
         if (userId == null) {
-            return groupRepository.findAllByOrderByDisplayOrderAsc();
+            return new ArrayList<>();
         }
         return groupRepository.findByUserIdOrderByDisplayOrderAsc(userId);
     }

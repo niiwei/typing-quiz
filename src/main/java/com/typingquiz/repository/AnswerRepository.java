@@ -2,6 +2,8 @@ package com.typingquiz.repository;
 
 import com.typingquiz.entity.Answer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -42,4 +44,10 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
      * @return 匹配的答案(如果存在)
      */
     Optional<Answer> findFirstByQuizIdAndNormalizedContent(Long quizId, String normalizedContent);
+
+    /**
+     * 根据用户ID统计答案数量
+     */
+    @Query("SELECT COUNT(a) FROM Answer a WHERE a.quiz.userId = :userId")
+    long countByUserId(@Param("userId") Long userId);
 }

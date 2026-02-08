@@ -23,6 +23,27 @@ class QuizController {
         this.groupScores = new Map();
     }
 
+    getAuthHeaders() {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        try {
+            let token = null;
+            if (typeof Auth !== 'undefined' && Auth.getToken) {
+                token = Auth.getToken();
+            }
+            if (!token && typeof localStorage !== 'undefined') {
+                token = localStorage.getItem('typingquiz_token');
+            }
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+        } catch (e) {
+            // ignore
+        }
+        return headers;
+    }
+
     ensureFillBlankMeasureEl(textEl) {
         if (!this._fillBlankMeasureEl) {
             const el = document.createElement('span');
@@ -266,7 +287,9 @@ class QuizController {
      * 加载分组测验列表
      */
     async loadGroupQuizzes() {
-        const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`);
+        const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`, {
+            headers: this.getAuthHeaders()
+        });
         if (!response.ok) {
             throw new Error('加载分组测验失败');
         }
@@ -298,7 +321,9 @@ class QuizController {
         this.fillBlankQuiz = null;
         this.filledBlanks = new Map();
 
-        const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`);
+        const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`, {
+            headers: this.getAuthHeaders()
+        });
         if (!quizResponse.ok) {
             throw new Error('测验不存在');
         }
@@ -308,7 +333,9 @@ class QuizController {
         if (this.quizType === 'FILL_BLANK') {
             await this.loadFillBlankQuiz();
         } else {
-            const answersResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}/answers`);
+            const answersResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}/answers`, {
+                headers: this.getAuthHeaders()
+            });
             if (!answersResponse.ok) {
                 throw new Error('加载答案失败');
             }
@@ -324,215 +351,23 @@ class QuizController {
             if (completed) {
                 // 如果已完成，显示结果面板
                 this.showCompletedQuizResult(isGiveUp);
-                return;
             }
         }
 
-        this.renderQuizInfo();
+        // 根据测验类型渲染UI
         this.renderQuizTypeUI();
-        this.renderGroupProgress();
 
-        // 启动新计时器
+        // 渲染测验信息
+        this.renderQuizInfo();
+
+        // 分组模式：渲染分组进度
+        if (this.groupMode) {
+            this.renderGroupProgress();
+        }
+
+        // 重启计时器
         this.startTimer();
-    }
-
-    /**
-     * 显示已完成测验的结果
-     */
-    showCompletedQuizResult(isGiveUp = false) {
-        // 计算统计
-        let found, total, missedAnswers = [];
-        if (this.quizType === 'FILL_BLANK') {
-            found = this.filledBlanks.size;
-            total = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
-
-            if (isGiveUp && this.fillBlankQuiz && this.fillBlankQuiz.blanks) {
-                // 放弃时显示所有正确答案
-                missedAnswers = this.fillBlankQuiz.blanks.map((blank, index) => ({
-                    id: index,
-                    content: blank.correctAnswer,
-                    displayContent: blank.correctAnswer,
-                    comment: blank.comment
-                }));
-            }
-        } else {
-            found = this.foundAnswers.size;
-            total = this.answers ? this.answers.length : 0;
-
-            if (isGiveUp && this.answers) {
-                // 放弃时显示所有未答出的答案
-                missedAnswers = this.answers.filter(
-                    answer => !this.foundAnswers.has(answer.id)
-                );
-            }
-        }
-
-        const stats = {
-            found: found,
-            total: total,
-            accuracy: total > 0 ? Math.round((found / total) * 100) : 0,
-            timeElapsed: 0,
-            quizType: this.quizType,
-            isGiveUp: isGiveUp
-        };
-
-        // 先渲染测验UI（显示题目和答案网格）
-        this.renderQuizInfo();
-
-        if (this.quizType === 'FILL_BLANK') {
-            // 填空题：放弃时重新渲染，让未答题显示红色框
-            if (isGiveUp) {
-                this.renderFillBlankQuizForGiveUp();
-            } else {
-                this.renderQuizTypeUI();
-            }
-        } else {
-            if (this.answers && this.answers.length > 0) {
-                this.renderQuizTypeUI();
-            }
-        }
-
-        // 显示结果面板
-        UIRenderer.showResults(stats, missedAnswers);
-
-        // 放弃时在答案网格中显示所有答案
-        if (isGiveUp && this.quizType === 'TYPING' && this.answers) {
-            UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
-        }
-
-        this.renderGroupProgress();
-    }
-
-    /**
-     * 放弃时渲染填空题，让未答题显示红色框
-     */
-    renderFillBlankQuizForGiveUp(originallyFilledIndices = new Set()) {
-        const questionEl = document.getElementById('fill-blank-question');
-        const textEl = document.getElementById('fill-blank-text');
-
-        if (!this.fillBlankQuiz) return;
-
-        questionEl.textContent = '题目: ' + (this.quiz.title || '填空题');
-
-        const blanks = this.fillBlankQuiz.blanks || [];
-        let result = this.fillBlankQuiz.fullText;
-
-        // 按 startIndex 降序排序
-        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
-            .sort((a, b) => b.startIndex - a.startIndex);
-
-        sortedBlanks.forEach(item => {
-            // 检查这个空格是否在放弃前就已经答出了
-            const isOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
-            const correctAnswer = item.correctAnswer || '';
-            const comment = item.comment || '';
-            const displayAnswer = isOriginallyFilled
-                ? (this.filledBlanks.get(item.originalIndex) || '')
-                : correctAnswer;
-            const state = isOriginallyFilled ? 'filled' : 'missed';
-            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
-                'data-mode="giveup" ' +
-                'data-state="' + state + '" ' +
-                'data-filled="1" ' +
-                'data-blank-index="' + item.originalIndex + '" ' +
-                'data-answer="' + encodeURIComponent(displayAnswer) + '" ' +
-                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
-                'data-comment="' + encodeURIComponent(comment) + '"></span>';
-
-            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
-        });
-
-        result = result.replace(/\n/g, '<div class="manual-break"></div>');
-        textEl.innerHTML = result;
-        this.replaceFillBlankWrappers(textEl);
-    }
-
-    /**
-     * 重置测验UI状态
-     */
-    resetQuizUI() {
-        // 启用输入框和放弃按钮
-        const answerInput = document.getElementById('answer-input');
-        const giveUpBtn = document.getElementById('give-up-btn');
-        const inputSection = document.getElementById('input-section');
-
-        if (answerInput) {
-            answerInput.disabled = false;
-            answerInput.value = '';
-        }
-
-        if (giveUpBtn) {
-            giveUpBtn.disabled = false;
-        }
-
-        // 显示输入区域（UIRenderer.showResults会隐藏它）
-        if (inputSection) {
-            inputSection.style.display = '';
-        }
-
-        // 隐藏结果面板
-        const resultsPanel = document.getElementById('results-panel');
-        if (resultsPanel) {
-            resultsPanel.style.display = 'none';
-        }
-
-        const feedbackMsg = document.getElementById('feedback-message');
-        if (feedbackMsg) {
-            feedbackMsg.textContent = '';
-            feedbackMsg.className = '';
-        }
-
-        // 启用填空题输入框
-        document.querySelectorAll('.fill-blank-input').forEach(input => {
-            input.disabled = false;
-        });
-
-        // 重置测验状态
         this.isQuizActive = true;
-    }
-
-    /**
-     * 从API加载测验数据
-     */
-    async loadQuiz() {
-        // 加载测验详情
-        const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`);
-        if (!quizResponse.ok) {
-            throw new Error('测验不存在');
-        }
-        this.quiz = await quizResponse.json();
-        this.quizType = this.quiz.quizType || 'TYPING';
-
-        // 根据测验类型加载不同的数据
-        if (this.quizType === 'FILL_BLANK') {
-            // 加载填空题数据
-            await this.loadFillBlankQuiz();
-        } else {
-            // 加载打字题答案列表
-            const answersResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}/answers`);
-            if (!answersResponse.ok) {
-                throw new Error('加载答案失败');
-            }
-            this.answers = await answersResponse.json();
-        }
-
-        // 渲染UI
-        this.renderQuizInfo();
-        this.renderQuizTypeUI();
-    }
-
-    /**
-     * 加载填空题数据
-     */
-    async loadFillBlankQuiz() {
-        const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`);
-        if (!response.ok) {
-            throw new Error('加载填空题数据失败');
-        }
-        this.fillBlankQuiz = await response.json();
-        
-        // 初始化已填写的空格
-        this.filledBlanks = new Map();
     }
 
     /**
@@ -850,9 +685,7 @@ class QuizController {
         try {
             const response = await fetch(`${this.apiBase}/answers/validate`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: this.getAuthHeaders(),
                 body: JSON.stringify({
                     quizId: this.quizId,
                     input: input

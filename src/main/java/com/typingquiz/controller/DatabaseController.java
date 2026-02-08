@@ -8,10 +8,12 @@ import com.typingquiz.entity.Quiz;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.QuizRepository;
 import com.typingquiz.service.QuizService;
+import com.typingquiz.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,13 +39,30 @@ public class DatabaseController {
         this.quizService = quizService;
     }
 
+    private Long getUserIdFromRequest(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            if (JwtUtil.validateToken(token)) {
+                return JwtUtil.getUserIdFromToken(token);
+            }
+        }
+        return null;
+    }
+
     /**
      * 按测验维度检索:根据测验ID查询其所有答案
      * GET /api/database/quiz/{id}/answers
      */
     @GetMapping("/quiz/{id}/answers")
-    public ResponseEntity<List<AnswerDTO>> getAnswersByQuizId(@PathVariable Long id) {
-        if (!quizRepository.existsById(id)) {
+    public ResponseEntity<List<AnswerDTO>> getAnswersByQuizId(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        Quiz quiz = quizRepository.findById(id).orElse(null);
+        if (quiz == null || !userId.equals(quiz.getUserId())) {
             return ResponseEntity.notFound().build();
         }
         
@@ -61,7 +80,11 @@ public class DatabaseController {
      */
     @GetMapping("/quiz/search")
     public ResponseEntity<List<QuizResponseDTO>> searchQuizzesByName(
-            @RequestParam String name) {
+            @RequestParam String name, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
         
         if (name == null || name.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
@@ -69,6 +92,7 @@ public class DatabaseController {
         
         List<Quiz> quizzes = quizRepository.findByTitleContainingIgnoreCase(name);
         List<QuizResponseDTO> response = quizzes.stream()
+                .filter(q -> userId.equals(q.getUserId()))
                 .map(quizService::toResponseDTO)
                 .collect(Collectors.toList());
         
@@ -80,10 +104,14 @@ public class DatabaseController {
      * GET /api/database/answer/{id}/quiz
      */
     @GetMapping("/answer/{id}/quiz")
-    public ResponseEntity<QuizResponseDTO> getQuizByAnswerId(@PathVariable Long id) {
+    public ResponseEntity<QuizResponseDTO> getQuizByAnswerId(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
         Answer answer = answerRepository.findById(id).orElse(null);
-        
-        if (answer == null) {
+        if (answer == null || !userId.equals(answer.getQuiz().getUserId())) {
             return ResponseEntity.notFound().build();
         }
         
@@ -99,7 +127,11 @@ public class DatabaseController {
      */
     @GetMapping("/answer/search")
     public ResponseEntity<List<AnswerWithQuizDTO>> searchAnswersByContent(
-            @RequestParam String content) {
+            @RequestParam String content, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
         
         if (content == null || content.trim().isEmpty()) {
             return ResponseEntity.badRequest().build();
@@ -107,6 +139,7 @@ public class DatabaseController {
         
         List<Answer> answers = answerRepository.findByContentContainingIgnoreCase(content);
         List<AnswerWithQuizDTO> response = answers.stream()
+                .filter(a -> userId.equals(a.getQuiz().getUserId()))
                 .map(answer -> new AnswerWithQuizDTO(
                     answer.getId(),
                     answer.getContent(),
@@ -123,9 +156,14 @@ public class DatabaseController {
      * GET /api/database/stats
      */
     @GetMapping("/stats")
-    public ResponseEntity<DatabaseStats> getDatabaseStats() {
-        long totalQuizzes = quizRepository.count();
-        long totalAnswers = answerRepository.count();
+    public ResponseEntity<DatabaseStats> getDatabaseStats(HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        long totalQuizzes = quizRepository.countByUserId(userId);
+        long totalAnswers = answerRepository.countByUserId(userId);
         
         DatabaseStats stats = new DatabaseStats(totalQuizzes, totalAnswers);
         return ResponseEntity.ok(stats);

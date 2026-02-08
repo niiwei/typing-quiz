@@ -156,7 +156,7 @@ public class QuizService {
      */
     public List<Quiz> getAllQuizzes(Long userId) {
         if (userId == null) {
-            return quizRepository.findAllWithAnswers();
+            return new ArrayList<>();
         }
         return quizRepository.findByUserIdWithAnswers(userId);
     }

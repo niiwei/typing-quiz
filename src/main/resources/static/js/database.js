@@ -14,8 +14,8 @@ let answerSearchTimer = null;
 // 加载数据库统计信息
 async function loadStats() {
     try {
-        const response = await fetch('/api/database/stats');
-        const stats = await response.json();
+        const response = await api.get('/database/stats');
+        const stats = response;
         
         document.getElementById('total-quizzes').textContent = stats.totalQuizzes;
         document.getElementById('total-answers').textContent = stats.totalAnswers;
@@ -45,8 +45,8 @@ async function loadInitialQuizList() {
     resultsDiv.innerHTML = '<div class="no-results">加载中...</div>';
     
     try {
-        const response = await fetch('/api/quizzes');
-        const quizzes = await response.json();
+        const response = await api.get('/quizzes');
+        const quizzes = response;
         
         if (quizzes.length === 0) {
             resultsDiv.innerHTML = '<div class="no-results">暂无测验</div>';
@@ -66,14 +66,14 @@ async function loadInitialAnswerList() {
     resultsDiv.innerHTML = '<div class="no-results">加载中...</div>';
     
     try {
-        // 获取所有测验的所有答案
-        const quizzesResponse = await fetch('/api/quizzes');
-        const quizzes = await quizzesResponse.json();
+        // 获取当前用户的测验的所有答案
+        const quizzesResponse = await api.get('/quizzes');
+        const quizzes = quizzesResponse;
         
         let allAnswers = [];
         for (const quiz of quizzes) {
-            const answersResponse = await fetch(`/api/database/quiz/${quiz.id}/answers`);
-            const answers = await answersResponse.json();
+            const answersResponse = await api.get(`/database/quiz/${quiz.id}/answers`);
+            const answers = answersResponse;
             
             answers.forEach(answer => {
                 allAnswers.push({
@@ -160,16 +160,16 @@ async function searchQuiz(input, resultsDiv) {
 async function searchQuizById(id, resultsDiv) {
     try {
         // 获取测验信息
-        const quizResponse = await fetch(`/api/quizzes/${id}`);
-        if (!quizResponse.ok) {
+        const quizResponse = await api.get(`/quizzes/${id}`);
+        if (!quizResponse) {
             resultsDiv.innerHTML = '<div class="no-results">未找到该测验</div>';
             return;
         }
-        const quiz = await quizResponse.json();
+        const quiz = quizResponse;
         
         // 获取测验的所有答案
-        const answersResponse = await fetch(`/api/database/quiz/${id}/answers`);
-        const answers = await answersResponse.json();
+        const answersResponse = await api.get(`/database/quiz/${id}/answers`);
+        const answers = answersResponse;
         
         displayQuizWithAnswers(quiz, answers, resultsDiv);
     } catch (error) {
@@ -180,8 +180,8 @@ async function searchQuizById(id, resultsDiv) {
 // 按测验名称搜索
 async function searchQuizByName(name, resultsDiv) {
     try {
-        const response = await fetch(`/api/database/quiz/search?name=${encodeURIComponent(name)}`);
-        const quizzes = await response.json();
+        const response = await api.get(`/database/quiz/search?name=${encodeURIComponent(name)}`);
+        const quizzes = response;
         
         if (quizzes.length === 0) {
             resultsDiv.innerHTML = '<div class="no-results">未找到匹配的测验</div>';
@@ -322,17 +322,16 @@ async function searchAnswer(input, resultsDiv) {
 // 按答案ID搜索
 async function searchAnswerById(id, resultsDiv) {
     try {
-        const response = await fetch(`/api/database/answer/${id}/quiz`);
-        if (!response.ok) {
+        const response = await api.get(`/database/answer/${id}/quiz`);
+        if (!response) {
             resultsDiv.innerHTML = '<div class="no-results">未找到该答案</div>';
             return;
         }
-        
-        const quiz = await response.json();
+        const quiz = response;
         
         // 获取该答案的详细信息
-        const answersResponse = await fetch(`/api/database/quiz/${quiz.id}/answers`);
-        const answers = await answersResponse.json();
+        const answersResponse = await api.get(`/database/quiz/${quiz.id}/answers`);
+        const answers = answersResponse;
         const answer = answers.find(a => a.id == id);
         
         displayAnswerWithQuiz(answer, quiz, resultsDiv);
@@ -344,8 +343,8 @@ async function searchAnswerById(id, resultsDiv) {
 // 按答案内容搜索
 async function searchAnswerByContent(content, resultsDiv) {
     try {
-        const response = await fetch(`/api/database/answer/search?content=${encodeURIComponent(content)}`);
-        const answers = await response.json();
+        const response = await api.get(`/database/answer/search?content=${encodeURIComponent(content)}`);
+        const answers = response;
         
         if (answers.length === 0) {
             resultsDiv.innerHTML = '<div class="no-results">未找到匹配的答案</div>';
