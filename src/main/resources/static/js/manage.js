@@ -879,7 +879,7 @@ function toggleSelectAll(checkbox) {
             selectedQuizzes.add(quizId);
         } else {
             selectedQuizzes.delete(quizId);
-        });
+        }
     });
     updateBulkActionsBar();
 }
