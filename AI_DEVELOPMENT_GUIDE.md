@@ -96,6 +96,12 @@ set MYSQL_HOST=47.102.147.127
 # 或双击 start.bat
 ```
 
+**Windows 启动建议：**
+
+- **优先使用 `start.bat` 启动/重启本地服务**（适合日常开发/快速重启）。
+- `./mvnw spring-boot:run` 依赖本机已正确配置 `JAVA_HOME`，否则会报 `JAVA_HOME not found`。
+- 若需要使用 `./mvnw`，请先配置系统环境变量 `JAVA_HOME`，或在当前终端临时设置后再执行。
+
 ### 云端部署
 ```bash
 # 1. SSH 登录
