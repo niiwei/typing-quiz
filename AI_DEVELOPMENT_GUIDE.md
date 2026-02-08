@@ -103,6 +103,22 @@ set MYSQL_HOST=47.102.147.127
 - 若需要使用 `./mvnw`，请先配置系统环境变量 `JAVA_HOME`，或在当前终端临时设置后再执行。
 
 ### 云端部署
+
+#### 自动部署（推荐）
+
+已配置 SSH 免密登录，可从 Windows 自动部署：
+
+```powershell
+ssh -i C:\Users\29982\.ssh\typing_quiz_deploy root@47.102.147.127 "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+```
+
+**配置说明：**
+- SSH 密钥位置：`C:\Users\29982\.ssh\typing_quiz_deploy`
+- 服务器地址：`47.102.147.127`
+- 首次配置需执行：将公钥添加到服务器的 `~/.ssh/authorized_keys`
+
+#### 手动部署
+
 ```bash
 # 1. SSH 登录
 ssh root@47.102.147.127
