@@ -45,7 +45,7 @@
    - 检查前端交互。
 3. **构建与文档**：
    - `./mvnw clean package`
-   - 更新 README、PROJECT_STATUS.md、CHANGELOG.md。
+   - 更新 README、AI_DEVELOPMENT_GUIDE.md、CHANGELOG.md。
 4. **合并与打标签**：将 develop 合并至 main，按第 2 节流程打标签并推送。
 5. **发布产物**：上传打包文件或生成 GitHub Release。
 
@@ -104,7 +104,7 @@ git push origin main
 
 1. **计划与分支**：为每个优化项创建 Issue，基于 `main` 或 `develop` 拉取 `feature/…` 分支。
 2. **开发与自测**：小步提交，完成后运行 `./mvnw test`、`./mvnw spring-boot:run` 验证核心流程。**本地测试通过后再推送代码**，不在云服务器上调试本地问题。
-3. **更新文档与版本**：如需发布，更新 `pom.xml` 版本号及 README、PROJECT_STATUS.md、CHANGELOG.md。
+3. **更新文档与版本**：如需发布，更新 `pom.xml` 版本号及 README、AI_DEVELOPMENT_GUIDE.md、CHANGELOG.md。
 4. **合并与打标签**：通过 PR 合并回 `main`（或先合并 `develop`），随后在 `main` 打上语义化版本标签并推送。
 5. **构建与备份**：执行 `./mvnw clean package` 生成产物，按需备份 `data/typingquiz.mv.db`。
 6. **发布与记录**：上传 jar 或创建 GitHub Release，附带变更说明与对应用的影响。

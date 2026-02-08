@@ -5,6 +5,7 @@
 const API_BASE = '/api';
 let currentQuizId = null;
 let currentGroupId = null;
+let selectedQuizzes = new Set(); // 存储选中的测验 ID
 
 // 获取带 token 的请求头
 function getAuthHeaders() {
@@ -96,7 +97,7 @@ function renderQuizTable(quizzes) {
     const tbody = document.getElementById('quiz-list');
     
     if (quizzes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">暂无测验</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">暂无测验</td></tr>';
         return;
     }
     
@@ -104,9 +105,14 @@ function renderQuizTable(quizzes) {
         const typeText = quiz.quizType === 'FILL_BLANK' ? '填空题' : '打字题';
         const groupName = window.quizGroupMap[quiz.id] || '-';
         const timeLimit = quiz.timeLimit ? quiz.timeLimit + '秒' : '无限制';
+        const isSelected = selectedQuizzes.has(quiz.id);
         
         return `
-            <tr>
+            <tr data-quiz-id="${quiz.id}">
+                <td>
+                    <input type="checkbox" class="quiz-checkbox" value="${quiz.id}" 
+                        ${isSelected ? 'checked' : ''} onchange="toggleQuizSelection(${quiz.id})">
+                </td>
                 <td>${quiz.id}</td>
                 <td>${quiz.title}</td>
                 <td><span class="quiz-type-badge">${typeText}</span></td>
@@ -845,6 +851,244 @@ async function handleFileImport(event) {
     } catch (error) {
         console.error('导入失败:', error);
         alert('导入失败: ' + error.message);
+    }
+}
+
+/**
+ * 切换单个测验的选择状态
+ */
+function toggleQuizSelection(quizId) {
+    if (selectedQuizzes.has(quizId)) {
+        selectedQuizzes.delete(quizId);
+    } else {
+        selectedQuizzes.add(quizId);
+    }
+    updateBulkActionsBar();
+    updateSelectAllCheckbox();
+}
+
+/**
+ * 全选/取消全选
+ */
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.quiz-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        const quizId = parseInt(cb.value);
+        if (checkbox.checked) {
+            selectedQuizzes.add(quizId);
+        } else {
+            selectedQuizzes.delete(quizId);
+        });
+    });
+    updateBulkActionsBar();
+}
+
+/**
+ * 更新全选复选框状态
+ */
+function updateSelectAllCheckbox() {
+    const selectAllCheckbox = document.getElementById('select-all-quizzes');
+    const checkboxes = document.querySelectorAll('.quiz-checkbox');
+    
+    if (selectedQuizzes.size === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (selectedQuizzes.size === checkboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+/**
+ * 更新批量操作工具栏
+ */
+function updateBulkActionsBar() {
+    const bar = document.getElementById('bulk-actions-bar');
+    const countSpan = document.getElementById('selected-count');
+    
+    countSpan.textContent = selectedQuizzes.size;
+    
+    if (selectedQuizzes.size > 0) {
+        bar.classList.add('active');
+    } else {
+        bar.classList.remove('active');
+    }
+}
+
+/**
+ * 全选所有测验
+ */
+function selectAll() {
+    if (!window.allQuizzes) return;
+    
+    window.allQuizzes.forEach(quiz => {
+        selectedQuizzes.add(quiz.id);
+    });
+    
+    // 更新所有复选框
+    const checkboxes = document.querySelectorAll('.quiz-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = true;
+    });
+    
+    updateBulkActionsBar();
+    updateSelectAllCheckbox();
+}
+
+/**
+ * 清除选择
+ */
+function clearSelection() {
+    selectedQuizzes.clear();
+    
+    // 取消所有复选框
+    const checkboxes = document.querySelectorAll('.quiz-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = false;
+    });
+    
+    updateBulkActionsBar();
+    updateSelectAllCheckbox();
+}
+
+/**
+ * 批量删除测验
+ */
+async function bulkDelete() {
+    if (selectedQuizzes.size === 0) {
+        alert('请先选择要删除的测验');
+        return;
+    }
+    
+    const count = selectedQuizzes.size;
+    if (!confirm(`确定要删除选中的 ${count} 个测验吗?此操作不可恢复!`)) {
+        return;
+    }
+    
+    const quizIds = Array.from(selectedQuizzes);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const quizId of quizIds) {
+        try {
+            const response = await fetch(`${API_BASE}/quizzes/${quizId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            
+            if (response.ok) {
+                successCount++;
+            } else {
+                failCount++;
+            }
+        } catch (error) {
+            console.error('删除测验失败:', quizId, error);
+            failCount++;
+        }
+    }
+    
+    alert(`批量删除完成!\n成功: ${successCount} 个\n失败: ${failCount} 个`);
+    
+    // 清空选择并刷新列表
+    selectedQuizzes.clear();
+    updateBulkActionsBar();
+    loadQuizzes();
+}
+
+/**
+ * 显示批量分组模态框
+ */
+async function showBulkGroupModal() {
+    if (selectedQuizzes.size === 0) {
+        alert('请先选择要分组的测验');
+        return;
+    }
+    
+    document.getElementById('bulk-selected-count').textContent = selectedQuizzes.size;
+    
+    // 加载分组列表
+    const select = document.getElementById('bulk-group-select');
+    select.innerHTML = '<option value="">加载中...</option>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/groups`, {
+            headers: getAuthHeaders()
+        });
+        const groups = await response.json();
+        
+        if (groups.length === 0) {
+            select.innerHTML = '<option value="">暂无分组，请先创建分组</option>';
+        } else {
+            select.innerHTML = groups.map(group => 
+                `<option value="${group.id}">${group.name} (${group.quizIds ? group.quizIds.length : 0}个测验)</option>`
+            ).join('');
+        }
+        
+        document.getElementById('bulk-group-modal').style.display = 'block';
+    } catch (error) {
+        console.error('加载分组失败:', error);
+        alert('加载分组失败');
+    }
+}
+
+/**
+ * 关闭批量分组模态框
+ */
+function closeBulkGroupModal() {
+    document.getElementById('bulk-group-modal').style.display = 'none';
+}
+
+/**
+ * 批量添加到分组
+ */
+async function bulkAddToGroup() {
+    const groupId = document.getElementById('bulk-group-select').value;
+    
+    if (!groupId) {
+        alert('请选择目标分组');
+        return;
+    }
+    
+    const quizIds = Array.from(selectedQuizzes);
+    
+    try {
+        // 获取当前分组信息
+        const groupResponse = await fetch(`${API_BASE}/groups/${groupId}`, {
+            headers: getAuthHeaders()
+        });
+        const group = await groupResponse.json();
+        
+        // 合并现有的测验 ID
+        const existingIds = group.quizIds || [];
+        const newIds = [...new Set([...existingIds, ...quizIds])];
+        
+        // 更新分组
+        const response = await fetch(`${API_BASE}/groups/${groupId}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                name: group.name,
+                description: group.description,
+                quizIds: newIds
+            })
+        });
+        
+        if (response.ok) {
+            alert(`成功将 ${quizIds.length} 个测验添加到分组`);
+            closeBulkGroupModal();
+            clearSelection();
+            loadQuizzes();
+            loadGroups();
+        } else {
+            alert('添加失败');
+        }
+    } catch (error) {
+        console.error('批量分组失败:', error);
+        alert('批量分组失败');
     }
 }
 

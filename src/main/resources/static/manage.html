@@ -142,6 +142,32 @@
         .quiz-table tr {
             transition: background 0.15s ease;
         }
+
+        /* 批量操作工具栏 */
+        .bulk-actions-bar {
+            display: none;
+            background: #FEF3C7;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            border: 2px solid #F59E0B;
+        }
+
+        .bulk-actions-bar.active {
+            display: flex;
+        }
+
+        .bulk-actions-bar .btn {
+            padding: 8px 16px;
+        }
+
+        .bulk-count {
+            font-weight: 600;
+            color: #92400E;
+        }
         
         .actions {
             display: flex;
@@ -318,10 +344,24 @@
             </div>
         </div>
 
+        <!-- 批量操作工具栏 -->
+        <div id="bulk-actions-bar" class="bulk-actions-bar">
+            <span class="bulk-count">已选择 <span id="selected-count">0</span> 个测验</span>
+            <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+            <button class="btn btn-secondary" onclick="clearSelection()">取消选择</button>
+            <div style="border-left: 2px solid #F59E0B; padding-left: 15px; display: flex; gap: 10px;">
+                <button class="btn btn-danger" onclick="bulkDelete()">批量删除</button>
+                <button class="btn btn-primary" onclick="showBulkGroupModal()">批量分组</button>
+            </div>
+        </div>
+
         <div class="quiz-table">
             <table>
                 <thead>
                     <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAll(this)">
+                        </th>
                         <th>ID</th>
                         <th>标题</th>
                         <th>类型</th>
@@ -334,7 +374,7 @@
                 </thead>
                 <tbody id="quiz-list">
                     <tr>
-                        <td colspan="8" style="text-align: center;">加载中...</td>
+                        <td colspan="9" style="text-align: center;">加载中...</td>
                     </tr>
                 </tbody>
             </table>
@@ -434,6 +474,26 @@
                     <button type="submit" class="btn btn-primary" onclick="saveGroup()">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 批量分组模态框 -->
+    <div id="bulk-group-modal" class="modal">
+        <div class="modal-content">
+            <h2>批量分组</h2>
+            <p style="color: #666; margin-bottom: 20px;">将选中的 <span id="bulk-selected-count">0</span> 个测验添加到分组</p>
+            
+            <div class="form-group">
+                <label for="bulk-group-select">选择目标分组</label>
+                <select id="bulk-group-select" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+                    <option value="">加载中...</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeBulkGroupModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="bulkAddToGroup()">确认添加</button>
+            </div>
         </div>
     </div>
 

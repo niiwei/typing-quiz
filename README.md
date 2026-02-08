@@ -23,10 +23,11 @@
 ## 技术栈
 
 ### 后端
-- Spring Boot 2.7.x
-- Spring Data JPA
-- H2 Database (嵌入式)
-- Maven
+- **框架**: Spring Boot 2.7.x
+- **数据持久化**: Spring Data JPA
+- **数据库**: MySQL 8.0
+- **认证**: JWT (JJWT) + Spring Security (BCrypt)
+- **构建工具**: Maven
 
 ### 前端
 - HTML5
@@ -38,10 +39,34 @@
 
 - Java JDK 11 或更高版本 ✅
 - Maven 3.6+ (可选,项目包含Maven Wrapper)
+- MySQL 8.0 (本地或远程)
 
 ## 快速开始
 
-### 启动应用
+### 1. 检查 Java 环境
+
+```bash
+java -version
+```
+
+如果未安装,请访问: https://adoptium.net/
+
+### 2. 环境检测（可选）
+
+**Windows:**
+```bash
+setup.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+脚本会自动检测 Java 和 Maven，并下载项目依赖。
+
+### 3. 启动应用
 
 **Windows:**
 ```bash
@@ -56,7 +81,7 @@ chmod +x start.sh
 
 应用将在 http://localhost:8080 启动
 
-### 访问应用
+### 4. 访问应用
 
 应用启动后会自动打开浏览器,或手动访问:
 
@@ -65,10 +90,42 @@ chmod +x start.sh
 - **测验管理:** http://localhost:8080/manage.html (创建/编辑/删除测验)
 - **数据库管理:** http://localhost:8080/database.html (查询和检索数据)
 - **直接测验:** http://localhost:8080/index.html?id=1
-- **H2控制台:** http://localhost:8080/h2-console
-  - JDBC URL: `jdbc:h2:file:./data/typingquiz`
-  - 用户名: `sa`
-  - 密码: (留空)
+- **注册/登录:** http://localhost:8080/register.html
+
+## 🎮 如何玩
+
+1. 选择一个测验(或直接访问默认的"世界首都"测验)
+2. 在输入框中输入答案
+3. 答案正确会立即显示并计分
+4. 尝试在时间限制内答出所有答案!
+
+## 💡 提示
+
+- 答案不区分大小写
+- 不需要按回车键,输入匹配即可
+- 可以任意顺序回答
+- 重复输入会提示"已回答"
+
+## 📝 创建测验
+
+### 方法1: 使用管理页面(推荐)
+访问 http://localhost:8080/manage.html 使用可视化界面创建测验
+
+### 方法2: 使用API
+```bash
+curl -X POST http://localhost:8080/api/quizzes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "我的测验",
+    "description": "测验描述",
+    "timeLimit": 300,
+    "answers": ["答案1", "答案2", "答案3"]
+  }'
+```
+
+## 🛑 停止应用
+
+在运行应用的命令行窗口按 `Ctrl+C`
 
 ## API文档
 
@@ -211,24 +268,53 @@ Content-Type: application/json
 
 ```
 typing-quiz/
-├── src/
-│   ├── main/
-│   │   ├── java/com/typingquiz/
-│   │   │   ├── TypingQuizApplication.java
-│   │   │   ├── entity/          # 实体类
-│   │   │   ├── repository/      # 数据访问层
-│   │   │   ├── service/         # 业务逻辑层
-│   │   │   ├── controller/      # 控制器层
-│   │   │   └── dto/             # 数据传输对象
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── static/          # 前端资源
-│   └── test/                    # 测试代码
+├── src/main/java/com/typingquiz/
+│   ├── TypingQuizApplication.java    # 应用入口
+│   ├── config/                       # 配置类
+│   │   ├── DataInitializer.java     # 数据初始化
+│   │   └── SecurityConfig.java       # Spring Security 配置
+│   ├── entity/                       # 实体类
+│   │   ├── Quiz.java                 # 测验主实体
+│   │   ├── Answer.java               # 答案实体
+│   │   ├── User.java                 # 用户实体
+│   │   ├── QuizGroup.java            # 测验分组实体
+│   │   ├── FillBlankQuiz.java        # 填空题实体
+│   │   └── QuizType.java             # 测验类型枚举
+│   ├── repository/                   # 数据访问层 (Spring Data JPA)
+│   ├── service/                      # 业务逻辑层
+│   ├── controller/                   # REST API 控制器
+│   ├── dto/                          # 数据传输对象
+│   ├── exception/                    # 异常处理
+│   └── util/                         # 工具类 (JwtUtil)
+├── src/main/resources/
+│   ├── application.properties        # 应用配置
+│   └── static/                       # 前端资源 (HTML/CSS/JS)
 ├── pom.xml
-├── setup.sh / setup.bat         # 环境检测脚本
-├── start.sh / start.bat         # 启动脚本
+├── Dockerfile
+├── start.bat                         # 本地启动 (连接云端 MySQL)
 └── README.md
 ```
+
+## 分层架构
+
+```
+Controller (REST API) → Service (业务逻辑) → Repository (数据访问) → Entity (数据模型)
+```
+
+## 安全设计
+
+### JWT 认证
+- Token 有效期: 24小时
+- 签名算法: HS256
+- 前端请求需携带: `Authorization: Bearer <token>`
+
+### 账户数据隔离
+- 所有数据查询按 `userId` 过滤
+- 用户只能访问自己的测验和分组
+
+### 密码加密
+- 使用 BCrypt (Spring Security)
+- 防彩虹表攻击
 
 ## 开发指南
 
