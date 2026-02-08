@@ -259,7 +259,7 @@ class QuizController {
             if (this.groupMode) {
                 await this.loadGroupQuizzes();
             } else {
-                await this.loadQuiz();
+                await this.loadQuizById(this.quizId);
             }
 
             this.setupEventListeners();
