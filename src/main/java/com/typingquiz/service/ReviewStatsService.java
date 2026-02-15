@@ -110,7 +110,7 @@ public class ReviewStatsService {
         distribution.put("90天以上", 0);
 
         for (QuizReviewStatus status : allStatus) {
-            int interval = status.getCurrentInterval();
+            int interval = status.getIntervalDays();
             if (interval == 0) {
                 distribution.put("0天", distribution.get("0天") + 1);
             } else if (interval <= 7) {

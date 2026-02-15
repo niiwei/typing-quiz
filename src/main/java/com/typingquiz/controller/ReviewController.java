@@ -515,7 +515,7 @@ public class ReviewController {
         Map<String, Object> map = new HashMap<>();
         map.put("quizId", status.getQuizId());
         map.put("status", status.getStatus());
-        map.put("intervalDays", status.getCurrentInterval());
+        map.put("intervalDays", status.getIntervalDays());
         map.put("easeFactor", status.getEaseFactor());
         map.put("nextReviewDate", status.getNextReviewDate());
         map.put("reviewCount", status.getReviewCount());

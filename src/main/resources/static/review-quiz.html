@@ -619,7 +619,7 @@
         function updateRatingIntervals(status) {
             const status_type = status.status;
             const ease = status.easeFactor || 2500;
-            const currentInterval = status.currentInterval || 0;
+            const currentInterval = status.intervalDays || 0;
             const learningStep = status.learningStep || 0;
 
             let intervals = {};

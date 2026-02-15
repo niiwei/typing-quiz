@@ -181,7 +181,7 @@ public class LearningService {
      */
     private LocalDate calculateNextReviewDate(int minutesFromNow) {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextReview = now.plusMinutes(minutes);
+        LocalDateTime nextReview = now.plusMinutes(minutesFromNow);
         
         // 如果跨天了，返回日期；否则如果是今天，也返回今天
         return nextReview.toLocalDate();

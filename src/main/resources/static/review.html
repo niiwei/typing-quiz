@@ -743,8 +743,8 @@
             const statusText = getStatusText(item.status, item.overdue);
 
             let metaItems = [];
-            if (item.currentInterval > 0) {
-                metaItems.push(`间隔: ${formatInterval(item.currentInterval)}`);
+            if (item.intervalDays > 0) {
+                metaItems.push(`间隔: ${formatInterval(item.intervalDays)}`);
             }
             if (item.reviewCount > 0) {
                 metaItems.push(`已复习 ${item.reviewCount} 次`);
