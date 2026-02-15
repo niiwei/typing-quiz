@@ -12,8 +12,11 @@ import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizType;
 import com.typingquiz.repository.AnswerRepository;
 import com.typingquiz.repository.FillBlankQuizRepository;
+import com.typingquiz.entity.QuizReviewStatus;
+import com.typingquiz.entity.ReviewStatus;
 import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.QuizRepository;
+import com.typingquiz.repository.QuizReviewStatusRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +38,7 @@ public class QuizService {
     private final FillBlankQuizRepository fillBlankQuizRepository;
     private final FillBlankQuizService fillBlankQuizService;
     private final QuizGroupRepository quizGroupRepository;
+    private final QuizReviewStatusRepository quizReviewStatusRepository;
     private final ObjectMapper objectMapper;
 
     @Autowired
@@ -43,12 +47,14 @@ public class QuizService {
                         FillBlankQuizRepository fillBlankQuizRepository,
                         FillBlankQuizService fillBlankQuizService,
                         QuizGroupRepository quizGroupRepository,
+                        QuizReviewStatusRepository quizReviewStatusRepository,
                         ObjectMapper objectMapper) {
         this.quizRepository = quizRepository;
         this.answerRepository = answerRepository;
         this.fillBlankQuizRepository = fillBlankQuizRepository;
         this.fillBlankQuizService = fillBlankQuizService;
         this.quizGroupRepository = quizGroupRepository;
+        this.quizReviewStatusRepository = quizReviewStatusRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -141,7 +147,28 @@ public class QuizService {
             }
         }
 
+        // 自动创建复习状态（确保每个测验都是未学习状态）
+        createReviewStatusForQuiz(quiz.getId(), userId);
+
         return quiz;
+    }
+
+    /**
+     * 为测验创建复习状态（初始状态：NEW）
+     */
+    private void createReviewStatusForQuiz(Long quizId, Long userId) {
+        try {
+            // 检查是否已存在（避免重复创建）
+            if (!quizReviewStatusRepository.existsByQuizIdAndUserId(quizId, userId)) {
+                QuizReviewStatus status = new QuizReviewStatus(quizId, userId);
+                status.setStatus(ReviewStatus.NEW);
+                quizReviewStatusRepository.save(status);
+                logger.info("已为测验 {} 创建复习状态", quizId);
+            }
+        } catch (Exception e) {
+            logger.warn("创建测验 {} 的复习状态失败: {}", quizId, e.getMessage());
+            // 不影响主流程，继续执行
+        }
     }
 
     /**
