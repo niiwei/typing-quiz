@@ -52,3 +52,47 @@
         justify-content: center;
     }
 }
+
+/* 模式切换组件 */
+.mode-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    background: #F3F4F6;
+    border-radius: 10px;
+}
+
+.mode-switcher-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: #6B7280;
+}
+
+.mode-switcher-btn:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.mode-switcher-btn.active {
+    background: white;
+    color: var(--primary, #4F46E5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mode-switcher-badge {
+    display: inline-block;
+    min-width: 20px;
+    padding: 2px 6px;
+    background: #EF4444;
+    color: white;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 6px;
+}

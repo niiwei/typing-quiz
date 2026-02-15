@@ -96,4 +96,13 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
      * 删除指定测验的复习状态（用于测验删除时清理）
      */
     void deleteByQuizId(Long quizId);
-}
+    /**
+     * 根据状态查询用户的复习状态
+     */
+    List<QuizReviewStatus> findByUserIdAndStatus(Long userId, ReviewStatus status);
+
+    /**
+     * 查询用户搁置的卡片
+     */
+    @Query("SELECT q FROM QuizReviewStatus q WHERE q.userId = ?1 AND q.buriedUntil IS NOT NULL AND q.buriedUntil > ?2")
+    List<QuizReviewStatus> findBuriedCards(Long userId, LocalDate today);

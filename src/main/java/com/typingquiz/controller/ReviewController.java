@@ -10,6 +10,7 @@ import com.typingquiz.entity.User;
 import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.QuizRepository;
 import com.typingquiz.service.QuizReviewService;
+import com.typingquiz.service.ReviewStatsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,14 +41,17 @@ public class ReviewController {
     private final QuizReviewService quizReviewService;
     private final QuizGroupRepository quizGroupRepository;
     private final QuizRepository quizRepository;
+    private final ReviewStatsService reviewStatsService;
 
     @Autowired
     public ReviewController(QuizReviewService quizReviewService,
                            QuizGroupRepository quizGroupRepository,
-                           QuizRepository quizRepository) {
+                           QuizRepository quizRepository,
+                           ReviewStatsService reviewStatsService) {
         this.quizReviewService = quizReviewService;
         this.quizGroupRepository = quizGroupRepository;
         this.quizRepository = quizRepository;
+        this.reviewStatsService = reviewStatsService;
     }
 
     /**
@@ -325,6 +329,199 @@ public class ReviewController {
         }
         
         return dto;
+    }
+
+    /**
+     * 获取复习统计数据
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<?> getReviewStats(HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            var stats = reviewStatsService.getUserStats(userId);
+            stats.setReviewHistory(reviewStatsService.getReviewHistory(userId, 30));
+            stats.setStreakDays(reviewStatsService.getStreakDays(userId));
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            logger.error("获取复习统计失败", e);
+            return ResponseEntity.badRequest().body("获取统计失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 搁置测验（推迟复习）
+     */
+    @PostMapping("/{quizId}/bury")
+    public ResponseEntity<?> buryQuiz(@PathVariable Long quizId,
+                                      @RequestBody(required = false) Map<String, Integer> body,
+                                      HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            int days = body != null ? body.getOrDefault("days", 1) : 1;
+            quizReviewService.buryCard(quizId, userId, days);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "已搁置" + days + "天"
+            ));
+        } catch (Exception e) {
+            logger.error("搁置测验失败", e);
+            return ResponseEntity.badRequest().body("搁置失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 暂停测验
+     */
+    @PostMapping("/{quizId}/suspend")
+    public ResponseEntity<?> suspendQuiz(@PathVariable Long quizId, HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            quizReviewService.suspendCard(quizId, userId);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "已暂停"
+            ));
+        } catch (Exception e) {
+            logger.error("暂停测验失败", e);
+            return ResponseEntity.badRequest().body("暂停失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 恢复暂停的测验
+     */
+    @PostMapping("/{quizId}/unsuspend")
+    public ResponseEntity<?> unsuspendQuiz(@PathVariable Long quizId, HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            quizReviewService.unsuspendCard(quizId, userId);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "已恢复"
+            ));
+        } catch (Exception e) {
+            logger.error("恢复测验失败", e);
+            return ResponseEntity.badRequest().body("恢复失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 重置测验
+     */
+    @PostMapping("/{quizId}/reset")
+    public ResponseEntity<?> resetQuiz(@PathVariable Long quizId, HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            quizReviewService.resetCard(quizId, userId);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "已重置"
+            ));
+        } catch (Exception e) {
+            logger.error("重置测验失败", e);
+            return ResponseEntity.badRequest().body("重置失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 按状态筛选测验
+     */
+    @GetMapping("/filter")
+    public ResponseEntity<?> filterReviews(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Long groupId,
+            HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            List<QuizReviewStatus> results;
+
+            if (status != null && !status.isEmpty()) {
+                // 按状态筛选
+                ReviewStatus reviewStatus = ReviewStatus.valueOf(status.toUpperCase());
+                results = reviewStatusRepository.findByUserIdAndStatus(userId, reviewStatus);
+            } else if (groupId != null) {
+                // 按分组筛选
+                results = reviewStatusRepository.findByUserId(userId).stream()
+                    .filter(s -> {
+                        Quiz quiz = quizRepository.findById(s.getQuizId()).orElse(null);
+                        if (quiz == null) return false;
+                        return quiz.getGroups().stream()
+                            .anyMatch(g -> g.getId().equals(groupId));
+                    })
+                    .collect(Collectors.toList());
+            } else {
+                // 查询所有
+                results = reviewStatusRepository.findByUserId(userId);
+            }
+
+            List<Map<String, Object>> filteredList = results.stream()
+                .map(this::convertToSimpleMap)
+                .collect(Collectors.toList());
+
+            return ResponseEntity.ok(filteredList);
+        } catch (Exception e) {
+            logger.error("筛选测验失败", e);
+            return ResponseEntity.badRequest().body("筛选失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取搁置的卡片列表
+     */
+    @GetMapping("/buried")
+    public ResponseEntity<?> getBuriedCards(HttpSession session) {
+        Long userId = getCurrentUserId(session);
+        if (userId == null) {
+            return ResponseEntity.status(401).body("未登录");
+        }
+
+        try {
+            List<QuizReviewStatus> buried = reviewStatusRepository.findBuriedCards(userId, LocalDate.now());
+            List<Map<String, Object>> result = buried.stream()
+                .map(this::convertToSimpleMap)
+                .collect(Collectors.toList());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("获取搁置卡片失败", e);
+            return ResponseEntity.badRequest().body("获取失败: " + e.getMessage());
+        }
+    }
+
+    private Map<String, Object> convertToSimpleMap(QuizReviewStatus status) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("quizId", status.getQuizId());
+        map.put("status", status.getStatus());
+        map.put("intervalDays", status.getCurrentInterval());
+        map.put("easeFactor", status.getEaseFactor());
+        map.put("nextReviewDate", status.getNextReviewDate());
+        map.put("reviewCount", status.getReviewCount());
+        map.put("lapseCount", status.getLapseCount());
+        map.put("buriedUntil", status.getBuriedUntil());
+        return map;
     }
 
     private int getStatusPriority(ReviewStatus status) {
