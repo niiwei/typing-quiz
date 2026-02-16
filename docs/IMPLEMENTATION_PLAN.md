@@ -18,10 +18,25 @@
 
 ### 关键设计变更
 
-#### 模式切换设计
+### 模式切换设计
 - **自由测验模式**（现有）：无复习追踪，用于快速练习
 - **Anki 复习模式**（新增）：启用 SM-2 算法追踪
 - **切换位置**：主页新增模式选择开关，用户可自由切换
+
+#### 状态标签逻辑（已实施）
+为了让复习列表更清晰，系统采用了细化的状态显示逻辑：
+
+| 状态类型 | 时间条件 | 建议标签 | 颜色 |
+| :--- | :--- | :--- | :--- |
+| **REVIEW** | `nextReviewDate` <= 现在 | **待复习** | 绿色 |
+| **REVIEW** | `nextReviewDate` > 现在 | **复习中** | 蓝色/浅色 |
+| **REVIEW** | `nextReviewDate` < 今天凌晨 | **已逾期** | 橙色/红色 |
+| **LEARNING** | `nextReviewDate` <= 现在 | **待学习** | 黄色/深色 |
+| **LEARNING** | `nextReviewDate` > 现在 | **学习中** | 黄色/浅色 |
+| **NEW** | 任何时间 | **新测验** | 灰色 |
+
+- **待复习/待学习**：专门指那些“已经到期、现在该做”的测验。
+- **复习中/学习中**：指该测验已经进入了复习循环，但目前还没到下一次复习的时间点。
 
 #### 数据隔离保证
 - 每个 `quiz_review_status` 记录绑定 `user_id` 和 `quiz_id`
@@ -786,6 +801,99 @@ Anki式间隔重复复习系统已完整实施，包含以下核心功能：
 
 ---
 
-*文档版本: 2.0*
-*更新时间: 2026-02-15*
+## 附录：时间系统大一统方案（2026-02-16 紧急修复）
+
+### 问题背景
+在复习系统运行过程中，发现部分测验（如"世界首都"）的 `nextReviewDate` 被错误地截断为 `00:00:00`，导致这些测验被判定为永久到期，从而被无限次地错误抽取。
+
+### 根因分析
+
+#### 1. 多套时间系统并存
+系统此前混用了 `LocalDate`（天）和 `LocalDateTime`（分秒）两种时间类型：
+- `LocalDate`：`lastReviewDate`, `buriedUntil`
+- `LocalDateTime`：`nextReviewDate`, `createdAt`, `updatedAt`
+
+这种混合使用会导致：
+- 日期加减时产生"消失的 12 小时"或"凌晨 0 点"的跳变
+- 在 Anki 算法计算下一次复习时间时，参考系不一致
+
+#### 2. 数据库字段隐式截断
+即便 Java 代码中正确设置了分秒精度，数据库字段仍可能因以下原因丢失精度：
+- **字段类型固化**：使用 `hibernate.ddl-auto=update` 时，无法自动修改已存在的字段类型。如果 `next_review_date` 最初被识别为 `DATE` 类型，数据库会在写入瞬间强行抹掉时分秒。
+- **序列化丢失**：Jackson 序列化时可能将 `LocalDateTime` 格式化为 `00:00:00`。
+
+### 解决方案
+
+#### 步骤一：统一实体类时间字段
+将所有时间相关字段统一升级为 `LocalDateTime`，并显式指定数据库字段类型为 `DATETIME(6)`：
+
+```java
+// 修改前
+private LocalDate lastReviewDate;
+private LocalDate buriedUntil;
+
+// 修改后
+@Column(name = "last_review_date", columnDefinition = "DATETIME(6)")
+private LocalDateTime lastReviewDate;
+
+@Column(name = "buried_until", columnDefinition = "DATETIME(6)")
+private LocalDateTime buriedUntil;
+```
+
+#### 步骤二：统一 Service 层时间计算
+强制所有时间计算使用统一的时区锚定：
+
+```java
+private static final java.time.ZoneId ZONE_ID = java.time.ZoneId.of("Asia/Shanghai");
+
+// 统一使用
+LocalDateTime now = LocalDateTime.now(ZONE_ID);
+status.setNextReviewDate(now.plusMinutes(10));
+```
+
+#### 步骤三：统一 Repository 查询参数
+将所有 Repository 查询方法的 `LocalDate` 参数改为 `LocalDateTime`：
+
+```java
+// 修改前
+List<QuizReviewStatus> findDueToday(Long userId, LocalDateTime now, LocalDate today);
+
+// 修改后
+List<QuizReviewStatus> findDueToday(Long userId, LocalDateTime now);
+```
+
+#### 步骤四：强制数据库结构刷新
+由于 `ddl-auto=update` 无法自动修改字段类型，需手动执行 DDL 或重启应用：
+
+```sql
+-- 手动刷新字段类型（MySQL 示例）
+ALTER TABLE quiz_review_status 
+MODIFY COLUMN next_review_date DATETIME(6) NOT NULL;
+
+ALTER TABLE quiz_review_status 
+MODIFY COLUMN last_review_date DATETIME(6) NOT NULL;
+
+ALTER TABLE quiz_review_status 
+MODIFY COLUMN buried_until DATETIME(6) NULL;
+```
+
+### 时间精度标准
+
+| 状态 | 时间字段 | 精度要求 | 说明 |
+|------|----------|----------|------|
+| **LEARNING/RELEARNING** | `nextReviewDate` | 秒级 | 学习阶段需精确到分钟/秒 |
+| **REVIEW** | `nextReviewDate` | 天级 | 复习阶段以天为单位 |
+| **所有状态** | `lastReviewDate` | 秒级 | 统一使用 LocalDateTime |
+| **所有状态** | `buriedUntil` | 秒级 | 搁置截止时间需精确 |
+
+### 验收标准
+- [ ] 所有测验的 `nextReviewDate` 包含完整的时分秒精度
+- [ ] 作答后新设置的 `nextReviewDate` 不再出现 `00:00:00`
+- [ ] 复习列表中"待学习"和"学习中"状态区分正确
+- [ ] 提交评级后能正确跳转到下一个测验
+
+---
+
+*文档版本: 2.1*
+*更新时间: 2026-02-16*
 *创建时间: 2026-02-15*

@@ -2,6 +2,8 @@ package com.typingquiz.dto;
 
 import com.typingquiz.entity.ReviewStatus;
 
+import java.time.LocalDateTime;
+
 /**
  * 学习阶段响应DTO
  * 用于返回学习评级后的结果和下次复习安排
@@ -56,6 +58,17 @@ public class LearnResponseDTO {
 
     public void setNewStatus(ReviewStatus newStatus) {
         this.newStatus = newStatus;
+    }
+
+    public void setStatus(String status) {
+        this.newStatus = ReviewStatus.valueOf(status);
+    }
+
+    public LocalDateTime getNextReviewDate() {
+        return null;
+    }
+
+    public void setNextReviewDate(LocalDateTime date) {
     }
 
     public Integer getIntervalDays() {

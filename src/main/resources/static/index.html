@@ -73,9 +73,217 @@
         </div>
     </div>
 
+    <script src="js/api.js?v=20260130-5"></script>
+    <script src="js/review-api.js?v=20260130-5"></script>
     <script src="js/timer.js?v=20260130-5"></script>
     <script src="js/ui-renderer.js?v=20260130-5"></script>
     <script src="js/quiz-controller.js?v=20260130-5"></script>
     <script src="js/main.js?v=20260130-5"></script>
+
+    <!-- 复习评级面板 - 仅复习模式显示 -->
+    <div id="rating-panel" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 24px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 100;">
+        <div style="text-align: center; font-size: 1.1rem; color: #312E81; margin-bottom: 16px;">根据记忆程度选择评级</div>
+        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+            <button class="rating-btn rating-again" onclick="submitRating(1)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%); color: white;">
+                重来
+                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">&lt;10分钟</span>
+            </button>
+            <button class="rating-btn rating-hard" onclick="submitRating(2)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #FDBA74 0%, #F97316 100%); color: white;">
+                困难
+                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">10分钟</span>
+            </button>
+            <button class="rating-btn rating-good" onclick="submitRating(3)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #6EE7B7 0%, #10B981 100%); color: white;">
+                良好
+                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">1天</span>
+            </button>
+            <button class="rating-btn rating-easy" onclick="submitRating(4)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #67E8F9 0%, #06B6D4 100%); color: white;">
+                简单
+                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">4天</span>
+            </button>
+        </div>
+        <div style="text-align: center; margin-top: 12px; font-size: 0.85rem; color: #5c677d;">快捷键: 1/2/3/4 或 空格键选择"良好"</div>
+    </div>
+
+    <!-- 复习完成弹窗 -->
+    <div id="review-completion-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 32px; border-radius: 16px; text-align: center; max-width: 400px;">
+            <div style="font-size: 4rem; margin-bottom: 16px;">🎉</div>
+            <h3 style="font-size: 1.5rem; color: #312E81; margin-bottom: 8px;">复习完成!</h3>
+            <p id="review-completion-message" style="color: #5c677d; margin-bottom: 24px;">今日复习任务已全部完成</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="returnToReviewPage()" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; background: #4F46E5; color: white;">返回复习页</button>
+                <button onclick="continueReview()" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; background: #F3F4F6; color: #312E81;">继续复习</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 复习模式相关变量
+        let isReviewMode = false;
+        let currentQuizStatus = null;
+
+        // 检查是否是复习模式
+        function checkReviewMode() {
+            const params = new URLSearchParams(window.location.search);
+            isReviewMode = params.get('mode') === 'review';
+            if (isReviewMode) {
+                document.body.classList.add('review-mode');
+                loadQuizStatus();
+            }
+        }
+
+        // 加载测验状态
+        async function loadQuizStatus() {
+            const params = new URLSearchParams(window.location.search);
+            const quizId = params.get('id');
+            if (!quizId || !isReviewMode) return;
+            
+            try {
+                const status = await ReviewAPI.getQuizStatus(quizId);
+                currentQuizStatus = status;
+                updateRatingIntervals(status);
+            } catch (error) {
+                console.error('加载测验状态失败:', error);
+            }
+        }
+
+        // 更新评级按钮间隔显示
+        function updateRatingIntervals(status) {
+            const intervals = calculateIntervals(status);
+            document.querySelector('.rating-again span').textContent = intervals[1];
+            document.querySelector('.rating-hard span').textContent = intervals[2];
+            document.querySelector('.rating-good span').textContent = intervals[3];
+            document.querySelector('.rating-easy span').textContent = intervals[4];
+        }
+
+        // 计算间隔
+        function calculateIntervals(status) {
+            const status_type = status.status;
+            const ease = status.easeFactor || 2500;
+            const currentInterval = status.intervalDays || 0;
+            const learningStep = status.learningStep || 0;
+            const MAX_INTERVAL = 365;
+
+            let intervals = {};
+
+            if (status_type === 'NEW' || status_type === 'LEARNING' || status_type === 'RELEARNING') {
+                if (learningStep === 0) {
+                    intervals = { 1: '<10分钟', 2: '<10分钟', 3: '10分钟', 4: '1天' };
+                } else if (learningStep === 1) {
+                    intervals = { 1: '<10分钟', 2: '10分钟', 3: '1小时', 4: '1天' };
+                } else {
+                    intervals = { 1: '<10分钟', 2: '1小时', 3: '1天', 4: '4天' };
+                }
+            } else {
+                intervals[1] = '<10分钟';
+                intervals[2] = formatInterval(Math.min(MAX_INTERVAL, Math.max(1, Math.round(currentInterval * 1.2))));
+                intervals[3] = formatInterval(Math.min(MAX_INTERVAL, Math.max(1, Math.round(currentInterval * ease / 1000))));
+                intervals[4] = formatInterval(Math.min(MAX_INTERVAL, Math.max(1, Math.round(currentInterval * ease / 1000 * 1.3))));
+            }
+
+            return intervals;
+        }
+
+        function formatInterval(days) {
+            if (days < 1) {
+                const hours = Math.round(days * 24);
+                if (hours < 1) return '<1小时';
+                return `${hours}小时`;
+            }
+            return days === 1 ? '1天' : `${days}天`;
+        }
+
+        // 显示评级面板
+        function showRatingPanel() {
+            if (!isReviewMode) return;
+            // 更新评级按钮上的间隔时间
+            if (currentQuizStatus) {
+                updateRatingIntervals(currentQuizStatus);
+            }
+            document.getElementById('rating-panel').style.display = 'block';
+        }
+
+        // 提交评级
+        async function submitRating(rating) {
+            const params = new URLSearchParams(window.location.search);
+            const quizId = params.get('id');
+            const groupId = params.get('groupId');
+            if (!quizId) return;
+
+            try {
+                const status = currentQuizStatus?.status;
+                console.log('提交评级 - 当前状态:', status, '分组:', groupId);
+                let result;
+
+                if (status === 'NEW' || status === 'LEARNING' || status === 'RELEARNING') {
+                    result = await ReviewAPI.submitLearnRating(quizId, rating, groupId);
+                } else {
+                    result = await ReviewAPI.submitReviewRating(quizId, rating, groupId);
+                }
+                console.log('评级结果:', result);
+
+                if (result.nextQuizId) {
+                    console.log('跳转到下一个测验:', result.nextQuizId);
+                    const groupParam = groupId ? `&groupId=${groupId}` : '';
+                    window.location.href = `index.html?id=${result.nextQuizId}&mode=review${groupParam}`;
+                } else if (result.completed) {
+                    console.log('显示完成弹窗');
+                    showReviewCompletionModal();
+                } else {
+                    console.log('没有下一个测验，返回复习页');
+                    returnToReviewPage();
+                }
+            } catch (error) {
+                console.error('提交评级失败:', error);
+                alert('提交失败，请重试');
+            }
+        }
+
+        // 显示完成弹窗
+        function showReviewCompletionModal() {
+            document.getElementById('review-completion-modal').style.display = 'flex';
+        }
+
+        // 返回复习页
+        function returnToReviewPage() {
+            window.location.href = 'review.html';
+        }
+
+        // 继续复习
+        async function continueReview() {
+            const params = new URLSearchParams(window.location.search);
+            const groupId = params.get('groupId');
+            const currentQuizId = params.get('id');
+            
+            try {
+                const next = await ReviewAPI.getNextQuiz(groupId, currentQuizId);
+                if (next && next.quizId) {
+                    const groupParam = groupId ? `&groupId=${groupId}` : '';
+                    window.location.href = `index.html?id=${next.quizId}&mode=review${groupParam}`;
+                } else {
+                    showReviewCompletionModal();
+                }
+            } catch (error) {
+                console.error('获取下一个测验失败:', error);
+            }
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (!isReviewMode) return;
+            if (document.getElementById('rating-panel').style.display !== 'block') return;
+            
+            switch (e.key) {
+                case '1': e.preventDefault(); submitRating(1); break;
+                case '2': e.preventDefault(); submitRating(2); break;
+                case '3':
+                case ' ': e.preventDefault(); submitRating(3); break;
+                case '4': e.preventDefault(); submitRating(4); break;
+            }
+        });
+
+        // 页面加载时检查复习模式
+        checkReviewMode();
+    </script>
 </body>
 </html>

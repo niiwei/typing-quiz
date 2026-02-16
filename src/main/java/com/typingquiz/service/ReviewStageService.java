@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -53,13 +53,10 @@ public class ReviewStageService {
         this.reviewStatusRepository = reviewStatusRepository;
     }
 
+    private static final java.time.ZoneId ZONE_ID = java.time.ZoneId.of("Asia/Shanghai");
+
     /**
      * 提交复习评级
-     *
-     * @param quizId 测验ID
-     * @param userId 用户ID
-     * @param rating 评级：1=重来, 2=困难, 3=良好, 4=简单
-     * @return 复习响应
      */
     public ReviewResponseDTO submitReviewRating(Long quizId, Long userId, int rating) {
         QuizReviewStatus status = reviewStatusRepository.findByQuizIdAndUserId(quizId, userId)
@@ -74,6 +71,7 @@ public class ReviewStageService {
         response.setQuizId(quizId);
         response.setRating(rating);
 
+        LocalDateTime now = LocalDateTime.now(ZONE_ID);
         int oldInterval = status.getIntervalDays();
         int oldEase = status.getEaseFactor();
         int newInterval;
@@ -88,7 +86,7 @@ public class ReviewStageService {
                 status.setIntervalDays(MIN_RELEARN_INTERVAL);
                 // 设置重学第一步的间隔
                 int firstStep = RELEARNING_STEPS_MINUTES.get(0);
-                status.setNextReviewDate(LocalDate.now().plusMinutes(firstStep));
+                status.setNextReviewDate(now.plusMinutes(firstStep));
                 
                 response.setNewStatus(newStatus);
                 response.setIntervalDays(MIN_RELEARN_INTERVAL);
@@ -105,7 +103,7 @@ public class ReviewStageService {
                 
                 status.setIntervalDays(newInterval);
                 status.setEaseFactor(newEase);
-                status.setNextReviewDate(LocalDate.now().plusDays(newInterval));
+                status.setNextReviewDate(now.plusDays(newInterval));
                 
                 response.setIntervalDays(newInterval);
                 response.setMessage("记住但较困难，" + newInterval + "天后复习");
@@ -118,7 +116,7 @@ public class ReviewStageService {
                 newInterval = applyFuzz(newInterval);
                 
                 status.setIntervalDays(newInterval);
-                status.setNextReviewDate(LocalDate.now().plusDays(newInterval));
+                status.setNextReviewDate(now.plusDays(newInterval));
                 
                 response.setIntervalDays(newInterval);
                 response.setMessage("记住，" + newInterval + "天后复习");
@@ -133,7 +131,7 @@ public class ReviewStageService {
                 
                 status.setIntervalDays(newInterval);
                 status.setEaseFactor(newEase);
-                status.setNextReviewDate(LocalDate.now().plusDays(newInterval));
+                status.setNextReviewDate(now.plusDays(newInterval));
                 
                 response.setIntervalDays(newInterval);
                 response.setMessage("记住且轻松，" + newInterval + "天后复习");
@@ -146,7 +144,7 @@ public class ReviewStageService {
 
         // 更新统计
         status.setReviewCount(status.getReviewCount() + 1);
-        status.setLastReviewDate(LocalDate.now());
+        status.setLastReviewDate(now);
         if (rating == 1) {
             status.setLapseCount(status.getLapseCount() + 1);
         }
@@ -175,6 +173,7 @@ public class ReviewStageService {
         response.setQuizId(quizId);
         response.setRating(rating);
 
+        LocalDateTime now = LocalDateTime.now(ZONE_ID);
         int currentStep = status.getLearningStep();
         int totalSteps = RELEARNING_STEPS_MINUTES.size();
 
@@ -182,7 +181,7 @@ public class ReviewStageService {
             case 1: // 重来 - 返回重学第一步
                 status.setLearningStep(0);
                 int firstStep = RELEARNING_STEPS_MINUTES.get(0);
-                status.setNextReviewDate(LocalDate.now().plusMinutes(firstStep));
+                status.setNextReviewDate(now.plusMinutes(firstStep));
                 
                 response.setCompleted(false);
                 response.setMessage("再来一次，" + formatMinutes(firstStep) + "后继续");
@@ -191,7 +190,7 @@ public class ReviewStageService {
 
             case 2: // 困难 - 重复当前步骤
                 int hardDelay = calculateRelearnHardDelay(currentStep);
-                status.setNextReviewDate(LocalDate.now().plusMinutes(hardDelay));
+                status.setNextReviewDate(now.plusMinutes(hardDelay));
                 response.setCompleted(false);
                 response.setMessage("再复习一下，" + formatMinutes(hardDelay) + "后继续");
                 response.setNextIntervalMinutes(hardDelay);
@@ -201,7 +200,7 @@ public class ReviewStageService {
             case 4: // 简单 - 直接毕业
                 if (rating == 4 || currentStep >= totalSteps - 1) {
                     // 完成重学，重新毕业
-                    graduateFromRelearning(status);
+                    graduateFromRelearning(status, now);
                     response.setCompleted(true);
                     response.setNewStatus(ReviewStatus.REVIEW);
                     response.setIntervalDays(status.getIntervalDays());
@@ -211,7 +210,7 @@ public class ReviewStageService {
                     int nextStep = currentStep + 1;
                     status.setLearningStep(nextStep);
                     int nextDelay = RELEARNING_STEPS_MINUTES.get(nextStep);
-                    status.setNextReviewDate(LocalDate.now().plusMinutes(nextDelay));
+                    status.setNextReviewDate(now.plusMinutes(nextDelay));
                     response.setCompleted(false);
                     response.setMessage("很好，" + formatMinutes(nextDelay) + "后继续");
                     response.setNextIntervalMinutes(nextDelay);
@@ -223,7 +222,7 @@ public class ReviewStageService {
         }
 
         status.setReviewCount(status.getReviewCount() + 1);
-        status.setLastReviewDate(LocalDate.now());
+        status.setLastReviewDate(now);
         reviewStatusRepository.save(status);
 
         return response;
@@ -232,7 +231,7 @@ public class ReviewStageService {
     /**
      * 从重学阶段毕业
      */
-    private void graduateFromRelearning(QuizReviewStatus status) {
+    private void graduateFromRelearning(QuizReviewStatus status, LocalDateTime now) {
         int oldInterval = status.getIntervalDays();
         
         // 重学毕业后间隔 = max(最小间隔, 原间隔 * 0.0) = 1天
@@ -242,7 +241,7 @@ public class ReviewStageService {
         status.setStatus(ReviewStatus.REVIEW);
         status.setLearningStep(0);
         status.setIntervalDays(newInterval);
-        status.setNextReviewDate(LocalDate.now().plusDays(newInterval));
+        status.setNextReviewDate(now.plusDays(newInterval));
     }
 
     /**

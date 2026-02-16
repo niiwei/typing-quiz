@@ -8,14 +8,14 @@ const ReviewAPI = {
      * 获取今日复习概览统计
      */
     async getTodaySummary() {
-        return api.get('/review/today-summary');
+        return api.get('/review/today');
     },
 
     /**
      * 获取分组复习摘要列表
      */
     async getGroupSummary() {
-        return api.get('/review/group-summary');
+        return api.get('/review/groups/summary');
     },
 
     /**
@@ -23,32 +23,45 @@ const ReviewAPI = {
      * @param {number} groupId - 分组ID
      */
     async getGroupReviewItems(groupId) {
-        return api.get(`/review/group/${groupId}`);
+        return api.get(`/review/groups/${groupId}/quizzes`);
     },
 
     /**
      * 获取下一个待学习/复习的测验
+     * @param {number} groupId - 分组ID（可选）
+     * @param {number} currentQuizId - 当前正在做的测验ID（可选，用于排除）
      */
-    async getNextQuiz() {
-        return api.get('/review/next');
+    async getNextQuiz(groupId = null, currentQuizId = null) {
+        let url = '/review/next';
+        const params = [];
+        if (groupId) params.push(`groupId=${groupId}`);
+        if (currentQuizId) params.push(`currentQuizId=${currentQuizId}`);
+        if (params.length > 0) url += '?' + params.join('&');
+        return api.get(url);
     },
 
     /**
      * 提交学习评级
      * @param {number} quizId - 测验ID
      * @param {number} rating - 评级 (1=重来, 2=困难, 3=良好, 4=简单)
+     * @param {number} groupId - 分组ID（可选）
      */
-    async submitLearnRating(quizId, rating) {
-        return api.post(`/review/${quizId}/learn`, { rating });
+    async submitLearnRating(quizId, rating, groupId = null) {
+        const body = { rating };
+        if (groupId) body.groupId = parseInt(groupId);
+        return api.post(`/review/${quizId}/learn`, body);
     },
 
     /**
      * 提交复习评级
      * @param {number} quizId - 测验ID
      * @param {number} rating - 评级 (1=重来, 2=困难, 3=良好, 4=简单)
+     * @param {number} groupId - 分组ID（可选）
      */
-    async submitReviewRating(quizId, rating) {
-        return api.post(`/review/${quizId}/review`, { rating });
+    async submitReviewRating(quizId, rating, groupId = null) {
+        const body = { rating };
+        if (groupId) body.groupId = parseInt(groupId);
+        return api.post(`/review/${quizId}/review`, body);
     },
 
     /**

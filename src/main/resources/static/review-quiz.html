@@ -270,10 +270,40 @@
             display: none;
         }
 
-        #rating-panel.visible + .skip-btn {
-            display: block;
+        /* 答案网格 */
+        #answers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            min-height: 100px;
         }
-    </style>
+
+        .answer-cell {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px 12px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+
+        .answer-cell.correct {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+        }
+
+        .answer-cell:hover {
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
 </head>
 <body>
     <!-- 导航栏 -->
@@ -309,8 +339,20 @@
         <span id="learning-step-text">学习阶段 1/3 - 10分钟后再次复习</span>
     </div>
 
+    <!-- 加载提示 -->
+    <div id="loading-indicator" style="padding: 40px; text-align: center; font-size: 1.2rem; color: var(--text);">
+        加载测验中...
+    </div>
+
+    <!-- 错误提示区域 -->
+    <div id="error-display" style="display: none; padding: 40px; text-align: center; background: #fee2e2; border-radius: 12px; margin: 20px; color: #dc2626;">
+        <h2>加载失败</h2>
+        <p id="error-message"></p>
+        <a href="review.html" style="color: var(--primary); text-decoration: underline;">返回复习页面</a>
+    </div>
+
     <!-- 原有的测验容器 -->
-    <div id="quiz-container">
+    <div id="quiz-container" style="display: none;">
         <div id="quiz-header">
             <h1 id="quiz-title">加载中...</h1>
             <p id="quiz-description"></p>
@@ -412,41 +454,65 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', async () => {
-            if (!Auth.isLoggedIn()) {
-                window.location.href = 'login.html';
-                return;
+            try {
+                console.log('Review quiz page initializing...');
+                
+                if (!Auth.isLoggedIn()) {
+                    console.log('Not logged in, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // 获取URL参数
+                const params = new URLSearchParams(window.location.search);
+                currentQuizId = params.get('id');
+                console.log('Current quiz ID:', currentQuizId);
+
+                if (!currentQuizId) {
+                    console.log('No quiz ID, loading next quiz');
+                    await loadNextQuiz();
+                } else {
+                    console.log('Loading quiz:', currentQuizId);
+                    await loadQuiz(parseInt(currentQuizId));
+                }
+
+                // 加载今日进度
+                await loadTodayProgress();
+
+                // 绑定键盘事件
+                document.addEventListener('keydown', handleKeyDown);
+                
+                console.log('Initialization complete');
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>页面加载失败</h2><p>' + error.message + '</p><a href="review.html">返回复习页面</a></div>';
             }
-
-            // 获取URL参数
-            const params = new URLSearchParams(window.location.search);
-            currentQuizId = params.get('id');
-
-            if (!currentQuizId) {
-                // 没有指定测验，获取下一个待复习的
-                await loadNextQuiz();
-            } else {
-                await loadQuiz(parseInt(currentQuizId));
-            }
-
-            // 加载今日进度
-            await loadTodayProgress();
-
-            // 绑定键盘事件
-            document.addEventListener('keydown', handleKeyDown);
         });
 
         // 加载测验
         async function loadQuiz(quizId) {
             try {
+                console.log('Loading quiz:', quizId);
+                
                 const [quiz, status] = await Promise.all([
                     fetch(`/api/quizzes/${quizId}`, {
                         headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
-                    }).then(r => r.json()),
+                    }).then(r => {
+                        if (!r.ok) throw new Error('Quiz API error: ' + r.status);
+                        return r.json();
+                    }),
                     ReviewAPI.getQuizStatus(quizId)
                 ]);
 
+                console.log('Quiz loaded:', quiz);
+                console.log('Status loaded:', status);
+
                 currentQuizId = quizId;
                 currentQuizStatus = status;
+
+                // 隐藏加载提示，显示容器
+                document.getElementById('loading-indicator').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
 
                 renderQuiz(quiz);
                 updateQuizStatusUI(status);
@@ -454,7 +520,9 @@
 
             } catch (error) {
                 console.error('加载测验失败:', error);
-                alert('加载测验失败，请重试');
+                document.getElementById('loading-indicator').style.display = 'none';
+                document.getElementById('error-display').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message;
             }
         }
 
@@ -689,7 +757,7 @@
 
                 if (result.completed) {
                     showCompletionModal();
-                } else if (result.nextQuiz) {
+                } else if (result.nextQuizId) {
                     // 自动进入下一张
                     loadNextQuiz();
                 } else {

@@ -438,6 +438,68 @@ class QuizController {
     }
 
     /**
+     * 渲染填空题（放弃专用）- 未答题显示红色框
+     */
+    renderFillBlankQuizForGiveUp(originallyFilledIndices) {
+        const questionEl = document.getElementById('fill-blank-question');
+        const textEl = document.getElementById('fill-blank-text');
+
+        if (!this.fillBlankQuiz) return;
+
+        // 渲染题目区域
+        questionEl.textContent = '题目: ' + (this.quiz.title || '填空题');
+
+        // 按位置从后往前处理，避免索引偏移问题
+        const blanks = this.fillBlankQuiz.blanks || [];
+        let result = this.fillBlankQuiz.fullText;
+
+        // 按 startIndex 降序排序（从后往前替换）
+        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
+            .sort((a, b) => b.startIndex - a.startIndex);
+
+        sortedBlanks.forEach(item => {
+            const originalIndex = item.originalIndex;
+            // 原本是未填写的（在放弃时需要标记为红色）
+            const wasOriginallyEmpty = !originallyFilledIndices.has(originalIndex);
+            const correctAnswer = item.correctAnswer || '';
+            const comment = item.comment || '';
+
+            // 为放弃场景创建特殊的wrapper样式
+            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
+                'data-mode="giveup" ' +
+                'data-was-empty="' + (wasOriginallyEmpty ? '1' : '0') + '" ' +
+                'data-blank-index="' + originalIndex + '" ' +
+                'data-answer="' + encodeURIComponent(correctAnswer) + '" ' +
+                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
+                'data-comment="' + encodeURIComponent(comment) + '"></span>';
+
+            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
+        });
+
+        // 将换行符替换为带额外间距的 div
+        result = result.replace(/\n/g, '<div class="manual-break"></div>');
+
+        textEl.innerHTML = result;
+        this.replaceFillBlankWrappers(textEl);
+
+        // 为放弃模式的空格添加特殊样式
+        document.querySelectorAll('.fill-blank-wrapper[data-mode="giveup"]').forEach(wrapper => {
+            const wasEmpty = wrapper.getAttribute('data-was-empty') === '1';
+            if (wasEmpty) {
+                // 未答出的显示红色边框
+                wrapper.style.border = '2px solid #ef4444';
+                wrapper.style.backgroundColor = '#fee2e2';
+            } else {
+                // 已答出的显示绿色边框
+                wrapper.style.border = '2px solid #22c55e';
+                wrapper.style.backgroundColor = '#dcfce7';
+            }
+            wrapper.style.borderRadius = '4px';
+            wrapper.style.padding = '2px 6px';
+        });
+    }
+
+    /**
      * 渲染填空题
      */
     renderFillBlankQuiz() {
@@ -894,6 +956,13 @@ class QuizController {
 
         // 显示结果
         UIRenderer.showResults(stats, missedAnswers);
+
+        // 复习模式：显示评级面板
+        if (typeof isReviewMode !== 'undefined' && isReviewMode) {
+            setTimeout(() => {
+                showRatingPanel();
+            }, 500);
+        }
 
         // 分组模式：显示分组结果汇总
         if (this.groupMode) {

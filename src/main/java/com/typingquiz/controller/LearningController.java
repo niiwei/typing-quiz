@@ -2,16 +2,15 @@ package com.typingquiz.controller;
 
 import com.typingquiz.dto.LearnResponseDTO;
 import com.typingquiz.entity.QuizReviewStatus;
-import com.typingquiz.entity.User;
 import com.typingquiz.service.LearningService;
 import com.typingquiz.service.QuizReviewService;
+import com.typingquiz.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,15 +34,30 @@ public class LearningController {
     }
 
     /**
+     * 获取当前用户ID
+     * 从Authorization头中解析JWT Token
+     */
+    private Long getCurrentUserId(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = authHeader.substring(7);
+        if (!JwtUtil.validateToken(token)) {
+            return null;
+        }
+        return JwtUtil.getUserIdFromToken(token);
+    }
+
+    /**
      * 开始学习新测验
      * 将状态从NEW转为LEARNING
      */
     @PostMapping("/start/{quizId}")
     public ResponseEntity<LearnResponseDTO> startLearning(
             @PathVariable Long quizId,
-            HttpSession session) {
+            @RequestHeader("Authorization") String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -72,9 +86,9 @@ public class LearningController {
     public ResponseEntity<LearnResponseDTO> submitRating(
             @PathVariable Long quizId,
             @RequestBody Map<String, Integer> request,
-            HttpSession session) {
+            @RequestHeader("Authorization") String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -106,9 +120,9 @@ public class LearningController {
     @GetMapping("/{quizId}/status")
     public ResponseEntity<Map<String, Object>> getLearningStatus(
             @PathVariable Long quizId,
-            HttpSession session) {
+            @RequestHeader("Authorization") String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
@@ -136,15 +150,15 @@ public class LearningController {
     @PostMapping("/{quizId}/skip")
     public ResponseEntity<Map<String, Object>> skipCard(
             @PathVariable Long quizId,
-            HttpSession session) {
+            @RequestHeader("Authorization") String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).build();
         }
 
         try {
-            quizReviewService.buryCard(quizId, userId, 1);
+            quizReviewService.buryQuiz(quizId, userId, 1);
             
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -155,11 +169,6 @@ public class LearningController {
             logger.error("跳过测验失败: quizId={}, userId={}", quizId, userId, e);
             return ResponseEntity.badRequest().body(createErrorMap(e.getMessage()));
         }
-    }
-
-    private Long getCurrentUserId(HttpSession session) {
-        User user = (User) session.getAttribute("currentUser");
-        return user != null ? user.getId() : null;
     }
 
     private LearnResponseDTO createErrorResponse(String message) {

@@ -1,5 +1,16 @@
 @echo off
 
+:: 关闭之前可能占用端口的 Java 进程
+echo 正在检查并关闭之前的 Java 进程...
+taskkill /F /IM java.exe 2>nul
+if %errorlevel% == 0 (
+    echo 已关闭之前的 Java 进程
+    timeout /t 2 /nobreak >nul
+) else (
+    echo 没有需要关闭的 Java 进程
+)
+echo.
+
 :: 设置 MySQL 连接地址（本地开发连云服务器）
 set MYSQL_HOST=47.102.147.127
 

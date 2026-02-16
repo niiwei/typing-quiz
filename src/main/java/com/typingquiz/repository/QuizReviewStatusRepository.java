@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,16 +35,16 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     List<QuizReviewStatus> findByUserIdAndStatus(Long userId, ReviewStatus status);
 
     /**
-     * 查询用户今日到期复习列表
-     * 条件：状态为REVIEW或RELEARNING，下次复习日期<=今天，未被搁置，未暂停
+     * 查询用户到期复习列表（包含REVIEW、RELEARNING、LEARNING，精确到时间）
+     * 条件：状态为REVIEW、RELEARNING或LEARNING，下次复习日期时间<=当前时间，未被搁置
      */
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "WHERE qrs.userId = :userId " +
-           "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING) " +
-           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :today) " +
-           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil < :today) " +
+           "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING, com.typingquiz.entity.ReviewStatus.LEARNING) " +
+           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
+           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
            "ORDER BY qrs.nextReviewDate ASC")
-    List<QuizReviewStatus> findDueToday(@Param("userId") Long userId, @Param("today") LocalDate today);
+    List<QuizReviewStatus> findDueToday(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     /**
      * 查询用户新测验列表（未学习）
@@ -60,14 +60,55 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     List<Object[]> countByStatus(@Param("userId") Long userId);
 
     /**
-     * 统计用户今日到期复习数量
+     * 统计用户到期复习数量（包含REVIEW、RELEARNING、LEARNING，精确到时间）
      */
     @Query("SELECT COUNT(qrs) FROM QuizReviewStatus qrs " +
            "WHERE qrs.userId = :userId " +
+           "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING, com.typingquiz.entity.ReviewStatus.LEARNING) " +
+           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
+           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now)")
+    Long countDueToday(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    /**
+     * 查询用户今日到期学习中测验（精确到时间）
+     */
+    @Query("SELECT qrs FROM QuizReviewStatus qrs " +
+           "WHERE qrs.userId = :userId " +
+           "AND qrs.status = com.typingquiz.entity.ReviewStatus.LEARNING " +
+           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
+           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
+           "ORDER BY qrs.nextReviewDate ASC")
+    List<QuizReviewStatus> findLearningDue(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    /**
+     * 查询用户到期复习测验（不包括学习中，精确到时间）
+     */
+    @Query("SELECT qrs FROM QuizReviewStatus qrs " +
+           "WHERE qrs.userId = :userId " +
            "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING) " +
-           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :today) " +
-           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil < :today)")
-    Long countDueToday(@Param("userId") Long userId, @Param("today") LocalDate today);
+           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
+           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
+           "ORDER BY qrs.nextReviewDate ASC")
+    List<QuizReviewStatus> findReviewDue(@Param("userId") Long userId, @Param("now") LocalDateTime now);
+
+    /**
+     * 查询用户新测验（按创建时间排序）
+     */
+    @Query("SELECT qrs FROM QuizReviewStatus qrs " +
+           "WHERE qrs.userId = :userId " +
+           "AND qrs.status = com.typingquiz.entity.ReviewStatus.NEW " +
+           "ORDER BY qrs.createdAt ASC")
+    List<QuizReviewStatus> findNewCards(@Param("userId") Long userId);
+
+    /**
+     * 统计用户到期学习中测验数量（精确到时间）
+     */
+    @Query("SELECT COUNT(qrs) FROM QuizReviewStatus qrs " +
+           "WHERE qrs.userId = :userId " +
+           "AND qrs.status = com.typingquiz.entity.ReviewStatus.LEARNING " +
+           "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
+           "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now)")
+    Long countLearningDue(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
     /**
      * 统计用户新测验数量
@@ -84,8 +125,8 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
            "GROUP BY qrs.nextReviewDate " +
            "ORDER BY qrs.nextReviewDate")
     List<Object[]> findForecast(@Param("userId") Long userId, 
-                                @Param("startDate") LocalDate startDate, 
-                                @Param("endDate") LocalDate endDate);
+                                @Param("startDate") LocalDateTime startDate, 
+                                @Param("endDate") LocalDateTime endDate);
 
     /**
      * 检查用户是否有指定测验的复习状态
@@ -96,13 +137,10 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
      * 删除指定测验的复习状态（用于测验删除时清理）
      */
     void deleteByQuizId(Long quizId);
-    /**
-     * 根据状态查询用户的复习状态
-     */
-    List<QuizReviewStatus> findByUserIdAndStatus(Long userId, ReviewStatus status);
 
     /**
      * 查询用户搁置的卡片
      */
     @Query("SELECT q FROM QuizReviewStatus q WHERE q.userId = ?1 AND q.buriedUntil IS NOT NULL AND q.buriedUntil > ?2")
-    List<QuizReviewStatus> findBuriedCards(Long userId, LocalDate today);
+    List<QuizReviewStatus> findBuriedCards(Long userId, LocalDateTime now);
+}

@@ -1,7 +1,6 @@
 package com.typingquiz.entity;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -19,6 +18,9 @@ import java.time.LocalDateTime;
            @Index(name = "idx_user_status", columnList = "user_id, status")
        })
 public class QuizReviewStatus {
+
+    @Transient
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(QuizReviewStatus.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,16 +64,16 @@ public class QuizReviewStatus {
     private Integer easeFactor = 2500;
 
     /**
-     * 下次复习日期
+     * 下次复习日期时间（精确到秒，用于学习和复习阶段）
      */
-    @Column(name = "next_review_date")
-    private LocalDate nextReviewDate;
+    @Column(name = "next_review_date", columnDefinition = "DATETIME(6)")
+    private LocalDateTime nextReviewDate;
 
     /**
-     * 上次复习日期
+     * 上次复习日期时间
      */
-    @Column(name = "last_review_date")
-    private LocalDate lastReviewDate;
+    @Column(name = "last_review_date", columnDefinition = "DATETIME(6)")
+    private LocalDateTime lastReviewDate;
 
     /**
      * 累计复习次数
@@ -92,11 +94,11 @@ public class QuizReviewStatus {
     private Integer learningStep = 0;
 
     /**
-     * 搁置截止日期（临时推迟复习）
+     * 搁置截止日期时间（临时推迟复习）
      * null表示未搁置
      */
-    @Column(name = "buried_until")
-    private LocalDate buriedUntil;
+    @Column(name = "buried_until", columnDefinition = "DATETIME(6)")
+    private LocalDateTime buriedUntil;
 
     /**
      * 创建时间
@@ -140,23 +142,61 @@ public class QuizReviewStatus {
     // 业务方法
 
     /**
-     * 检查卡片是否已被搁置到今天之后
+     * 检查卡片是否已被搁置到当前时间之后
      */
     public boolean isBuried() {
         if (buriedUntil == null) {
             return false;
         }
-        return !buriedUntil.isBefore(LocalDate.now());
+        return buriedUntil.isAfter(LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai")));
     }
 
     /**
      * 检查卡片今天是否需要复习
      */
-    public boolean isDueToday() {
+    public boolean isDueForReview() {
         if (status != ReviewStatus.REVIEW || isBuried() || status == ReviewStatus.SUSPENDED) {
             return false;
         }
-        return nextReviewDate != null && !nextReviewDate.isAfter(LocalDate.now());
+        return nextReviewDate != null && !nextReviewDate.isAfter(LocalDateTime.now());
+    }
+
+    /**
+     * 核心准入判定：检查该测验目前是否对用户“可访问”
+     */
+    public boolean isUserAccessible() {
+        if (status == ReviewStatus.SUSPENDED) {
+            return false;
+        }
+        
+        // 1. 检查是否被搁置
+        if (isBuried()) {
+            return false;
+        }
+
+        // 2. 检查脏数据屏蔽
+        if (intervalDays != null && intervalDays >= 36500) {
+            return false;
+        }
+
+        // 3. 状态判定
+        if (status == ReviewStatus.NEW) {
+            return true;
+        }
+
+        // 4. 时间判定（增加安全缓冲垫）
+        // 强制使用北京时间，并要求当前时间必须超过下次复习时间至少 1 秒
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai"));
+        
+        // 特殊防御：如果下次复习时间刚好是凌晨 0 点且处于学习阶段，通常意味着数据截断损坏
+        if (status == ReviewStatus.LEARNING && nextReviewDate != null && 
+            nextReviewDate.getHour() == 0 && nextReviewDate.getMinute() == 0 && nextReviewDate.getSecond() == 0) {
+            return false;
+        }
+
+        boolean accessible = nextReviewDate == null || now.isAfter(nextReviewDate.plusSeconds(1));
+        
+        return accessible;
     }
 
     /**
@@ -215,19 +255,19 @@ public class QuizReviewStatus {
         this.easeFactor = easeFactor;
     }
 
-    public LocalDate getNextReviewDate() {
+    public LocalDateTime getNextReviewDate() {
         return nextReviewDate;
     }
 
-    public void setNextReviewDate(LocalDate nextReviewDate) {
+    public void setNextReviewDate(LocalDateTime nextReviewDate) {
         this.nextReviewDate = nextReviewDate;
     }
 
-    public LocalDate getLastReviewDate() {
+    public LocalDateTime getLastReviewDate() {
         return lastReviewDate;
     }
 
-    public void setLastReviewDate(LocalDate lastReviewDate) {
+    public void setLastReviewDate(LocalDateTime lastReviewDate) {
         this.lastReviewDate = lastReviewDate;
     }
 
@@ -255,11 +295,11 @@ public class QuizReviewStatus {
         this.learningStep = learningStep;
     }
 
-    public LocalDate getBuriedUntil() {
+    public LocalDateTime getBuriedUntil() {
         return buriedUntil;
     }
 
-    public void setBuriedUntil(LocalDate buriedUntil) {
+    public void setBuriedUntil(LocalDateTime buriedUntil) {
         this.buriedUntil = buriedUntil;
     }
 

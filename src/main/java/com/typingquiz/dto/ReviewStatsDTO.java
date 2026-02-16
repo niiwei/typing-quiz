@@ -1,6 +1,5 @@
 package com.typingquiz.dto;
 
-import lombok.Data;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -8,7 +7,6 @@ import java.util.Map;
 /**
  * 复习统计数据传输对象
  */
-@Data
 public class ReviewStatsDTO {
 
     // 卡片统计
@@ -42,22 +40,81 @@ public class ReviewStatsDTO {
     // 复习历史（最近30天）
     private List<DailyReviewHistory> reviewHistory;
 
+    // Getters and Setters
+    public int getTotalCards() { return totalCards; }
+    public void setTotalCards(int totalCards) { this.totalCards = totalCards; }
+
+    public int getNewCards() { return newCards; }
+    public void setNewCards(int newCards) { this.newCards = newCards; }
+
+    public int getLearningCards() { return learningCards; }
+    public void setLearningCards(int learningCards) { this.learningCards = learningCards; }
+
+    public int getReviewCards() { return reviewCards; }
+    public void setReviewCards(int reviewCards) { this.reviewCards = reviewCards; }
+
+    public int getRelearningCards() { return relearningCards; }
+    public void setRelearningCards(int relearningCards) { this.relearningCards = relearningCards; }
+
+    public int getSuspendedCards() { return suspendedCards; }
+    public void setSuspendedCards(int suspendedCards) { this.suspendedCards = suspendedCards; }
+
+    public int getDueToday() { return dueToday; }
+    public void setDueToday(int dueToday) { this.dueToday = dueToday; }
+
+    public int getTotalReviewCount() { return totalReviewCount; }
+    public void setTotalReviewCount(int totalReviewCount) { this.totalReviewCount = totalReviewCount; }
+
+    public int getTotalLapseCount() { return totalLapseCount; }
+    public void setTotalLapseCount(int totalLapseCount) { this.totalLapseCount = totalLapseCount; }
+
+    public double getAverageEaseFactor() { return averageEaseFactor; }
+    public void setAverageEaseFactor(double averageEaseFactor) { this.averageEaseFactor = averageEaseFactor; }
+
+    public int getStreakDays() { return streakDays; }
+    public void setStreakDays(int streakDays) { this.streakDays = streakDays; }
+
+    public List<DailyForecast> getForecast() { return forecast; }
+    public void setForecast(List<DailyForecast> forecast) { this.forecast = forecast; }
+
+    public Map<String, Integer> getIntervalDistribution() { return intervalDistribution; }
+    public void setIntervalDistribution(Map<String, Integer> intervalDistribution) { this.intervalDistribution = intervalDistribution; }
+
+    public Map<String, Integer> getEaseDistribution() { return easeDistribution; }
+    public void setEaseDistribution(Map<String, Integer> easeDistribution) { this.easeDistribution = easeDistribution; }
+
+    public List<DailyReviewHistory> getReviewHistory() { return reviewHistory; }
+    public void setReviewHistory(List<DailyReviewHistory> reviewHistory) { this.reviewHistory = reviewHistory; }
+
     /**
      * 每日预测数据
      */
-    @Data
     public static class DailyForecast {
         private LocalDate date;
         private int count;
+
+        public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
+
+        public int getCount() { return count; }
+        public void setCount(int count) { this.count = count; }
     }
 
     /**
      * 每日复习历史记录
      */
-    @Data
     public static class DailyReviewHistory {
         private LocalDate date;
-        private int reviewedCount;   // 当日复习数量
-        private int correctCount;    // 当日正确数量（用于自动评级功能）
+        private int reviewedCount;
+        private int correctCount;
+
+        public LocalDate getDate() { return date; }
+        public void setDate(LocalDate date) { this.date = date; }
+
+        public int getReviewedCount() { return reviewedCount; }
+        public void setReviewedCount(int reviewedCount) { this.reviewedCount = reviewedCount; }
+
+        public int getCorrectCount() { return correctCount; }
+        public void setCorrectCount(int correctCount) { this.correctCount = correctCount; }
     }
 }

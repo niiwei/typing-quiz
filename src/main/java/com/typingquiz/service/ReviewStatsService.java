@@ -4,10 +4,11 @@ import com.typingquiz.dto.ReviewStatsDTO;
 import com.typingquiz.entity.QuizReviewStatus;
 import com.typingquiz.entity.ReviewStatus;
 import com.typingquiz.repository.QuizReviewStatusRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,10 +17,14 @@ import java.util.stream.Collectors;
  * 提供复习相关的统计数据和图表数据
  */
 @Service
-@RequiredArgsConstructor
 public class ReviewStatsService {
 
     private final QuizReviewStatusRepository reviewStatusRepository;
+
+    @Autowired
+    public ReviewStatsService(QuizReviewStatusRepository reviewStatusRepository) {
+        this.reviewStatusRepository = reviewStatusRepository;
+    }
 
     /**
      * 获取用户复习统计概览
@@ -41,9 +46,9 @@ public class ReviewStatsService {
         stats.setSuspendedCards(statusCounts.getOrDefault(ReviewStatus.SUSPENDED, 0L).intValue());
 
         // 今日到期数量
-        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         long dueToday = allStatus.stream()
-                .filter(s -> s.getNextReviewDate() != null && !s.getNextReviewDate().isAfter(today))
+                .filter(s -> s.getNextReviewDate() != null && !s.getNextReviewDate().isAfter(now))
                 .filter(s -> s.getStatus() != ReviewStatus.SUSPENDED)
                 .count();
         stats.setDueToday((int) dueToday);
@@ -83,9 +88,10 @@ public class ReviewStatsService {
 
         for (int i = 0; i < days; i++) {
             LocalDate date = today.plusDays(i);
+            LocalDateTime dayEnd = date.plusDays(1).atStartOfDay();
             long count = allStatus.stream()
                     .filter(s -> s.getNextReviewDate() != null)
-                    .filter(s -> s.getNextReviewDate().equals(date))
+                    .filter(s -> !s.getNextReviewDate().isAfter(dayEnd))
                     .filter(s -> s.getStatus() != ReviewStatus.SUSPENDED)
                     .count();
 

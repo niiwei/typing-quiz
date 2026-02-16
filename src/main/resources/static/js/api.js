@@ -22,6 +22,20 @@ const api = {
 
         try {
             const response = await fetch(url, options);
+            
+            // Handle 401 Unauthorized
+            if (response.status === 401) {
+                console.error('Session expired or not logged in');
+                Auth.logout();
+                throw new Error('Unauthorized: Please login again');
+            }
+            
+            // Check if response is empty
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error(`Invalid response format: ${response.status}`);
+            }
+            
             return await response.json();
         } catch (error) {
             console.error('API request failed:', error);

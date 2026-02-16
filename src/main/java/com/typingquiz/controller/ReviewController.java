@@ -1,24 +1,26 @@
 package com.typingquiz.controller;
 
 import com.typingquiz.dto.GroupReviewDTO;
+import com.typingquiz.dto.LearnResponseDTO;
 import com.typingquiz.dto.QuizReviewItemDTO;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizReviewStatus;
 import com.typingquiz.entity.ReviewStatus;
-import com.typingquiz.entity.User;
 import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.QuizRepository;
+import com.typingquiz.repository.QuizReviewStatusRepository;
+import com.typingquiz.service.LearningService;
 import com.typingquiz.service.QuizReviewService;
 import com.typingquiz.service.ReviewStatsService;
+import com.typingquiz.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,16 +44,22 @@ public class ReviewController {
     private final QuizGroupRepository quizGroupRepository;
     private final QuizRepository quizRepository;
     private final ReviewStatsService reviewStatsService;
+    private final QuizReviewStatusRepository reviewStatusRepository;
+    private final LearningService learningService;
 
     @Autowired
     public ReviewController(QuizReviewService quizReviewService,
                            QuizGroupRepository quizGroupRepository,
                            QuizRepository quizRepository,
-                           ReviewStatsService reviewStatsService) {
+                           ReviewStatsService reviewStatsService,
+                           QuizReviewStatusRepository reviewStatusRepository,
+                           LearningService learningService) {
         this.quizReviewService = quizReviewService;
         this.quizGroupRepository = quizGroupRepository;
         this.quizRepository = quizRepository;
         this.reviewStatsService = reviewStatsService;
+        this.reviewStatusRepository = reviewStatusRepository;
+        this.learningService = learningService;
     }
 
     /**
@@ -59,10 +67,11 @@ public class ReviewController {
      * 用于首页显示各分组的新测验/复习数量角标
      */
     @GetMapping("/groups/summary")
-    public ResponseEntity<List<GroupReviewDTO>> getGroupReviewSummary(HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    public ResponseEntity<?> getGroupReviewSummary(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("error", "未登录", "message", "请先登录"));
         }
 
         try {
@@ -86,28 +95,30 @@ public class ReviewController {
                 int newCount = 0;
                 int learningCount = 0;
                 int reviewCount = 0;
+                int relearningCount = 0;
                 int dueTodayCount = 0;
-                LocalDate today = LocalDate.now();
+                LocalDateTime today = LocalDateTime.now();
                 
                 for (QuizReviewStatus status : allStatuses) {
                     if (groupQuizIds.contains(status.getQuizId())) {
-                        switch (status.getStatus()) {
-                            case NEW:
-                                newCount++;
-                                break;
-                            case LEARNING:
-                                learningCount++;
-                                break;
-                            case REVIEW:
-                            case RELEARNING:
-                                reviewCount++;
-                                // 检查是否今日到期
-                                if (status.getNextReviewDate() != null 
-                                        && !status.getNextReviewDate().isAfter(today)
-                                        && !status.isBuried()) {
+                        // 使用统一的准入逻辑进行计数
+                        if (status.isUserAccessible()) {
+                            switch (status.getStatus()) {
+                                case NEW:
+                                    newCount++;
+                                    break;
+                                case LEARNING:
+                                    learningCount++;
+                                    break;
+                                case REVIEW:
+                                    reviewCount++;
                                     dueTodayCount++;
-                                }
-                                break;
+                                    break;
+                                case RELEARNING:
+                                    relearningCount++;
+                                    dueTodayCount++;
+                                    break;
+                            }
                         }
                     }
                 }
@@ -115,8 +126,9 @@ public class ReviewController {
                 dto.setNewCount(newCount);
                 dto.setLearningCount(learningCount);
                 dto.setReviewCount(reviewCount);
+                dto.setRelearningCount(relearningCount);
                 dto.setDueTodayCount(dueTodayCount);
-                dto.setExpandable(newCount + learningCount + reviewCount > 0);
+                dto.setExpandable(newCount + learningCount + reviewCount + relearningCount > 0);
                 
                 return dto;
             }).collect(Collectors.toList());
@@ -133,14 +145,14 @@ public class ReviewController {
      * 用于展开分组后显示测验详情
      */
     @GetMapping("/groups/{groupId}/quizzes")
-    public ResponseEntity<List<QuizReviewItemDTO>> getGroupQuizzes(
+    public ResponseEntity<?> getGroupQuizzes(
             @PathVariable Long groupId,
             @RequestParam(required = false) ReviewStatus status,
-            HttpSession session) {
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("error", "未登录", "message", "请先登录"));
         }
 
         try {
@@ -156,7 +168,7 @@ public class ReviewController {
             
             // 获取这些测验的复习状态
             List<QuizReviewItemDTO> result = new ArrayList<>();
-            LocalDate today = LocalDate.now();
+            LocalDateTime today = LocalDateTime.now();
             
             for (Quiz quiz : quizzes) {
                 QuizReviewStatus reviewStatus = quizReviewService.getUserReviewStatuses(userId)
@@ -165,8 +177,9 @@ public class ReviewController {
                         .findFirst()
                         .orElse(null);
                 
+                // 如果没有复习状态，自动创建 NEW 状态
                 if (reviewStatus == null) {
-                    continue; // 跳过没有复习状态的测验
+                    reviewStatus = quizReviewService.initializeQuizStatus(quiz.getId(), userId);
                 }
                 
                 // 如果指定了状态过滤
@@ -180,8 +193,8 @@ public class ReviewController {
             
             // 排序：今日到期优先，然后是新测验，再是学习中，最后是其他
             result.sort((a, b) -> {
-                if (a.isOverdue() && !b.isOverdue()) return -1;
-                if (!a.isOverdue() && b.isOverdue()) return 1;
+                if (a.isDue() && !b.isDue()) return -1;
+                if (!a.isDue() && b.isDue()) return 1;
                 return Integer.compare(getStatusPriority(a.getStatus()), getStatusPriority(b.getStatus()));
             });
             
@@ -196,10 +209,11 @@ public class ReviewController {
      * 获取今日复习总览
      */
     @GetMapping("/today")
-    public ResponseEntity<Map<String, Object>> getTodayOverview(HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    public ResponseEntity<Map<String, Object>> getTodayOverview(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("error", "未登录", "message", "请先登录"));
         }
 
         try {
@@ -227,86 +241,57 @@ public class ReviewController {
     @GetMapping("/next")
     public ResponseEntity<Map<String, Object>> getNextQuiz(
             @RequestParam(required = false) Long groupId,
-            HttpSession session) {
+            @RequestParam(required = false) Long currentQuizId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
-        Long userId = getCurrentUserId(session);
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(401).body(Map.of("error", "未登录", "message", "请先登录"));
         }
 
         try {
-            // 获取今日到期的测验
-            List<QuizReviewStatus> dueToday = quizReviewService.getDueToday(userId);
+            // 使用 Anki 队列顺序获取下一个测验
+            Map<String, Object> nextQuiz = getNextQuizForUser(userId, groupId, currentQuizId);
             
-            // 如果有指定分组，过滤
-            if (groupId != null) {
+            // 诊断逻辑：如果用户请求了诊断信息（可以通过 query 参数触发）
+            // 或者我们可以默认在 nextQuiz 为空时，返回该分组内第一个未准入测验的状态
+            if (nextQuiz == null && groupId != null) {
+                Map<String, Object> diagResult = new HashMap<>();
+                diagResult.put("message", "该分组暂无待复习测验");
+                
+                // 尝试找出一个“准入失败”的测验作为诊断样例
                 QuizGroup group = quizGroupRepository.findById(groupId).orElse(null);
                 if (group != null) {
-                    List<Long> groupQuizIds = group.getQuizzes().stream()
-                            .map(Quiz::getId)
-                            .collect(Collectors.toList());
-                    dueToday = dueToday.stream()
-                            .filter(s -> groupQuizIds.contains(s.getQuizId()))
-                            .collect(Collectors.toList());
-                }
-            }
-            
-            // 如果没有今日到期的，找新测验
-            if (dueToday.isEmpty()) {
-                List<QuizReviewStatus> newCards = quizReviewService.getUserReviewStatuses(userId)
-                        .stream()
-                        .filter(s -> s.getStatus() == ReviewStatus.NEW)
-                        .collect(Collectors.toList());
-                
-                if (groupId != null) {
-                    QuizGroup group = quizGroupRepository.findById(groupId).orElse(null);
-                    if (group != null) {
-                        List<Long> groupQuizIds = group.getQuizzes().stream()
-                                .map(Quiz::getId)
-                                .collect(Collectors.toList());
-                        newCards = newCards.stream()
-                                .filter(s -> groupQuizIds.contains(s.getQuizId()))
-                                .collect(Collectors.toList());
+                    List<Long> ids = group.getQuizzes().stream().map(Quiz::getId).collect(Collectors.toList());
+                    List<QuizReviewStatus> all = quizReviewService.getUserReviewStatuses(userId);
+                    QuizReviewStatus sample = all.stream().filter(s -> ids.contains(s.getQuizId())).findFirst().orElse(null);
+                    if (sample != null) {
+                        Map<String, Object> debug = new HashMap<>();
+                        debug.put("quizId", sample.getQuizId());
+                        debug.put("status", sample.getStatus());
+                        debug.put("nextReviewDate", sample.getNextReviewDate());
+                        debug.put("isBuried", sample.isBuried());
+                        debug.put("intervalDays", sample.getIntervalDays());
+                        debug.put("serverTime", LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai")));
+                        diagResult.put("debugInfo", debug);
                     }
                 }
-                
-                if (!newCards.isEmpty()) {
-                    QuizReviewStatus next = newCards.get(0);
-                    Quiz quiz = quizRepository.findById(next.getQuizId()).orElse(null);
-                    
-                    Map<String, Object> result = new HashMap<>();
-                    result.put("quizId", next.getQuizId());
-                    result.put("quizTitle", quiz != null ? quiz.getTitle() : "未知");
-                    result.put("status", next.getStatus());
-                    result.put("type", "NEW");
-                    
-                    return ResponseEntity.ok(result);
-                }
-            } else {
-                // 返回第一个今日到期的
-                QuizReviewStatus next = dueToday.get(0);
-                Quiz quiz = quizRepository.findById(next.getQuizId()).orElse(null);
-                
-                Map<String, Object> result = new HashMap<>();
-                result.put("quizId", next.getQuizId());
-                result.put("quizTitle", quiz != null ? quiz.getTitle() : "未知");
-                result.put("status", next.getStatus());
-                result.put("type", next.getStatus() == ReviewStatus.RELEARNING ? "RELEARNING" : "REVIEW");
-                
-                return ResponseEntity.ok(result);
+                return ResponseEntity.ok(diagResult);
             }
             
-            // 没有可学习的
-            Map<String, Object> emptyResult = new HashMap<>();
-            emptyResult.put("message", "今天没有待复习的测验");
-            return ResponseEntity.ok(emptyResult);
+            if (nextQuiz != null) {
+                // 注入当前的服务器诊断时间
+                nextQuiz.put("debugServerTime", LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai")).toString());
+            }
+            
+            return ResponseEntity.ok(nextQuiz);
         } catch (Exception e) {
             logger.error("获取下一个测验失败: userId={}, groupId={}", userId, groupId, e);
             return ResponseEntity.badRequest().build();
         }
     }
 
-    private QuizReviewItemDTO convertToItemDTO(Quiz quiz, QuizReviewStatus status, LocalDate today) {
+    private QuizReviewItemDTO convertToItemDTO(Quiz quiz, QuizReviewStatus status, LocalDateTime now) {
         QuizReviewItemDTO dto = new QuizReviewItemDTO();
         dto.setQuizId(quiz.getId());
         dto.setQuizTitle(quiz.getTitle());
@@ -323,10 +308,13 @@ public class ReviewController {
         dto.setBuried(status.isBuried());
         dto.setBuriedUntil(status.getBuriedUntil());
         
-        // 判断是否逾期
-        if (status.getNextReviewDate() != null && status.getStatus() == ReviewStatus.REVIEW) {
-            dto.setOverdue(status.getNextReviewDate().isBefore(today));
-        }
+        // 判定是否到期：必须是非搁置且 (下次复习时间为空 或 下次复习时间已过)
+        // 额外保护：如果间隔天数异常大（>36500天），即使数据库查出来了，也判定为未到期（防止脏数据）
+        boolean isDue = !status.isBuried() && 
+                        (status.getNextReviewDate() == null || !status.getNextReviewDate().isAfter(now)) &&
+                        (status.getIntervalDays() == null || status.getIntervalDays() < 36500);
+        
+        dto.setDue(isDue);
         
         return dto;
     }
@@ -335,8 +323,9 @@ public class ReviewController {
      * 获取复习统计数据
      */
     @GetMapping("/stats")
-    public ResponseEntity<?> getReviewStats(HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    public ResponseEntity<?> getReviewStats(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).body("未登录");
         }
@@ -353,190 +342,215 @@ public class ReviewController {
     }
 
     /**
-     * 搁置测验（推迟复习）
+     * 提交学习评级（新测验/学习阶段/重新学习阶段）
      */
-    @PostMapping("/{quizId}/bury")
-    public ResponseEntity<?> buryQuiz(@PathVariable Long quizId,
-                                      @RequestBody(required = false) Map<String, Integer> body,
-                                      HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    @PostMapping("/{quizId}/learn")
+    public ResponseEntity<?> submitLearnRating(
+            @PathVariable Long quizId,
+            @RequestBody Map<String, Integer> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).body("未登录");
         }
 
+        Integer rating = request.get("rating");
+        if (rating == null || rating < 1 || rating > 4) {
+            return ResponseEntity.badRequest().body("评级必须在1-4之间");
+        }
+
         try {
-            int days = body != null ? body.getOrDefault("days", 1) : 1;
-            quizReviewService.buryCard(quizId, userId, days);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "已搁置" + days + "天"
-            ));
+            LearnResponseDTO response = learningService.submitLearningRating(quizId, userId, rating);
+            
+            // 获取分组ID（如果有）
+            Integer groupIdInt = request.get("groupId");
+            Long groupId = groupIdInt != null ? groupIdInt.longValue() : null;
+            
+            // 获取下一个测验（无论当前是否完成）
+            // 延迟 500ms，确保数据库事务已完全提交且状态已刷新
+            try { Thread.sleep(500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            Map<String, Object> nextQuiz = getNextQuizForUser(userId, groupId, quizId);
+            if (nextQuiz != null && nextQuiz.containsKey("quizId")) {
+                response.setNextQuizId((Long) nextQuiz.get("quizId"));
+                response.setNextQuizTitle((String) nextQuiz.get("quizTitle"));
+            }
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("搁置测验失败", e);
-            return ResponseEntity.badRequest().body("搁置失败: " + e.getMessage());
+            logger.error("提交学习评级失败: quizId={}, userId={}, rating={}", quizId, userId, rating, e);
+            return ResponseEntity.badRequest().body("提交失败: " + e.getMessage());
         }
     }
 
     /**
-     * 暂停测验
+     * 提交复习评级（复习阶段）
      */
-    @PostMapping("/{quizId}/suspend")
-    public ResponseEntity<?> suspendQuiz(@PathVariable Long quizId, HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    @PostMapping("/{quizId}/review")
+    public ResponseEntity<?> submitReviewRating(
+            @PathVariable Long quizId,
+            @RequestBody Map<String, Integer> request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).body("未登录");
         }
 
+        Integer rating = request.get("rating");
+        if (rating == null || rating < 1 || rating > 4) {
+            return ResponseEntity.badRequest().body("评级必须在1-4之间");
+        }
+
         try {
-            quizReviewService.suspendCard(quizId, userId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "已暂停"
-            ));
+            // 处理复习评级
+            LearnResponseDTO response = quizReviewService.submitReviewRating(quizId, userId, rating);
+            
+            // 获取分组ID（如果有）
+            Integer groupIdInt = request.get("groupId");
+            Long groupId = groupIdInt != null ? groupIdInt.longValue() : null;
+            
+            // 获取下一个测验（无论当前是否完成）
+            // 延迟 500ms，确保数据库事务已完全提交且状态已刷新
+            try { Thread.sleep(500); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+            Map<String, Object> nextQuiz = getNextQuizForUser(userId, groupId, quizId);
+            if (nextQuiz != null && nextQuiz.containsKey("quizId")) {
+                response.setNextQuizId((Long) nextQuiz.get("quizId"));
+                response.setNextQuizTitle((String) nextQuiz.get("quizTitle"));
+            }
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("暂停测验失败", e);
-            return ResponseEntity.badRequest().body("暂停失败: " + e.getMessage());
+            logger.error("提交复习评级失败: quizId={}, userId={}, rating={}", quizId, userId, rating, e);
+            return ResponseEntity.badRequest().body("提交失败: " + e.getMessage());
         }
     }
 
     /**
-     * 恢复暂停的测验
-     */
-    @PostMapping("/{quizId}/unsuspend")
-    public ResponseEntity<?> unsuspendQuiz(@PathVariable Long quizId, HttpSession session) {
-        Long userId = getCurrentUserId(session);
-        if (userId == null) {
-            return ResponseEntity.status(401).body("未登录");
-        }
-
-        try {
-            quizReviewService.unsuspendCard(quizId, userId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "已恢复"
-            ));
-        } catch (Exception e) {
-            logger.error("恢复测验失败", e);
-            return ResponseEntity.badRequest().body("恢复失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 重置测验
+     * 重置测验状态
      */
     @PostMapping("/{quizId}/reset")
-    public ResponseEntity<?> resetQuiz(@PathVariable Long quizId, HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    public ResponseEntity<?> resetQuizStatus(
+            @PathVariable Long quizId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).body("未登录");
         }
 
         try {
             quizReviewService.resetCard(quizId, userId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "已重置"
-            ));
+            return ResponseEntity.ok(Map.of("success", true, "message", "已重置测验状态"));
         } catch (Exception e) {
-            logger.error("重置测验失败", e);
+            logger.error("重置测验状态失败", e);
             return ResponseEntity.badRequest().body("重置失败: " + e.getMessage());
         }
     }
 
     /**
-     * 按状态筛选测验
+     * 获取测验状态
      */
-    @GetMapping("/filter")
-    public ResponseEntity<?> filterReviews(
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long groupId,
-            HttpSession session) {
-        Long userId = getCurrentUserId(session);
+    @GetMapping("/{quizId}/status")
+    public ResponseEntity<?> getQuizStatus(
+            @PathVariable Long quizId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
         if (userId == null) {
             return ResponseEntity.status(401).body("未登录");
         }
 
         try {
-            List<QuizReviewStatus> results;
-
-            if (status != null && !status.isEmpty()) {
-                // 按状态筛选
-                ReviewStatus reviewStatus = ReviewStatus.valueOf(status.toUpperCase());
-                results = reviewStatusRepository.findByUserIdAndStatus(userId, reviewStatus);
-            } else if (groupId != null) {
-                // 按分组筛选
-                results = reviewStatusRepository.findByUserId(userId).stream()
-                    .filter(s -> {
-                        Quiz quiz = quizRepository.findById(s.getQuizId()).orElse(null);
-                        if (quiz == null) return false;
-                        return quiz.getGroups().stream()
-                            .anyMatch(g -> g.getId().equals(groupId));
-                    })
-                    .collect(Collectors.toList());
-            } else {
-                // 查询所有
-                results = reviewStatusRepository.findByUserId(userId);
-            }
-
-            List<Map<String, Object>> filteredList = results.stream()
-                .map(this::convertToSimpleMap)
-                .collect(Collectors.toList());
-
-            return ResponseEntity.ok(filteredList);
+            QuizReviewStatus status = quizReviewService.getQuizStatus(quizId, userId);
+            return ResponseEntity.ok(status);
         } catch (Exception e) {
-            logger.error("筛选测验失败", e);
-            return ResponseEntity.badRequest().body("筛选失败: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 获取搁置的卡片列表
-     */
-    @GetMapping("/buried")
-    public ResponseEntity<?> getBuriedCards(HttpSession session) {
-        Long userId = getCurrentUserId(session);
-        if (userId == null) {
-            return ResponseEntity.status(401).body("未登录");
-        }
-
-        try {
-            List<QuizReviewStatus> buried = reviewStatusRepository.findBuriedCards(userId, LocalDate.now());
-            List<Map<String, Object>> result = buried.stream()
-                .map(this::convertToSimpleMap)
-                .collect(Collectors.toList());
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            logger.error("获取搁置卡片失败", e);
+            logger.error("获取测验状态失败", e);
             return ResponseEntity.badRequest().body("获取失败: " + e.getMessage());
         }
     }
 
-    private Map<String, Object> convertToSimpleMap(QuizReviewStatus status) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("quizId", status.getQuizId());
-        map.put("status", status.getStatus());
-        map.put("intervalDays", status.getIntervalDays());
-        map.put("easeFactor", status.getEaseFactor());
-        map.put("nextReviewDate", status.getNextReviewDate());
-        map.put("reviewCount", status.getReviewCount());
-        map.put("lapseCount", status.getLapseCount());
-        map.put("buriedUntil", status.getBuriedUntil());
-        return map;
+    /**
+     * 获取用户下一个待复习测验（遵循 Anki 队列顺序）
+     * 优先级：1.学习/重学中 2.待复习 3.新测验
+     */
+    private Map<String, Object> getNextQuizForUser(Long userId, Long groupId, Long currentQuizId) {
+        try {
+            logger.info("[抽取检查] 开始为用户 {} 获取下一个测验, 分组: {}, 排除当前测验: {}", userId, groupId, currentQuizId);
+            // 获取用户所有复习状态记录
+            List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
+            
+            // 如果指定了分组，先过滤出该分组的 ID 列表
+            List<Long> groupQuizIds = null;
+            if (groupId != null) {
+                QuizGroup group = quizGroupRepository.findById(groupId).orElse(null);
+                if (group != null) {
+                    groupQuizIds = group.getQuizzes().stream()
+                            .map(Quiz::getId)
+                            .collect(Collectors.toList());
+                }
+            }
+            
+            final List<Long> targetQuizIds = groupQuizIds;
+            
+            // 准入过滤：只保留 isUserAccessible() 为 true 且不是当前测验的记录
+            List<QuizReviewStatus> accessibleStatuses = allStatuses.stream()
+                    .filter(s -> targetQuizIds == null || targetQuizIds.contains(s.getQuizId()))
+                    .filter(s -> currentQuizId == null || !s.getQuizId().equals(currentQuizId))
+                    .filter(QuizReviewStatus::isUserAccessible)
+                    .collect(Collectors.toList());
+            
+            if (accessibleStatuses.isEmpty()) {
+                logger.info("[抽取检查] 无可用测验（已过滤排除项）");
+                return null;
+            }
+            
+            // 排序：按照优先级 (1.学习/重学中 2.待复习 3.新测验)
+            accessibleStatuses.sort((a, b) -> {
+                int pA = getStatusPriority(a.getStatus());
+                int pB = getStatusPriority(b.getStatus());
+                if (pA != pB) return Integer.compare(pA, pB);
+                
+                // 同优先级下，按下次复习时间排序（先到期的优先）
+                if (a.getNextReviewDate() != null && b.getNextReviewDate() != null) {
+                    return a.getNextReviewDate().compareTo(b.getNextReviewDate());
+                }
+                return 0;
+            });
+            
+            QuizReviewStatus selected = accessibleStatuses.get(0);
+            logger.info("[抽取检查] 最终选中测验: {}", selected.getQuizId());
+            return convertToNextQuizMap(selected);
+        } catch (Exception e) {
+            logger.error("获取下一个测验失败", e);
+            return null;
+        }
     }
 
     private int getStatusPriority(ReviewStatus status) {
         switch (status) {
-            case NEW: return 1;
-            case LEARNING: return 2;
-            case RELEARNING: return 3;
-            case REVIEW: return 4;
+            case LEARNING: return 1;
+            case RELEARNING: return 2;
+            case REVIEW: return 3;
+            case NEW: return 4;
             case SUSPENDED: return 5;
             default: return 6;
         }
     }
 
-    private Long getCurrentUserId(HttpSession session) {
-        User user = (User) session.getAttribute("currentUser");
-        return user != null ? user.getId() : null;
+    private Map<String, Object> convertToNextQuizMap(QuizReviewStatus status) {
+        Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
+        Map<String, Object> result = new HashMap<>();
+        result.put("quizId", status.getQuizId());
+        result.put("quizTitle", quiz != null ? quiz.getTitle() : "未知");
+        result.put("status", status.getStatus());
+        return result;
+    }
+
+    private Long getCurrentUserId(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        String token = authHeader.substring(7);
+        if (!JwtUtil.validateToken(token)) {
+            return null;
+        }
+        return JwtUtil.getUserIdFromToken(token);
     }
 }

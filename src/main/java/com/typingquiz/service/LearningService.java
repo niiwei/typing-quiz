@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -51,13 +50,10 @@ public class LearningService {
                 .orElseThrow(() -> new RuntimeException("未找到该测验的学习状态"));
     }
 
+    private static final java.time.ZoneId ZONE_ID = java.time.ZoneId.of("Asia/Shanghai");
+
     /**
      * 提交学习评级
-     * 
-     * @param quizId 测验ID
-     * @param userId 用户ID（数据隔离）
-     * @param rating 评级：1=重来, 2=困难, 3=良好, 4=简单
-     * @return 学习响应，包含下次学习时间
      */
     public LearnResponseDTO submitLearningRating(Long quizId, Long userId, int rating) {
         QuizReviewStatus status = getLearningStatus(quizId, userId);
@@ -66,6 +62,8 @@ public class LearningService {
         if (status.getStatus() != ReviewStatus.LEARNING && status.getStatus() != ReviewStatus.NEW) {
             throw new RuntimeException("该测验不在学习阶段，当前状态：" + status.getStatus());
         }
+
+        LocalDateTime now = LocalDateTime.now(ZONE_ID);
 
         // 如果是新卡片，第一次评级转为学习中
         if (status.getStatus() == ReviewStatus.NEW) {
@@ -83,7 +81,7 @@ public class LearningService {
         switch (rating) {
             case 1: // 重来 - 返回第一步
                 status.setLearningStep(0);
-                status.setNextReviewDate(calculateNextReviewDate(LEARNING_STEPS_MINUTES.get(0)));
+                status.setNextReviewDate(now.plusMinutes(LEARNING_STEPS_MINUTES.get(0)));
                 response.setCompleted(false);
                 response.setMessage("再来一次，10分钟后继续");
                 response.setNextIntervalMinutes(LEARNING_STEPS_MINUTES.get(0));
@@ -91,7 +89,7 @@ public class LearningService {
                 
             case 2: // 困难 - 重复当前步骤
                 int hardDelay = calculateHardDelay(currentStep);
-                status.setNextReviewDate(calculateNextReviewDate(hardDelay));
+                status.setNextReviewDate(now.plusMinutes(hardDelay));
                 response.setCompleted(false);
                 response.setMessage("再复习一下，" + formatMinutes(hardDelay) + "后继续");
                 response.setNextIntervalMinutes(hardDelay);
@@ -100,7 +98,7 @@ public class LearningService {
             case 3: // 良好 - 进入下一步或毕业
                 if (currentStep >= totalSteps - 1) {
                     // 完成学习，进入复习阶段
-                    graduateCard(status);
+                    graduateCard(status, now);
                     response.setCompleted(true);
                     response.setNewStatus(ReviewStatus.REVIEW);
                     response.setIntervalDays(status.getIntervalDays());
@@ -110,7 +108,7 @@ public class LearningService {
                     int nextStep = currentStep + 1;
                     status.setLearningStep(nextStep);
                     int nextDelay = LEARNING_STEPS_MINUTES.get(nextStep);
-                    status.setNextReviewDate(calculateNextReviewDate(nextDelay));
+                    status.setNextReviewDate(now.plusMinutes(nextDelay));
                     response.setCompleted(false);
                     response.setMessage("很好，" + formatMinutes(nextDelay) + "后继续");
                     response.setNextIntervalMinutes(nextDelay);
@@ -119,7 +117,7 @@ public class LearningService {
                 
             case 4: // 简单 - 直接毕业（跳过剩余步骤）
                 // 使用简单间隔（4天）作为毕业间隔
-                graduateWithEasyInterval(status);
+                graduateWithEasyInterval(status, now);
                 response.setCompleted(true);
                 response.setNewStatus(ReviewStatus.REVIEW);
                 response.setIntervalDays(status.getIntervalDays());
@@ -132,7 +130,7 @@ public class LearningService {
 
         // 更新统计
         status.setReviewCount(status.getReviewCount() + 1);
-        status.setLastReviewDate(LocalDate.now());
+        status.setLastReviewDate(now);
         
         reviewStatusRepository.save(status);
         
@@ -158,33 +156,29 @@ public class LearningService {
     /**
      * 毕业卡片（完成学习阶段）
      */
-    private void graduateCard(QuizReviewStatus status) {
+    private void graduateCard(QuizReviewStatus status, LocalDateTime now) {
         status.setStatus(ReviewStatus.REVIEW);
         status.setLearningStep(0);
         status.setIntervalDays(1); // 毕业间隔：1天
-        status.setNextReviewDate(LocalDate.now().plusDays(1));
+        status.setNextReviewDate(now.plusDays(1));
     }
 
     /**
      * 使用简单间隔毕业
      */
-    private void graduateWithEasyInterval(QuizReviewStatus status) {
+    private void graduateWithEasyInterval(QuizReviewStatus status, LocalDateTime now) {
         status.setStatus(ReviewStatus.REVIEW);
         status.setLearningStep(0);
         status.setIntervalDays(4); // 简单间隔：4天
         status.setEaseFactor(Math.min(MAX_EASE, status.getEaseFactor() + EASE_INCREASE_EASY));
-        status.setNextReviewDate(LocalDate.now().plusDays(4));
+        status.setNextReviewDate(now.plusDays(4));
     }
 
     /**
-     * 计算下次复习日期
+     * 计算下次复习时间（精确到分钟）
      */
-    private LocalDate calculateNextReviewDate(int minutesFromNow) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime nextReview = now.plusMinutes(minutesFromNow);
-        
-        // 如果跨天了，返回日期；否则如果是今天，也返回今天
-        return nextReview.toLocalDate();
+    private LocalDateTime calculateNextReviewDate(int minutesFromNow) {
+        return LocalDateTime.now(ZONE_ID).plusMinutes(minutesFromNow);
     }
 
     /**

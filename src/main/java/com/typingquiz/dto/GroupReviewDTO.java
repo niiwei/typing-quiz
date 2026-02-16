@@ -15,6 +15,7 @@ public class GroupReviewDTO {
     private int newCount;      // 新测验
     private int learningCount; // 学习中
     private int reviewCount;   // 待复习
+    private int relearningCount; // 重新学习中
     private int dueTodayCount; // 今日到期
     
     // 是否可展开（包含测验详情）
@@ -64,6 +65,14 @@ public class GroupReviewDTO {
 
     public void setReviewCount(int reviewCount) {
         this.reviewCount = reviewCount;
+    }
+
+    public int getRelearningCount() {
+        return relearningCount;
+    }
+
+    public void setRelearningCount(int relearningCount) {
+        this.relearningCount = relearningCount;
     }
 
     public int getDueTodayCount() {

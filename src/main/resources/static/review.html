@@ -264,9 +264,17 @@
             color: var(--primary);
         }
 
-        .status-learning {
+        /* 待学习（已到期）- 深黄色/橙色 */
+        .status-learning-due {
+            background: #F59E0B;
+            color: white;
+        }
+
+        /* 学习中（未到期）- 极浅黄色 */
+        .status-learning-scheduled {
             background: #FEF3C7;
             color: #D97706;
+            opacity: 0.7;
         }
 
         .status-review {
@@ -279,9 +287,26 @@
             color: var(--danger);
         }
 
+        /* 复习中（未到期）样式 */
+        .status-scheduled {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
         .status-overdue {
             background: #FECACA;
             color: #991B1B;
+        }
+
+        /* 重置按钮样式 */
+        .btn-reset {
+            background: #F3F4F6;
+            color: #4B5563;
+        }
+
+        .btn-reset:hover {
+            background: #E5E7EB;
+            color: #1F2937;
         }
 
         .quiz-actions {
@@ -314,6 +339,34 @@
 
         .btn-bury:hover {
             background: #E5E7EB;
+        }
+
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 分组卡片上的开始复习按钮 */
+        .btn-start-review {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start-review:hover {
+            background: var(--primary-light);
+            transform: scale(1.1);
         }
 
         /* 筛选栏 */
@@ -527,7 +580,7 @@
 
             try {
                 const items = await ReviewAPI.filterByStatus(status);
-                renderFilteredItems(items, `状态: ${getStatusText(status, false)}`);
+                renderFilteredItems(items, `状态: ${getStatusText(status, false, null)}`);
             } catch (error) {
                 console.error('筛选失败:', error);
             }
@@ -591,8 +644,8 @@
 
         // 创建筛选结果项HTML
         function createFilteredItemHTML(item) {
-            const statusClass = getStatusClass(item.status, false);
-            const statusText = getStatusText(item.status, false);
+            const statusClass = getStatusClass(item);
+            const statusText = getStatusText(item);
 
             return `
                 <div class="quiz-item" onclick="startQuizReview(${item.quizId})">
@@ -618,7 +671,11 @@
                 updateStats(summary);
             } catch (error) {
                 console.error('加载今日概览失败:', error);
-                showEmptyState('加载失败，请刷新重试');
+                if (error.message.includes('Unauthorized')) {
+                    showEmptyState('请先登录后再查看复习任务<br><a href="home.html" style="color: var(--primary); margin-top: 10px; display: inline-block;">去登录 →</a>');
+                } else {
+                    showEmptyState('加载失败，请刷新重试');
+                }
             }
         }
 
@@ -648,8 +705,13 @@
                 renderGroups();
             } catch (error) {
                 console.error('加载分组摘要失败:', error);
-                document.getElementById('groups-container').innerHTML =
-                    '<div class="empty-state">加载失败，请刷新重试</div>';
+                if (error.message.includes('Unauthorized')) {
+                    document.getElementById('groups-container').innerHTML =
+                        '<div class="empty-state">请先登录后再查看复习任务<br><a href="home.html" style="color: var(--primary); margin-top: 10px; display: inline-block;">去登录 →</a></div>';
+                } else {
+                    document.getElementById('groups-container').innerHTML =
+                        '<div class="empty-state">加载失败，请刷新重试</div>';
+                }
             }
         }
 
@@ -673,7 +735,9 @@
 
         // 创建分组卡片HTML
         function createGroupCard(group) {
-            const totalDue = group.newCount + group.learningCount + group.reviewCount + group.relearningCount;
+            console.log('Group data:', group);
+            const totalDue = (group.newCount || 0) + (group.learningCount || 0) + (group.reviewCount || 0) + (group.relearningCount || 0);
+            console.log('totalDue:', totalDue, 'for group:', group.groupName);
             const isExpanded = expandedGroups.has(group.groupId);
 
             let badges = [];
@@ -682,6 +746,12 @@
             if (group.reviewCount > 0) badges.push(`<span class="group-badge badge-review">复 ${group.reviewCount}</span>`);
             if (group.relearningCount > 0) badges.push(`<span class="group-badge badge-relearning">重 ${group.relearningCount}</span>`);
 
+            // 只有在有待复习测验时才显示开始按钮
+            const startButton = totalDue > 0 
+                ? `<button class="btn-start-review" onclick="event.stopPropagation(); startGroupReview(${group.groupId})" title="开始复习该分组">▶</button>` 
+                : '';
+            console.log('startButton HTML:', startButton);
+
             return `
                 <div class="group-card ${isExpanded ? 'expanded' : ''}" data-group-id="${group.groupId}">
                     <div class="group-header" onclick="toggleGroup(${group.groupId})">
@@ -689,13 +759,40 @@
                             <span class="group-name">${group.groupName}</span>
                             <div class="group-stats">${badges.join('')}</div>
                         </div>
-                        <span class="expand-icon">▼</span>
+                        <div class="group-actions">
+                            ${startButton}
+                            <span class="expand-icon">▼</span>
+                        </div>
                     </div>
                     <div class="quiz-list" id="quiz-list-${group.groupId}">
                         ${isExpanded ? '<div class="loading">加载中...</div>' : ''}
                     </div>
                 </div>
             `;
+        }
+
+        // 开始分组复习
+        async function startGroupReview(groupId) {
+            try {
+                // 获取该分组下一个待复习的测验
+                const nextQuiz = await ReviewAPI.getNextQuiz(groupId);
+                console.log('[诊断] 获取下一个测验响应:', nextQuiz);
+                
+                if (nextQuiz && nextQuiz.quizId) {
+                    window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review&groupId=${groupId}`;
+                } else {
+                    if (nextQuiz && nextQuiz.debugInfo) {
+                        console.warn('[诊断分析] 准入失败原因:', nextQuiz.debugInfo);
+                        const info = nextQuiz.debugInfo;
+                        alert(`该分组暂无待办任务。\n\n诊断信息：\n- 测验ID: ${info.quizId}\n- 状态: ${info.status}\n- 下次复习: ${info.nextReviewDate}\n- 服务器时间: ${info.serverTime}`);
+                    } else {
+                        alert('该分组暂无待复习测验！');
+                    }
+                }
+            } catch (error) {
+                console.error('获取分组下一个测验失败:', error);
+                alert('获取测验失败，请重试');
+            }
         }
 
         // 展开/折叠分组
@@ -739,8 +836,8 @@
 
         // 创建测验项HTML
         function createQuizItemHTML(item) {
-            const statusClass = getStatusClass(item.status, item.overdue);
-            const statusText = getStatusText(item.status, item.overdue);
+            const statusClass = getStatusClass(item);
+            const statusText = getStatusText(item);
 
             let metaItems = [];
             if (item.intervalDays > 0) {
@@ -765,33 +862,52 @@
                     <div class="quiz-actions" onclick="event.stopPropagation()">
                         <button class="action-btn btn-start" onclick="startQuizReview(${item.quizId})">开始</button>
                         <button class="action-btn btn-bury" onclick="buryQuiz(${item.quizId}, this)">搁置</button>
+                        <button class="action-btn btn-reset" onclick="resetQuizStatus(${item.quizId}, this)" title="重置学习状态">重置</button>
                     </div>
                 </div>
             `;
         }
 
         // 获取状态样式类
-        function getStatusClass(status, overdue) {
-            if (overdue) return 'status-overdue';
+        function getStatusClass(item) {
+            if (item.status === 'REVIEW' && !item.due) return 'status-scheduled';
+            if (item.status === 'LEARNING') {
+                return item.due ? 'status-learning-due' : 'status-learning-scheduled';
+            }
+            if (item.status === 'RELEARNING') {
+                return item.due ? 'status-relearning' : 'status-scheduled';
+            }
+            
             const classMap = {
                 'NEW': 'status-new',
-                'LEARNING': 'status-learning',
-                'REVIEW': 'status-review',
-                'RELEARNING': 'status-relearning'
+                'REVIEW': 'status-review'
             };
-            return classMap[status] || 'status-new';
+            return classMap[item.status] || 'status-new';
         }
 
-        // 获取状态显示文本
-        function getStatusText(status, overdue) {
-            if (overdue) return '已逾期';
+        /**
+         * 获取状态显示文本
+         * @param {Object} item 测验项对象
+         */
+        function getStatusText(item) {
+            const isDue = item.due;
+            
+            if (item.status === 'REVIEW') {
+                return isDue ? '待复习' : '复习中';
+            }
+            
+            if (item.status === 'LEARNING') {
+                return isDue ? '待学习' : '学习中';
+            }
+            
+            if (item.status === 'RELEARNING') {
+                return isDue ? '待重学' : '重学中';
+            }
+            
             const textMap = {
-                'NEW': '新测验',
-                'LEARNING': '学习中',
-                'REVIEW': '待复习',
-                'RELEARNING': '重学中'
+                'NEW': '新测验'
             };
-            return textMap[status] || status;
+            return textMap[item.status] || item.status;
         }
 
         // 格式化间隔显示
@@ -812,7 +928,7 @@
             try {
                 const nextQuiz = await ReviewAPI.getNextQuiz();
                 if (nextQuiz && nextQuiz.quizId) {
-                    window.location.href = `review-quiz.html?id=${nextQuiz.quizId}`;
+                                        window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review`;
                 } else {
                     alert('今日复习任务已全部完成！');
                 }
@@ -824,7 +940,7 @@
 
         // 开始单个测验复习
         function startQuizReview(quizId) {
-            window.location.href = `review-quiz.html?id=${quizId}`;
+            window.location.href = `index.html?id=${quizId}&mode=review`;
         }
 
         // 搁置测验
@@ -839,6 +955,33 @@
             } catch (error) {
                 console.error('搁置测验失败:', error);
                 alert('操作失败，请重试');
+            }
+        }
+
+        // 重置测验状态
+        async function resetQuizStatus(quizId, btn) {
+            if (!confirm('确定要重置该测验的学习进度吗？重置后将变回新测验。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/review/${quizId}/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('typingquiz_token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('重置成功');
+                    location.reload(); // 刷新页面以更新状态
+                } else {
+                    const error = await response.text();
+                    alert('重置失败: ' + error);
+                }
+            } catch (error) {
+                console.error('重置请求失败:', error);
+                alert('重置失败，请检查网络连接');
             }
         }
 

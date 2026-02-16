@@ -2,7 +2,7 @@ package com.typingquiz.dto;
 
 import com.typingquiz.entity.ReviewStatus;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 测验复习项DTO
@@ -23,7 +23,7 @@ public class QuizReviewItemDTO {
     private Integer totalLearningSteps;
     
     // 复习安排
-    private LocalDate nextReviewDate;
+    private LocalDateTime nextReviewDate;
     private Integer intervalDays;
     private Integer easeFactor;
     
@@ -33,10 +33,10 @@ public class QuizReviewItemDTO {
     
     // 是否被搁置
     private boolean isBuried;
-    private LocalDate buriedUntil;
+    private LocalDateTime buriedUntil;
     
-    // 是否逾期
-    private boolean isOverdue;
+    // 是否到期
+    private boolean due;
 
     public QuizReviewItemDTO() {
     }
@@ -78,6 +78,10 @@ public class QuizReviewItemDTO {
         return statusDisplay;
     }
 
+    public void setStatusDisplay(String statusDisplay) {
+        this.statusDisplay = statusDisplay;
+    }
+
     public Integer getLearningStep() {
         return learningStep;
     }
@@ -94,11 +98,11 @@ public class QuizReviewItemDTO {
         this.totalLearningSteps = totalLearningSteps;
     }
 
-    public LocalDate getNextReviewDate() {
+    public LocalDateTime getNextReviewDate() {
         return nextReviewDate;
     }
 
-    public void setNextReviewDate(LocalDate nextReviewDate) {
+    public void setNextReviewDate(LocalDateTime nextReviewDate) {
         this.nextReviewDate = nextReviewDate;
     }
 
@@ -142,20 +146,20 @@ public class QuizReviewItemDTO {
         isBuried = buried;
     }
 
-    public LocalDate getBuriedUntil() {
+    public LocalDateTime getBuriedUntil() {
         return buriedUntil;
     }
 
-    public void setBuriedUntil(LocalDate buriedUntil) {
+    public void setBuriedUntil(LocalDateTime buriedUntil) {
         this.buriedUntil = buriedUntil;
     }
 
-    public boolean isOverdue() {
-        return isOverdue;
+    public boolean isDue() {
+        return due;
     }
 
-    public void setOverdue(boolean overdue) {
-        isOverdue = overdue;
+    public void setDue(boolean due) {
+        this.due = due;
     }
 
     @Override
