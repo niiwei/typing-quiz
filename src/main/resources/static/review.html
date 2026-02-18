@@ -76,6 +76,14 @@
             font-weight: 700;
         }
 
+        .stat-value-muted {
+            color: #9ca3af;
+        }
+
+        .stat-item-muted {
+            opacity: 0.7;
+        }
+
         .stat-label {
             font-size: 0.85rem;
             opacity: 0.9;
@@ -469,16 +477,16 @@
                     <div class="stat-label">待学习</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="learning-count">-</div>
-                    <div class="stat-label">学习中</div>
-                </div>
-                <div class="stat-item">
                     <div class="stat-value" id="review-count">-</div>
                     <div class="stat-label">待复习</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="relearning-count">-</div>
-                    <div class="stat-label">重学中</div>
+                <div class="stat-item stat-item-muted">
+                    <div class="stat-value stat-value-muted" id="learning-count">-</div>
+                    <div class="stat-label">未到期</div>
+                </div>
+                <div class="stat-item stat-item-muted">
+                    <div class="stat-value stat-value-muted" id="relearning-count">-</div>
+                    <div class="stat-label">已暂停</div>
                 </div>
             </div>
         </div>
@@ -681,13 +689,12 @@
 
         // 更新统计显示
         function updateStats(summary) {
-            document.getElementById('new-count').textContent = summary.newCount || 0;
-            document.getElementById('learning-count').textContent = summary.learningCount || 0;
-            document.getElementById('review-count').textContent = summary.reviewCount || 0;
-            document.getElementById('relearning-count').textContent = summary.relearningCount || 0;
+            document.getElementById('new-count').textContent = summary.pendingLearnCount || 0;
+            document.getElementById('learning-count').textContent = summary.scheduledCount || 0;
+            document.getElementById('review-count').textContent = summary.pendingReviewCount || 0;
+            document.getElementById('relearning-count').textContent = summary.suspendedCount || 0;
 
-            const total = (summary.newCount || 0) + (summary.learningCount || 0) +
-                         (summary.reviewCount || 0) + (summary.relearningCount || 0);
+            const total = summary.totalCount || 0;
             document.getElementById('total-badge').textContent = `共 ${total} 个`;
 
             // 更新开始按钮状态

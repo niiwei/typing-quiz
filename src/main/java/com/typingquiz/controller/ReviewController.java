@@ -192,11 +192,22 @@ public class ReviewController {
                 result.add(dto);
             }
             
-            // 排序：今日到期优先，然后是新测验，再是学习中，最后是其他
+            // 排序：与 getNextQuizForUser 保持一致
+            // 优先级：LEARNING(1) > RELEARNING(2) > REVIEW(3) > NEW(4)
+            // 同优先级按 nextReviewDate 排序（先到期优先）
             result.sort((a, b) -> {
-                if (a.isDue() && !b.isDue()) return -1;
-                if (!a.isDue() && b.isDue()) return 1;
-                return Integer.compare(getStatusPriority(a.getStatus()), getStatusPriority(b.getStatus()));
+                int pA = getStatusPriority(a.getStatus());
+                int pB = getStatusPriority(b.getStatus());
+                if (pA != pB) return Integer.compare(pA, pB);
+                
+                // 同优先级按下次复习时间排序
+                if (a.getNextReviewDate() != null && b.getNextReviewDate() != null) {
+                    return a.getNextReviewDate().compareTo(b.getNextReviewDate());
+                }
+                // null 视为最优先（立即到期）
+                if (a.getNextReviewDate() == null && b.getNextReviewDate() != null) return -1;
+                if (a.getNextReviewDate() != null && b.getNextReviewDate() == null) return 1;
+                return 0;
             });
             
             return ResponseEntity.ok(result);
@@ -273,11 +284,22 @@ public class ReviewController {
             logger.info("[诊断] 总复习状态: {}, 其他用户测验: {}, 无分组: {}, 有效测验: {}", 
                 allStatuses.size(), skippedOtherUser, skippedNoGroup, result.size());
             
-            // 排序：今日到期优先，然后是新测验，再是学习中，最后是其他
+            // 排序：与 getNextQuizForUser 保持一致
+            // 优先级：LEARNING(1) > RELEARNING(2) > REVIEW(3) > NEW(4)
+            // 同优先级按 nextReviewDate 排序（先到期优先）
             result.sort((a, b) -> {
-                if (a.isDue() && !b.isDue()) return -1;
-                if (!a.isDue() && b.isDue()) return 1;
-                return Integer.compare(getStatusPriority(a.getStatus()), getStatusPriority(b.getStatus()));
+                int pA = getStatusPriority(a.getStatus());
+                int pB = getStatusPriority(b.getStatus());
+                if (pA != pB) return Integer.compare(pA, pB);
+                
+                // 同优先级按下次复习时间排序
+                if (a.getNextReviewDate() != null && b.getNextReviewDate() != null) {
+                    return a.getNextReviewDate().compareTo(b.getNextReviewDate());
+                }
+                // null 视为最优先（立即到期）
+                if (a.getNextReviewDate() == null && b.getNextReviewDate() != null) return -1;
+                if (a.getNextReviewDate() != null && b.getNextReviewDate() == null) return 1;
+                return 0;
             });
             
             return ResponseEntity.ok(result);
@@ -288,7 +310,7 @@ public class ReviewController {
     }
 
     /**
-     * 获取今日复习总览
+     * 获取今日复习总览（使用 ReviewLabel 体系）
      */
     @GetMapping("/today")
     public ResponseEntity<Map<String, Object>> getTodayOverview(
@@ -299,15 +321,57 @@ public class ReviewController {
         }
 
         try {
-            Map<String, Long> stats = quizReviewService.getTodayStats(userId);
-            int dueToday = quizReviewService.getRemainingCountForToday(userId);
+            LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai"));
+            
+            // 获取用户所有复习状态
+            List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
+            
+            // 使用 ReviewLabel 体系统计（过滤其他用户的测验）
+            int pendingLearnCount = 0;   // 待学习
+            int pendingReviewCount = 0;  // 待复习
+            int scheduledCount = 0;      // 未到期
+            int suspendedCount = 0;      // 已暂停
+            int skippedOtherUser = 0;    // 跳过的其他用户测验
+            
+            for (QuizReviewStatus status : allStatuses) {
+                // 检查测验是否属于当前用户
+                Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
+                if (quiz == null) {
+                    continue;
+                }
+                if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) {
+                    skippedOtherUser++;
+                    continue;
+                }
+                
+                ReviewLabel label = status.getLabel(now);
+                switch (label) {
+                    case PENDING_LEARN:
+                        pendingLearnCount++;
+                        break;
+                    case PENDING_REVIEW:
+                        pendingReviewCount++;
+                        break;
+                    case SCHEDULED:
+                        scheduledCount++;
+                        break;
+                    case SUSPENDED:
+                        suspendedCount++;
+                        break;
+                }
+            }
+            
+            int totalCount = pendingLearnCount + pendingReviewCount;
+            
+            logger.info("[今日复习统计] 用户{}: 总数={}, 待学习={}, 未到期={}, 待复习={}, 已暂停={}, 跳过其他用户={}",
+                userId, totalCount, pendingLearnCount, scheduledCount, pendingReviewCount, suspendedCount, skippedOtherUser);
             
             Map<String, Object> result = new HashMap<>();
-            result.put("newCount", stats.getOrDefault("NEW", 0L));
-            result.put("learningCount", stats.getOrDefault("LEARNING", 0L));
-            result.put("reviewCount", stats.getOrDefault("REVIEW", 0L) + stats.getOrDefault("RELEARNING", 0L));
-            result.put("suspendedCount", stats.getOrDefault("SUSPENDED", 0L));
-            result.put("dueTodayCount", dueToday);
+            result.put("pendingLearnCount", pendingLearnCount);
+            result.put("pendingReviewCount", pendingReviewCount);
+            result.put("scheduledCount", scheduledCount);
+            result.put("suspendedCount", suspendedCount);
+            result.put("totalCount", totalCount);
             
             return ResponseEntity.ok(result);
         } catch (Exception e) {

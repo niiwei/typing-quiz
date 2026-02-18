@@ -5,11 +5,9 @@ package com.typingquiz.entity;
  * 用于前端展示和统一判断逻辑
  */
 public enum ReviewLabel {
-    PENDING_LEARN("待学习", "今日需要学习的测验"),
-    PENDING_REVIEW("待复习", "今日需要复习的测验"),
-    LEARNING("学习中", "正在学习阶段，未到复习时间"),
-    REVIEWING("复习中", "正常复习周期，未到复习时间"),
-    RELEARNING("重学中", "复习失败后重新学习"),
+    PENDING_LEARN("待学习", "NEW或LEARNING且已到期"),
+    PENDING_REVIEW("待复习", "REVIEW或RELEARNING且已到期"),
+    SCHEDULED("未到期", "学习中/复习中/重学中但未到复习时间"),
     SUSPENDED("已暂停", "用户主动暂停的测验");
 
     private final String displayName;

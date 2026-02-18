@@ -223,25 +223,26 @@ public class QuizReviewStatus {
         }
         
         if (isBuried()) {
-            // 搁置状态显示原状态，但不算今日到期
-            return getStatusLabel(status);
+            // 搁置状态视为未到期
+            return ReviewLabel.SCHEDULED;
         }
         
         // 判断今日是否到期
-        boolean isDueToday = isDueToday(beijingNow);
+        boolean isDueToday = nextReviewDate == null || 
+                !nextReviewDate.atZone(ZoneId.of("Asia/Shanghai"))
+                        .toLocalDateTime().isAfter(beijingNow);
         
         switch (status) {
             case NEW:
                 // NEW状态算作待学习
                 return ReviewLabel.PENDING_LEARN;
             case LEARNING:
-                return isDueToday ? ReviewLabel.PENDING_LEARN : ReviewLabel.LEARNING;
+                return isDueToday ? ReviewLabel.PENDING_LEARN : ReviewLabel.SCHEDULED;
             case REVIEW:
-                return isDueToday ? ReviewLabel.PENDING_REVIEW : ReviewLabel.REVIEWING;
             case RELEARNING:
-                return isDueToday ? ReviewLabel.PENDING_REVIEW : ReviewLabel.RELEARNING;
+                return isDueToday ? ReviewLabel.PENDING_REVIEW : ReviewLabel.SCHEDULED;
             default:
-                return ReviewLabel.LEARNING;
+                return ReviewLabel.SCHEDULED;
         }
     }
     
@@ -268,19 +269,6 @@ public class QuizReviewStatus {
         // 今日到期：日期相同 或 时间已过
         return beijingNext.toLocalDate().equals(beijingNow.toLocalDate())
                 || !beijingNext.isAfter(beijingNow);
-    }
-    
-    /**
-     * 根据状态获取对应标签（非到期状态）
-     */
-    private ReviewLabel getStatusLabel(ReviewStatus status) {
-        switch (status) {
-            case NEW: return ReviewLabel.PENDING_LEARN;
-            case LEARNING: return ReviewLabel.LEARNING;
-            case REVIEW: return ReviewLabel.REVIEWING;
-            case RELEARNING: return ReviewLabel.RELEARNING;
-            default: return ReviewLabel.LEARNING;
-        }
     }
 
     // Getters and Setters
