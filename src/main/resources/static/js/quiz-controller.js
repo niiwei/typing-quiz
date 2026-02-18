@@ -261,38 +261,106 @@ class QuizController {
             console.log('[QuizController.init] groupMode:', this.groupMode, 'groupId:', this.groupId, 'isReviewMode:', this.isReviewMode);
 
             if (this.groupMode) {
-                // 分组模式下，如果URL指定了具体测验ID，优先加载该测验
-                console.log('[QuizController.init] 分组模式，加载分组测验列表');
-                await this.loadGroupQuizzes();
-                // 检查URL中的测验是否在分组中，如果不在则加载第一个
-                const urlQuizId = this.quizId;
-                const quizInGroup = this.groupQuizzes.find(q => q.id == urlQuizId);
-                if (quizInGroup) {
-                    console.log('[QuizController.init] URL测验在分组中，加载:', urlQuizId);
-                    this.currentQuizIndex = this.groupQuizzes.indexOf(quizInGroup);
-                    await this.loadQuizById(urlQuizId);
+                // 分组模式：从 sessionStorage 获取分组测验列表
+                console.log('[QuizController.init] 分组模式，groupId:', this.groupId);
+                
+                const storedList = sessionStorage.getItem(`groupQuizList_${this.groupId}`);
+                let quizList = [];
+                
+                if (storedList) {
+                    try {
+                        quizList = JSON.parse(storedList);
+                        console.log('[QuizController.init] 从 sessionStorage 获取分组列表:', quizList.length, '个测验');
+                    } catch (e) {
+                        console.error('[QuizController.init] 解析 sessionStorage 失败:', e);
+                    }
+                }
+                
+                // 如果 sessionStorage 没有列表，需要重新获取
+                if (quizList.length === 0) {
+                    console.log('[QuizController.init] sessionStorage 为空，重新获取分组列表');
+                    await this.loadGroupQuizzes();
+                    quizList = this.groupQuizzes.map(q => q.id);
+                    sessionStorage.setItem(`groupQuizList_${this.groupId}`, JSON.stringify(quizList));
                 } else {
-                    // URL中的测验不在分组中，加载分组第一个
-                    console.log('[QuizController.init] URL测验不在分组中，加载分组第一个:', this.groupQuizzes[0].id);
-                    this.currentQuizIndex = 0;
+                    // 加载测验数据
+                    await this.loadGroupQuizzes();
+                }
+                
+                // 计算进度
+                const urlQuizId = this.quizId;
+                const currentIndex = quizList.indexOf(urlQuizId);
+                
+                // 保存原始列表长度用于显示
+                this.groupQuizTotal = quizList.length;
+                
+                if (currentIndex >= 0) {
+                    // 当前测验在列表中
+                    this.currentQuizIndex = currentIndex;
+                    console.log('[QuizController.init] 分组进度:', currentIndex + 1, '/', quizList.length);
+                    await this.loadQuizById(urlQuizId);
+                } else if (this.groupQuizzes.length > 0) {
+                    // 当前测验不在列表中（已完成），加载第一个未完成的
+                    this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
+                    console.log('[QuizController.init] 测验已完成，分组进度:', this.currentQuizIndex + 1, '/', quizList.length);
                     await this.loadQuizById(this.groupQuizzes[0].id);
+                } else {
+                    // 列表为空，全部完成
+                    console.log('[QuizController.init] 分组全部完成');
+                    sessionStorage.removeItem(`groupQuizList_${this.groupId}`);
+                    alert('该分组复习任务已全部完成！');
+                    window.location.href = 'review.html';
                 }
             } else if (this.isReviewMode) {
-                // 全局复习模式：加载所有待复习测验列表
-                console.log('[QuizController.init] 全局复习模式，加载今日复习列表');
-                await this.loadGlobalReviewQuizzes();
-                // 检查URL中的测验是否在列表中
-                const urlQuizId = this.quizId;
-                const quizInList = this.groupQuizzes.find(q => q.id == urlQuizId);
-                if (quizInList) {
-                    console.log('[QuizController.init] URL测验在列表中，加载:', urlQuizId);
-                    this.currentQuizIndex = this.groupQuizzes.indexOf(quizInList);
-                    await this.loadQuizById(urlQuizId);
+                // 全局复习模式：从 sessionStorage 获取测验列表
+                console.log('[QuizController.init] 全局复习模式');
+                
+                const storedList = sessionStorage.getItem('reviewQuizList');
+                let quizList = [];
+                
+                if (storedList) {
+                    try {
+                        quizList = JSON.parse(storedList);
+                        console.log('[QuizController.init] 从 sessionStorage 获取列表:', quizList.length, '个测验');
+                    } catch (e) {
+                        console.error('[QuizController.init] 解析 sessionStorage 失败:', e);
+                    }
+                }
+                
+                // 如果 sessionStorage 没有列表，需要重新获取
+                if (quizList.length === 0) {
+                    console.log('[QuizController.init] sessionStorage 为空，重新获取列表');
+                    await this.loadGlobalReviewQuizzes();
+                    quizList = this.groupQuizzes.map(q => q.id);
+                    sessionStorage.setItem('reviewQuizList', JSON.stringify(quizList));
                 } else {
-                    // URL中的测验不在列表中，加载第一个
-                    console.log('[QuizController.init] URL测验不在列表中，加载第一个:', this.groupQuizzes[0].id);
-                    this.currentQuizIndex = 0;
+                    // 加载测验数据
+                    await this.loadGlobalReviewQuizzes();
+                }
+                
+                // 计算进度
+                const urlQuizId = this.quizId;
+                const currentIndex = quizList.indexOf(urlQuizId);
+                
+                // 保存原始列表长度用于显示
+                this.reviewQuizTotal = quizList.length;
+                
+                if (currentIndex >= 0) {
+                    // 当前测验在列表中
+                    this.currentQuizIndex = currentIndex;
+                    console.log('[QuizController.init] 进度:', currentIndex + 1, '/', quizList.length);
+                    await this.loadQuizById(urlQuizId);
+                } else if (this.groupQuizzes.length > 0) {
+                    // 当前测验不在列表中（已完成），加载第一个未完成的
+                    this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
+                    console.log('[QuizController.init] 测验已完成，进度:', this.currentQuizIndex + 1, '/', quizList.length);
                     await this.loadQuizById(this.groupQuizzes[0].id);
+                } else {
+                    // 列表为空，全部完成
+                    console.log('[QuizController.init] 全部完成');
+                    sessionStorage.removeItem('reviewQuizList');
+                    alert('今日复习任务已全部完成！');
+                    window.location.href = 'review.html';
                 }
             } else {
                 console.log('[QuizController.init] 非分组模式，加载测验:', this.quizId);
@@ -772,11 +840,19 @@ class QuizController {
         if ((!this.groupMode && !this.isReviewMode) || this.groupQuizzes.length <= 1) return;
 
         const progressLabel = this.groupMode ? '分组进度' : '今日复习';
+        
+        // 使用保存的原始总数
+        let totalCount = this.groupQuizzes.length;
+        if (this.groupMode && this.groupQuizTotal) {
+            totalCount = this.groupQuizTotal;
+        } else if (this.isReviewMode && this.reviewQuizTotal) {
+            totalCount = this.reviewQuizTotal;
+        }
 
         let progressHTML = `
             <div id="group-progress" class="group-progress">
                 <div class="group-progress-info">
-                    <span>${progressLabel}: ${this.currentQuizIndex + 1} / ${this.groupQuizzes.length}</span>
+                    <span>${progressLabel}: ${this.currentQuizIndex + 1} / ${totalCount}</span>
                     <span class="current-quiz-name">${this.quiz.title}</span>
                 </div>
                 <div class="group-nav-hint">

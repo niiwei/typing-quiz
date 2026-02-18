@@ -549,6 +549,9 @@
 
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', async () => {
+            // 清除旧的复习列表，确保重新进入时使用新列表
+            sessionStorage.removeItem('reviewQuizList');
+            
             if (!Auth.isLoggedIn()) {
                 window.location.href = 'login.html';
                 return;
@@ -781,23 +784,45 @@
         // 开始分组复习
         async function startGroupReview(groupId) {
             try {
-                // 获取该分组下一个待复习的测验
-                const nextQuiz = await ReviewAPI.getNextQuiz(groupId);
-                console.log('[诊断] 获取下一个测验响应:', nextQuiz);
+                console.log('[分组复习] 开始获取分组待复习列表, groupId:', groupId);
                 
-                if (nextQuiz && nextQuiz.quizId) {
-                    window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review&groupId=${groupId}`;
-                } else {
-                    if (nextQuiz && nextQuiz.debugInfo) {
-                        console.warn('[诊断分析] 准入失败原因:', nextQuiz.debugInfo);
-                        const info = nextQuiz.debugInfo;
-                        alert(`该分组暂无待办任务。\n\n诊断信息：\n- 测验ID: ${info.quizId}\n- 状态: ${info.status}\n- 下次复习: ${info.nextReviewDate}\n- 服务器时间: ${info.serverTime}`);
-                    } else {
-                        alert('该分组暂无待复习测验！');
+                // 先获取该分组的完整测验列表
+                const response = await fetch(`/api/review/groups/${groupId}/quizzes`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('typingquiz_token')
                     }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取分组测验列表失败');
                 }
+                
+                const reviewItems = await response.json();
+                console.log('[分组复习] API返回', reviewItems.length, '个测验');
+                
+                // 过滤出待复习的测验
+                const dueItems = reviewItems.filter(item => 
+                    item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW'
+                );
+                console.log('[分组复习] 待复习测验:', dueItems.length);
+                
+                if (dueItems.length === 0) {
+                    alert('该分组暂无待复习测验！');
+                    return;
+                }
+                
+                // 提取测验ID列表并存入 sessionStorage（使用分组特定的key）
+                const quizIds = dueItems.map(item => item.quizId);
+                sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
+                console.log('[分组复习] 已保存测验列表到 sessionStorage:', quizIds.length, '个');
+                
+                // 跳转到第一个测验
+                const firstQuizId = quizIds[0];
+                console.log('[分组复习] 跳转到测验:', firstQuizId);
+                window.location.href = `index.html?id=${firstQuizId}&mode=review&groupId=${groupId}`;
+                
             } catch (error) {
-                console.error('获取分组下一个测验失败:', error);
+                console.error('获取分组测验失败:', error);
                 alert('获取测验失败，请重试');
             }
         }
@@ -967,19 +992,45 @@
         // 开始复习
         async function startReview() {
             try {
-                console.log('[全局复习] 开始获取下一个测验...');
-                const nextQuiz = await ReviewAPI.getNextQuiz();
-                console.log('[全局复习] 获取结果:', nextQuiz);
+                console.log('[全局复习] 开始获取待复习列表...');
                 
-                if (nextQuiz && nextQuiz.quizId) {
-                    console.log('[全局复习] 跳转到测验:', nextQuiz.quizId);
-                    window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review`;
-                } else {
-                    console.log('[全局复习] 没有可用测验:', nextQuiz);
-                    alert('今日复习任务已全部完成！');
+                // 先获取完整的待复习测验列表
+                const response = await fetch('/api/review/quizzes', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('typingquiz_token')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取复习列表失败');
                 }
+                
+                const reviewItems = await response.json();
+                console.log('[全局复习] API返回', reviewItems.length, '个测验');
+                
+                // 过滤出待复习的测验
+                const dueItems = reviewItems.filter(item => 
+                    item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW'
+                );
+                console.log('[全局复习] 待复习测验:', dueItems.length);
+                
+                if (dueItems.length === 0) {
+                    alert('今日复习任务已全部完成！');
+                    return;
+                }
+                
+                // 提取测验ID列表并存入 sessionStorage
+                const quizIds = dueItems.map(item => item.quizId);
+                sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+                console.log('[全局复习] 已保存测验列表到 sessionStorage:', quizIds.length, '个');
+                
+                // 跳转到第一个测验
+                const firstQuizId = quizIds[0];
+                console.log('[全局复习] 跳转到测验:', firstQuizId);
+                window.location.href = `index.html?id=${firstQuizId}&mode=review`;
+                
             } catch (error) {
-                console.error('[全局复习] 获取下一个测验失败:', error);
+                console.error('[全局复习] 获取复习任务失败:', error);
                 alert('获取复习任务失败，请重试');
             }
         }

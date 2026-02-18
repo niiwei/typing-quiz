@@ -164,19 +164,32 @@ public class ReviewController {
                 return ResponseEntity.status(403).build();
             }
 
-            // 获取分组下的所有测验
-            List<Quiz> quizzes = group.getQuizzes();
+            // 获取分组下的所有测验ID
+            List<Long> quizIds = group.getQuizzes().stream()
+                    .map(Quiz::getId)
+                    .collect(Collectors.toList());
             
-            // 获取这些测验的复习状态
+            if (quizIds.isEmpty()) {
+                return ResponseEntity.ok(new ArrayList<>());
+            }
+            
+            // 使用 JOIN 查询一次性获取用户可访问的复习状态（避免N+1）
+            List<QuizReviewStatus> allStatuses = reviewStatusRepository.findUserAccessibleStatuses(userId);
+            
+            // 过滤出分组中的测验
+            Map<Long, QuizReviewStatus> statusMap = new HashMap<>();
+            for (QuizReviewStatus rs : allStatuses) {
+                if (quizIds.contains(rs.getQuizId())) {
+                    statusMap.put(rs.getQuizId(), rs);
+                }
+            }
+            
+            // 构建结果
             List<QuizReviewItemDTO> result = new ArrayList<>();
             LocalDateTime today = LocalDateTime.now();
             
-            for (Quiz quiz : quizzes) {
-                QuizReviewStatus reviewStatus = quizReviewService.getUserReviewStatuses(userId)
-                        .stream()
-                        .filter(s -> s.getQuizId().equals(quiz.getId()))
-                        .findFirst()
-                        .orElse(null);
+            for (Quiz quiz : group.getQuizzes()) {
+                QuizReviewStatus reviewStatus = statusMap.get(quiz.getId());
                 
                 // 如果没有复习状态，自动创建 NEW 状态
                 if (reviewStatus == null) {
@@ -230,59 +243,38 @@ public class ReviewController {
         }
 
         try {
-            // 获取用户所有测验的复习状态（只返回有复习状态的）
-            List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
+            // 使用 JOIN 查询一次性获取用户可访问的复习状态（避免N+1）
+            List<QuizReviewStatus> allStatuses = reviewStatusRepository.findUserAccessibleStatuses(userId);
             
-            // 诊断日志
-            logger.info("[诊断] userId={}, 返回复习状态数: {}", userId, allStatuses.size());
-            if (!allStatuses.isEmpty()) {
-                logger.info("[诊断] 第一个状态: quizId={}, status={}, userId={}", 
-                    allStatuses.get(0).getQuizId(), 
-                    allStatuses.get(0).getStatus(),
-                    allStatuses.get(0).getUserId());
-                logger.info("[诊断] 最后一个状态: quizId={}, status={}, userId={}", 
-                    allStatuses.get(allStatuses.size()-1).getQuizId(), 
-                    allStatuses.get(allStatuses.size()-1).getStatus(),
-                    allStatuses.get(allStatuses.size()-1).getUserId());
+            // 批量获取所有测验ID对应的Quiz信息
+            List<Long> quizIds = allStatuses.stream()
+                    .map(QuizReviewStatus::getQuizId)
+                    .collect(Collectors.toList());
+            Map<Long, Quiz> quizMap = new HashMap<>();
+            if (!quizIds.isEmpty()) {
+                quizRepository.findAllById(quizIds).forEach(q -> quizMap.put(q.getId(), q));
             }
             
             // 只返回属于当前用户且有效分组的测验
             List<QuizReviewItemDTO> result = new ArrayList<>();
             LocalDateTime now = LocalDateTime.now();
-            int skippedNoGroup = 0;
-            int skippedOtherUser = 0;
             
             for (QuizReviewStatus status : allStatuses) {
                 if (status == null || status.getStatus() == ReviewStatus.SUSPENDED) continue;
                 
-                // 获取测验信息
-                Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
-                if (quiz == null) {
-                    skippedNoGroup++;
-                    continue;
-                }
+                // 从Map中获取测验信息（批量查询，无需逐个查询）
+                Quiz quiz = quizMap.get(status.getQuizId());
+                if (quiz == null) continue;
                 
-                // 检查测验是否属于当前用户（关键过滤）
-                if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) {
-                    skippedOtherUser++;
-                    logger.info("[诊断] 跳过其他用户的测验: quizId={}, title={}, quizOwnerId={}, currentUserId={}", 
-                        quiz.getId(), quiz.getTitle(), quiz.getUserId(), userId);
-                    continue;
-                }
+                // 检查测验是否属于当前用户
+                if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) continue;
                 
                 // 检查测验是否属于有效分组（排除孤儿测验）
-                if (quiz.getGroups() == null || quiz.getGroups().isEmpty()) {
-                    skippedNoGroup++;
-                    logger.info("[诊断] 跳过无分组的测验: quizId={}, title={}", quiz.getId(), quiz.getTitle());
-                    continue;
-                }
+                if (quiz.getGroups() == null || quiz.getGroups().isEmpty()) continue;
                 
                 QuizReviewItemDTO dto = convertToItemDTO(quiz, status, now);
                 result.add(dto);
             }
-            
-            logger.info("[诊断] 总复习状态: {}, 其他用户测验: {}, 无分组: {}, 有效测验: {}", 
-                allStatuses.size(), skippedOtherUser, skippedNoGroup, result.size());
             
             // 排序：与 getNextQuizForUser 保持一致
             // 优先级：LEARNING(1) > RELEARNING(2) > REVIEW(3) > NEW(4)
@@ -323,27 +315,16 @@ public class ReviewController {
         try {
             LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Shanghai"));
             
-            // 获取用户所有复习状态
-            List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
+            // 使用 JOIN 查询一次性获取用户可访问的复习状态（避免N+1）
+            List<QuizReviewStatus> allStatuses = reviewStatusRepository.findUserAccessibleStatuses(userId);
             
-            // 使用 ReviewLabel 体系统计（过滤其他用户的测验）
+            // 使用 ReviewLabel 体系统计
             int pendingLearnCount = 0;   // 待学习
             int pendingReviewCount = 0;  // 待复习
             int scheduledCount = 0;      // 未到期
             int suspendedCount = 0;      // 已暂停
-            int skippedOtherUser = 0;    // 跳过的其他用户测验
             
             for (QuizReviewStatus status : allStatuses) {
-                // 检查测验是否属于当前用户
-                Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
-                if (quiz == null) {
-                    continue;
-                }
-                if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) {
-                    skippedOtherUser++;
-                    continue;
-                }
-                
                 ReviewLabel label = status.getLabel(now);
                 switch (label) {
                     case PENDING_LEARN:
@@ -363,8 +344,8 @@ public class ReviewController {
             
             int totalCount = pendingLearnCount + pendingReviewCount;
             
-            logger.info("[今日复习统计] 用户{}: 总数={}, 待学习={}, 未到期={}, 待复习={}, 已暂停={}, 跳过其他用户={}",
-                userId, totalCount, pendingLearnCount, scheduledCount, pendingReviewCount, suspendedCount, skippedOtherUser);
+            logger.info("[今日复习统计] 用户{}: 总数={}, 待学习={}, 未到期={}, 待复习={}, 已暂停={}",
+                userId, totalCount, pendingLearnCount, scheduledCount, pendingReviewCount, suspendedCount);
             
             Map<String, Object> result = new HashMap<>();
             result.put("pendingLearnCount", pendingLearnCount);

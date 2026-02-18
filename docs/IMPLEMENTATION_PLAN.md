@@ -1006,6 +1006,356 @@ MODIFY COLUMN buried_until DATETIME(6) NULL;
 
 ---
 
-*文档版本: 2.3*
+## 附录：复习进度显示问题修复（2026-02-18）
+
+### 问题复盘
+
+**症状**：全局复习和分组复习的进度显示错误，如 "1/21" → "1/20" 而非 "1/21" → "2/21"。
+
+### 根因分析
+
+#### 1. 分母动态变化
+
+每次页面加载时，前端调用 API 获取当前待复习测验列表：
+- 作答完成后，测验状态改变（从 `PENDING_LEARN/PENDING_REVIEW` 变为其他）
+- 下次页面加载时，该测验不在列表中
+- `groupQuizzes.length` 每次减少 1
+
+#### 2. 分子每次重置
+
+页面跳转使用 `window.location.href`，导致页面完全重新加载：
+- `currentQuizIndex` 每次从 0 开始
+- 无法记住"当前是第几个测验"
+
+#### 3. 原始列表未保存
+
+用户点击"开始复习"时，没有保存原始测验列表：
+- 每次进入测验页面都重新获取列表
+- 无法知道当前测验在原始列表中的位置
+
+### 修复方案
+
+#### 核心思路
+
+使用 `sessionStorage` 保存原始测验列表，确保：
+1. 页面跳转时数据保持
+2. 关闭浏览器/标签页后自动清除
+3. 返回复习页面时清除旧列表，重新获取
+
+#### 修改内容
+
+**1. review.html - 点击复习按钮时保存列表**
+
+```javascript
+// 全局复习
+async function startReview() {
+    // 获取完整待复习列表
+    const response = await fetch('/api/review/quizzes', ...);
+    const dueItems = reviewItems.filter(item => 
+        item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW'
+    );
+    
+    // 存入 sessionStorage
+    const quizIds = dueItems.map(item => item.quizId);
+    sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+    
+    // 跳转到第一个测验
+    window.location.href = `index.html?id=${quizIds[0]}&mode=review`;
+}
+
+// 分组复习（同理）
+async function startGroupReview(groupId) {
+    // 使用分组特定的 key
+    sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
+}
+```
+
+**2. review.html - 页面加载时清除旧列表**
+
+```javascript
+document.addEventListener('DOMContentLoaded', async () => {
+    // 清除旧的复习列表，确保重新进入时使用新列表
+    sessionStorage.removeItem('reviewQuizList');
+    ...
+});
+```
+
+**3. quiz-controller.js - 从 sessionStorage 读取列表计算进度**
+
+```javascript
+// 从 sessionStorage 获取原始列表
+const storedList = sessionStorage.getItem('reviewQuizList');
+const quizList = JSON.parse(storedList);
+
+// 分子 = 当前测验在原始列表中的位置
+const currentIndex = quizList.indexOf(urlQuizId);
+this.currentQuizIndex = currentIndex;
+
+// 分母 = 原始列表长度
+this.reviewQuizTotal = quizList.length;
+```
+
+### 流程对比
+
+| 步骤 | 修改前 | 修改后 |
+|------|--------|--------|
+| 点击复习 | 获取下一个测验 → 跳转 | 获取完整列表 → 存 sessionStorage → 跳转 |
+| 进入测验页面 | API 返回剩余列表 | 从 sessionStorage 读取原始列表 |
+| 分母 | `groupQuizzes.length`（剩余数） | `quizList.length`（原始总数） |
+| 分子 | 列表中位置（每次从 0 开始） | 原始列表中位置（固定不变） |
+| 返回 review.html | 无操作 | 清除 sessionStorage |
+| 再次点击复习 | 使用旧列表（错误） | 重新获取新列表（正确） |
+
+### 经验教训
+
+| 问题 | 教训 |
+|------|------|
+| 分母使用动态数据 | 进度显示的分母应该是"原始总数"，而非"当前剩余数" |
+| 页面跳转丢失状态 | 使用 `sessionStorage` 保持状态，比 `localStorage` 更适合会话级数据 |
+| 分子每次重置 | 进度分子应该是测验在原始列表中的固定位置，而非当前列表中的位置 |
+| 重新进入未刷新 | 返回复习页面时应清除旧数据，确保下次进入使用新列表 |
+
+### 设计原则
+
+**复习进度显示的正确实现**：
+
+1. **分母**：用户点击复习按钮时确定的原始测验总数，整个复习过程中不变
+2. **分子**：当前测验在原始列表中的固定位置（从 0 开始的索引 + 1）
+3. **存储**：使用 `sessionStorage` 保存原始列表，会话结束后自动清除
+4. **刷新**：返回复习页面时清除旧数据，确保重新进入时使用新列表
+
+**黄金法则**：**进度显示要基于"原始列表"，而非"实时列表"。**
+
+---
+
+## 附录：复习功能完整架构（2026-02-18）
+
+### 系统架构概览
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              前端 (Static)                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  review.html          │  index.html           │  quiz-controller.js        │
+│  ├─ startReview()     │  ├─ 复习完成跳转      │  ├─ init() 初始化          │
+│  ├─ startGroupReview()│  └─ getNextQuiz()     │  ├─ loadGlobalReviewQuizzes│
+│  └─ DOMContentLoaded  │                       │  ├─ loadGroupQuizzes()     │
+│      (清除旧列表)     │                       │  └─ renderGroupProgress()  │
+│                       │                       │                            │
+│  sessionStorage:      │  sessionStorage:      │  this.groupQuizTotal       │
+│  ├─ reviewQuizList    │  ├─ reviewQuizList    │  this.reviewQuizTotal      │
+│  └─ groupQuizList_X   │  └─ groupQuizList_X   │  this.groupQuizzes         │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         后端 API (/api/review)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  ReviewController                                                              │
+│  ├─ GET /groups/summary     → 分组复习统计                                   │
+│  ├─ GET /groups/{id}/quizzes→ 分组测验列表                                   │
+│  ├─ GET /quizzes            → 全局复习列表                                   │
+│  ├─ GET /today              → 今日复习总览                                   │
+│  ├─ GET /next               → 获取下一个测验                                 │
+│  ├─ GET /stats              → 复习统计数据                                   │
+│  ├─ POST /{id}/learn        → 提交学习评级                                   │
+│  ├─ POST /{id}/review       → 提交复习评级                                   │
+│  ├─ POST /{id}/reset        → 重置测验状态                                   │
+│  ├─ GET /{id}/status        → 获取测验状态                                   │
+│  └─ POST /{id}/bury         → 搁置测验                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            Service 层                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  QuizReviewService     │  LearningService      │  ReviewStatsService       │
+│  ├─ submitReviewRating │  ├─ submitLearningRating│  ├─ getUserStats        │
+│  ├─ buryQuiz           │  ├─ startLearning      │  ├─ getReviewHistory    │
+│  ├─ suspendCard        │  └─ graduateCard       │  └─ getStreakDays       │
+│  ├─ resetCard          │                        │                          │
+│  └─ initializeQuizStatus                       │                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          Repository 层                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  QuizReviewStatusRepository                                                  │
+│  ├─ findByUserId                    → 用户所有复习状态                       │
+│  ├─ findUserAccessibleStatuses      → 用户可访问的复习状态（JOIN优化）      │
+│  ├─ findDueToday                    → 今日到期列表                          │
+│  ├─ countDueToday                   → 今日到期数量                          │
+│  ├─ findLearningDue                 → 学习中到期列表                        │
+│  ├─ findReviewDue                   → 复习到期列表                          │
+│  ├─ findNewCards                    → 新测验列表                            │
+│  ├─ countByStatus                   → 各状态数量统计                        │
+│  └─ findForecast                    → 未来N天预测                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Entity 层                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  QuizReviewStatus    │  ReviewStatus    │  ReviewLabel                      │
+│  ├─ quizId           │  ├─ NEW          │  ├─ PENDING_LEARN                │
+│  ├─ userId           │  ├─ LEARNING     │  ├─ PENDING_REVIEW               │
+│  ├─ status           │  ├─ REVIEW       │  ├─ SCHEDULED                    │
+│  ├─ intervalDays     │  ├─ RELEARNING   │  └─ SUSPENDED                    │
+│  ├─ easeFactor       │  └─ SUSPENDED    │                                  │
+│  ├─ nextReviewDate   │                  │                                  │
+│  ├─ learningStep     │                  │                                  │
+│  ├─ buriedUntil      │                  │                                  │
+│  ├─ isUserAccessible │                  │                                  │
+│  └─ getLabel()       │                  │                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 数据流分析
+
+#### 1. 全局复习流程
+
+```
+用户点击"开始复习"
+    │
+    ▼
+review.html → startReview()
+    │
+    ├─ 调用 GET /api/review/quizzes 获取完整列表
+    ├─ 过滤 PENDING_LEARN/PENDING_REVIEW
+    ├─ sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds))
+    │
+    ▼
+index.html?id={firstQuizId}&mode=review
+    │
+    ▼
+quiz-controller.js → init()
+    │
+    ├─ sessionStorage.getItem('reviewQuizList')
+    ├─ loadGlobalReviewQuizzes() 加载测验数据
+    ├─ 计算 currentQuizIndex = quizList.indexOf(quizId)
+    ├─ this.reviewQuizTotal = quizList.length
+    │
+    ▼
+renderGroupProgress()
+    │
+    ├─ 分母 = this.reviewQuizTotal (原始总数)
+    ├─ 分子 = this.currentQuizIndex + 1
+    │
+    ▼
+用户作答 → 评级
+    │
+    ▼
+index.html → POST /api/review/{id}/learn 或 /review
+    │
+    ▼
+返回 nextQuizId
+    │
+    ▼
+window.location.href = index.html?id={nextQuizId}&mode=review
+    │
+    ▼
+重新加载 → 从 sessionStorage 读取原始列表 → 进度正确
+```
+
+#### 2. 分组复习流程
+
+```
+用户点击分组"开始复习"
+    │
+    ▼
+review.html → startGroupReview(groupId)
+    │
+    ├─ 调用 GET /api/review/groups/{groupId}/quizzes
+    ├─ 过滤 PENDING_LEARN/PENDING_REVIEW
+    ├─ sessionStorage.setItem('groupQuizList_{groupId}', JSON.stringify(quizIds))
+    │
+    ▼
+index.html?id={firstQuizId}&mode=review&groupId={groupId}
+    │
+    ▼
+quiz-controller.js → init()
+    │
+    ├─ this.groupMode = true
+    ├─ sessionStorage.getItem('groupQuizList_{groupId}')
+    ├─ loadGroupQuizzes()
+    ├─ this.groupQuizTotal = quizList.length
+    │
+    ▼
+renderGroupProgress()
+    │
+    ├─ 分母 = this.groupQuizTotal (原始总数)
+    └─ 分子 = this.currentQuizIndex + 1
+```
+
+### 关键设计决策
+
+| 决策点 | 实现方式 | 理由 |
+|--------|----------|------|
+| **进度存储** | sessionStorage | 页面跳转保持数据，关闭标签页自动清除 |
+| **列表key** | 全局: `reviewQuizList`<br>分组: `groupQuizList_{groupId}` | 区分全局和分组复习，避免冲突 |
+| **准入判定** | `QuizReviewStatus.isUserAccessible()` | 统一判断逻辑，包含搁置、状态、时间检查 |
+| **状态标签** | `ReviewLabel` 枚举 | 业务层标签（待学习/待复习/未到期/已暂停） |
+| **时区处理** | `ZoneId.of("Asia/Shanghai")` | 统一使用北京时间 |
+| **N+1优化** | `findUserAccessibleStatuses` + 批量查询 | 避免循环查询 Quiz 表 |
+
+### API 端点汇总
+
+| 方法 | 路径 | 功能 | 返回类型 |
+|------|------|------|----------|
+| GET | `/api/review/groups/summary` | 分组复习统计 | `List<GroupReviewDTO>` |
+| GET | `/api/review/groups/{id}/quizzes` | 分组测验列表 | `List<QuizReviewItemDTO>` |
+| GET | `/api/review/quizzes` | 全局复习列表 | `List<QuizReviewItemDTO>` |
+| GET | `/api/review/today` | 今日复习总览 | `Map<String, Object>` |
+| GET | `/api/review/next` | 获取下一个测验 | `Map<String, Object>` |
+| GET | `/api/review/stats` | 复习统计数据 | `ReviewStatsDTO` |
+| GET | `/api/review/{id}/status` | 测验状态 | `QuizReviewStatus` |
+| POST | `/api/review/{id}/learn` | 提交学习评级 | `LearnResponseDTO` |
+| POST | `/api/review/{id}/review` | 提交复习评级 | `LearnResponseDTO` |
+| POST | `/api/review/{id}/reset` | 重置测验状态 | `Map<String, Object>` |
+| POST | `/api/review/{id}/bury` | 搁置测验 | - |
+
+### 潜在问题和解决方案
+
+| 问题 | 状态 | 解决方案 |
+|------|------|----------|
+| 复习进度显示错误（1/21→1/20） | ✅ 已修复 | 使用 sessionStorage 保存原始列表 |
+| N+1 查询导致加载慢 | ✅ 已修复 | 使用 JOIN 查询 + 批量获取 |
+| 时间精度丢失（00:00:00） | ✅ 已修复 | 统一使用 LocalDateTime + DATETIME(6) |
+| 数据归属混乱（显示其他用户测验） | ✅ 已修复 | 添加 Quiz.userId 过滤 |
+| 复习历史记录缺失 | ⚠️ 待实现 | 需创建复习历史记录表 |
+| 连续学习天数统计 | ⚠️ 待实现 | 需创建打卡记录表 |
+
+### 文件清单
+
+**后端 (Java)**
+
+| 文件 | 路径 | 功能 |
+|------|------|------|
+| ReviewController.java | controller/ | 复习 API 入口 |
+| QuizReviewService.java | service/ | 复习核心业务逻辑 |
+| LearningService.java | service/ | 学习阶段业务逻辑 |
+| ReviewStatsService.java | service/ | 统计数据服务 |
+| QuizReviewStatusRepository.java | repository/ | 数据访问层 |
+| QuizReviewStatus.java | entity/ | 复习状态实体 |
+| ReviewStatus.java | entity/ | 状态枚举 |
+| ReviewLabel.java | entity/ | 业务标签枚举 |
+| QuizReviewItemDTO.java | dto/ | 复习项 DTO |
+| GroupReviewDTO.java | dto/ | 分组统计 DTO |
+| ReviewStatsDTO.java | dto/ | 统计 DTO |
+| LearnResponseDTO.java | dto/ | 学习响应 DTO |
+
+**前端 (HTML/JS)**
+
+| 文件 | 路径 | 功能 |
+|------|------|------|
+| review.html | static/ | 复习主页 |
+| index.html | static/ | 测验页面（复用） |
+| quiz-controller.js | static/js/ | 测验控制器 |
+| review-api.js | static/js/ | 复习 API 封装 |
+
+---
+
+*文档版本: 2.5*
 *更新时间: 2026-02-18*
 *创建时间: 2026-02-15*

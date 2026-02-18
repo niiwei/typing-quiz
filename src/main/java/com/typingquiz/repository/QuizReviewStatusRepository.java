@@ -30,6 +30,15 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     List<QuizReviewStatus> findByUserId(Long userId);
 
     /**
+     * 查询用户可访问的复习状态（只返回属于当前用户的测验，避免N+1查询）
+     */
+    @Query("SELECT qrs FROM QuizReviewStatus qrs " +
+           "JOIN Quiz q ON qrs.quizId = q.id " +
+           "WHERE qrs.userId = :userId " +
+           "AND (q.userId IS NULL OR q.userId = :userId)")
+    List<QuizReviewStatus> findUserAccessibleStatuses(@Param("userId") Long userId);
+
+    /**
      * 查询用户指定状态的复习记录
      */
     List<QuizReviewStatus> findByUserIdAndStatus(Long userId, ReviewStatus status);
