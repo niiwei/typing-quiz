@@ -840,9 +840,16 @@
             const statusText = getStatusText(item);
 
             let metaItems = [];
-            if (item.intervalDays > 0) {
+            
+            // 间隔显示：REVIEW 状态显示 intervalDays，LEARNING/RELEARNING 显示倒计时
+            if (item.status === 'LEARNING' || item.status === 'RELEARNING') {
+                // 学习阶段显示倒计时剩余时间
+                const remainingTime = calculateRemainingTime(item.nextReviewDate);
+                metaItems.push(`间隔: ${remainingTime}`);
+            } else if (item.intervalDays > 0) {
                 metaItems.push(`间隔: ${formatInterval(item.intervalDays)}`);
             }
+            
             if (item.reviewCount > 0) {
                 metaItems.push(`已复习 ${item.reviewCount} 次`);
             }
@@ -923,17 +930,49 @@
             return `${days}天`;
         }
 
+        // 计算剩余时间（用于学习阶段倒计时）
+        function calculateRemainingTime(nextReviewDate) {
+            if (!nextReviewDate) {
+                return '<10分钟';
+            }
+            
+            const now = new Date();
+            const target = new Date(nextReviewDate);
+            const diff = target - now;  // 毫秒差
+            
+            if (diff <= 0) {
+                return '即将到期';
+            }
+            
+            const minutes = Math.ceil(diff / 60000);  // 转为分钟，向上取整
+            const hours = Math.ceil(diff / 3600000);   // 转为小时，向上取整
+            
+            if (minutes < 60) {
+                return `${minutes}分钟后`;
+            } else if (hours < 24) {
+                return `${hours}小时后`;
+            } else {
+                const days = Math.ceil(diff / 86400000);
+                return `${days}天后`;
+            }
+        }
+
         // 开始复习
         async function startReview() {
             try {
+                console.log('[全局复习] 开始获取下一个测验...');
                 const nextQuiz = await ReviewAPI.getNextQuiz();
+                console.log('[全局复习] 获取结果:', nextQuiz);
+                
                 if (nextQuiz && nextQuiz.quizId) {
-                                        window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review`;
+                    console.log('[全局复习] 跳转到测验:', nextQuiz.quizId);
+                    window.location.href = `index.html?id=${nextQuiz.quizId}&mode=review`;
                 } else {
+                    console.log('[全局复习] 没有可用测验:', nextQuiz);
                     alert('今日复习任务已全部完成！');
                 }
             } catch (error) {
-                console.error('获取下一个测验失败:', error);
+                console.error('[全局复习] 获取下一个测验失败:', error);
                 alert('获取复习任务失败，请重试');
             }
         }

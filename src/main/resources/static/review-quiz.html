@@ -456,6 +456,8 @@
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 console.log('Review quiz page initializing...');
+                console.log('[诊断] 当前URL:', window.location.href);
+                console.log('[诊断] URL参数:', window.location.search);
                 
                 if (!Auth.isLoggedIn()) {
                     console.log('Not logged in, redirecting to login');
@@ -466,14 +468,17 @@
                 // 获取URL参数
                 const params = new URLSearchParams(window.location.search);
                 currentQuizId = params.get('id');
-                console.log('Current quiz ID:', currentQuizId);
+                const groupId = params.get('groupId');
+                console.log('[诊断] 从URL获取的 currentQuizId:', currentQuizId);
+                console.log('[诊断] 从URL获取的 groupId:', groupId);
 
                 if (!currentQuizId) {
-                    console.log('No quiz ID, loading next quiz');
+                    console.log('[诊断] 没有 quiz ID，加载下一个测验');
                     await loadNextQuiz();
                 } else {
-                    console.log('Loading quiz:', currentQuizId);
-                    await loadQuiz(parseInt(currentQuizId));
+                    const parsedId = parseInt(currentQuizId);
+                    console.log('[诊断] 准备加载测验 ID:', parsedId);
+                    await loadQuiz(parsedId);
                 }
 
                 // 加载今日进度
@@ -491,8 +496,9 @@
 
         // 加载测验
         async function loadQuiz(quizId) {
+            console.log('[loadQuiz] 开始加载测验:', quizId);
             try {
-                console.log('Loading quiz:', quizId);
+                console.log('[loadQuiz] 发送 API 请求...');
                 
                 const [quiz, status] = await Promise.all([
                     fetch(`/api/quizzes/${quizId}`, {
@@ -504,8 +510,8 @@
                     ReviewAPI.getQuizStatus(quizId)
                 ]);
 
-                console.log('Quiz loaded:', quiz);
-                console.log('Status loaded:', status);
+                console.log('[loadQuiz] 测验数据:', quiz);
+                console.log('[loadQuiz] 状态数据:', status);
 
                 currentQuizId = quizId;
                 currentQuizStatus = status;
@@ -518,8 +524,10 @@
                 updateQuizStatusUI(status);
                 updateRatingIntervals(status);
 
+                console.log('[loadQuiz] 测验加载完成');
+
             } catch (error) {
-                console.error('加载测验失败:', error);
+                console.error('[loadQuiz] 加载测验失败:', error);
                 document.getElementById('loading-indicator').style.display = 'none';
                 document.getElementById('error-display').style.display = 'block';
                 document.getElementById('error-message').textContent = error.message;
@@ -741,6 +749,8 @@
         async function submitRating(rating) {
             if (!currentQuizId || isCompleted) return;
 
+            console.log('[评级] 开始提交评级 - quizId:', currentQuizId, 'rating:', rating);
+
             try {
                 const status = currentQuizStatus?.status;
                 let result;
@@ -751,18 +761,21 @@
                     result = await ReviewAPI.submitReviewRating(currentQuizId, rating);
                 }
 
+                console.log('[评级] 收到响应:', result);
+
                 // 更新进度
                 todayCompleted++;
                 updateProgress();
 
                 if (result.completed) {
+                    console.log('[评级] completed=true，显示完成弹窗');
                     showCompletionModal();
                 } else if (result.nextQuizId) {
-                    // 自动进入下一张
-                    loadNextQuiz();
+                    console.log('[评级] nextQuizId=', result.nextQuizId, '加载下一个测验');
+                    loadNextQuizById(result.nextQuizId);
                 } else {
-                    // 返回复习列表
-                    returnToReviewPage();
+                    console.log('[评级] nextQuizId 为空，前端自己获取下一个测验');
+                    await loadNextQuiz();
                 }
 
             } catch (error) {
@@ -771,18 +784,38 @@
             }
         }
 
-        // 加载下一个测验
-        async function loadNextQuiz() {
+        // 根据 ID 加载下一个测验
+        async function loadNextQuizById(quizId) {
             try {
-                const next = await ReviewAPI.getNextQuiz();
-                if (next && next.quizId) {
-                    // 重置状态
+                const next = await ReviewAPI.getQuiz(quizId);
+                if (next && next.id) {
                     hideRatingPanel();
                     document.getElementById('input-section').style.display = 'block';
                     document.getElementById('results-panel').style.display = 'none';
                     document.getElementById('answer-input').value = '';
 
-                    // 更新URL
+                    history.replaceState(null, '', `?id=${next.id}`);
+
+                    await loadQuiz(next.id);
+                } else {
+                    await loadNextQuiz();
+                }
+            } catch (error) {
+                console.error('加载下一个测验失败:', error);
+                await loadNextQuiz();
+            }
+        }
+
+        // 加载下一个测验（从 API 获取）
+        async function loadNextQuiz() {
+            try {
+                const next = await ReviewAPI.getNextQuiz();
+                if (next && next.quizId) {
+                    hideRatingPanel();
+                    document.getElementById('input-section').style.display = 'block';
+                    document.getElementById('results-panel').style.display = 'none';
+                    document.getElementById('answer-input').value = '';
+
                     history.replaceState(null, '', `?id=${next.quizId}`);
 
                     await loadQuiz(next.quizId);

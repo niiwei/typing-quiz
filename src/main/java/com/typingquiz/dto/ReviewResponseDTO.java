@@ -11,6 +11,7 @@ public class ReviewResponseDTO {
     private Long quizId;
     private int rating;
     private boolean completed;
+    private Long nextQuizId;  // 添加下一个测验ID字段
     private ReviewStatus newStatus;
     private Integer intervalDays;
     private Integer nextIntervalMinutes;
@@ -45,6 +46,14 @@ public class ReviewResponseDTO {
 
     public void setCompleted(boolean completed) {
         this.completed = completed;
+    }
+
+    public Long getNextQuizId() {
+        return nextQuizId;
+    }
+
+    public void setNextQuizId(Long nextQuizId) {
+        this.nextQuizId = nextQuizId;
     }
 
     public ReviewStatus getNewStatus() {

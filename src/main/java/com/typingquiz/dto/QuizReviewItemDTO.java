@@ -37,6 +37,13 @@ public class QuizReviewItemDTO {
     
     // 是否到期
     private boolean due;
+    
+    // 业务层标签（待学习/待复习/学习中/复习中）
+    private String label;
+    private String labelDisplay;
+    
+    // 用户ID（用于诊断）
+    private Long userId;
 
     public QuizReviewItemDTO() {
     }
@@ -160,6 +167,30 @@ public class QuizReviewItemDTO {
 
     public void setDue(boolean due) {
         this.due = due;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String getLabelDisplay() {
+        return labelDisplay;
+    }
+
+    public void setLabelDisplay(String labelDisplay) {
+        this.labelDisplay = labelDisplay;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     @Override

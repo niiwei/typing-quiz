@@ -1,5 +1,37 @@
 # Typing Quiz 更新日志
 
+## [v1.7.1] - 2026-02-18
+
+### 问题修复
+
+#### 全局复习测验数量显示错误 ✅
+
+**问题描述**
+全局复习模式显示测验总数为 48 个，但用户实际只有 29 个测验（待复习 19 个）。前端控制台显示所有测验的 `userId` 都是 6，误导排查方向。
+
+**根因分析**
+1. `QuizReviewStatus` 表中存在用户 6 对其他用户测验（userId 2,3,4,5,7）的复习状态记录（共 40 条异常数据）
+2. `ReviewController.getGlobalReviewQuizzes()` 只过滤了 `QuizReviewStatus.userId`，未检查 `Quiz.userId`
+3. DTO 中的 `userId` 字段取自 `QuizReviewStatus.userId` 而非 `Quiz.userId`，导致前端显示的 userId 都是当前用户
+
+**排查过程**
+1. 前端日志输出所有测验详情，发现 `userId` 全是 6
+2. 数据库查询确认：`SELECT quiz_id, quiz_owner_id FROM quiz_review_status JOIN quiz WHERE user_id=6 AND quiz_owner_id!=6` 返回 40 条异常记录
+3. 发现 quizId 124-400 的测验属于其他用户（2,3,4,5,7），quizId 491-519 才是用户 6 的测验
+
+**解决方案**
+- `ReviewController.java`: 在全局复习查询循环中增加 `quiz.getUserId().equals(userId)` 检查
+- 过滤掉测验拥有者与当前用户不匹配的记录
+
+**修改文件**
+- `src/main/java/com/typingquiz/controller/ReviewController.java`
+
+**验证结果**
+- 全局复习测验数量从 48 降至 29（符合预期）
+- 后端日志：`其他用户测验: 40, 无分组: 1, 有效测验: 29`
+
+---
+
 ## [v1.7.0] - 2026-02-09
 
 ### 新增功能

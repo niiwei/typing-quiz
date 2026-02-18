@@ -2,6 +2,7 @@ package com.typingquiz.entity;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * 测验复习状态实体类
@@ -204,6 +205,82 @@ public class QuizReviewStatus {
      */
     public String getStatusDisplayName() {
         return status.getDisplayName();
+    }
+
+    /**
+     * 获取复习标签（统一判断逻辑）
+     * @param now 当前时间
+     * @return ReviewLabel 业务层标签
+     */
+    public ReviewLabel getLabel(LocalDateTime now) {
+        // 统一使用北京时间
+        LocalDateTime beijingNow = now.atZone(ZoneId.systemDefault())
+                .withZoneSameInstant(ZoneId.of("Asia/Shanghai"))
+                .toLocalDateTime();
+        
+        if (status == ReviewStatus.SUSPENDED) {
+            return ReviewLabel.SUSPENDED;
+        }
+        
+        if (isBuried()) {
+            // 搁置状态显示原状态，但不算今日到期
+            return getStatusLabel(status);
+        }
+        
+        // 判断今日是否到期
+        boolean isDueToday = isDueToday(beijingNow);
+        
+        switch (status) {
+            case NEW:
+                // NEW状态算作待学习
+                return ReviewLabel.PENDING_LEARN;
+            case LEARNING:
+                return isDueToday ? ReviewLabel.PENDING_LEARN : ReviewLabel.LEARNING;
+            case REVIEW:
+                return isDueToday ? ReviewLabel.PENDING_REVIEW : ReviewLabel.REVIEWING;
+            case RELEARNING:
+                return isDueToday ? ReviewLabel.PENDING_REVIEW : ReviewLabel.RELEARNING;
+            default:
+                return ReviewLabel.LEARNING;
+        }
+    }
+    
+    /**
+     * 获取复习标签（使用当前时间）
+     */
+    public ReviewLabel getLabel() {
+        return getLabel(LocalDateTime.now());
+    }
+    
+    /**
+     * 判断今日是否到期（统一时区）
+     */
+    private boolean isDueToday(LocalDateTime beijingNow) {
+        if (nextReviewDate == null) {
+            return true;  // NEW状态或无期日算到期
+        }
+        
+        // 将nextReviewDate也转为北京时间比较
+        LocalDateTime beijingNext = nextReviewDate.atZone(ZoneId.systemDefault())
+                .withZoneSameInstant(ZoneId.of("Asia/Shanghai"))
+                .toLocalDateTime();
+        
+        // 今日到期：日期相同 或 时间已过
+        return beijingNext.toLocalDate().equals(beijingNow.toLocalDate())
+                || !beijingNext.isAfter(beijingNow);
+    }
+    
+    /**
+     * 根据状态获取对应标签（非到期状态）
+     */
+    private ReviewLabel getStatusLabel(ReviewStatus status) {
+        switch (status) {
+            case NEW: return ReviewLabel.PENDING_LEARN;
+            case LEARNING: return ReviewLabel.LEARNING;
+            case REVIEW: return ReviewLabel.REVIEWING;
+            case RELEARNING: return ReviewLabel.RELEARNING;
+            default: return ReviewLabel.LEARNING;
+        }
     }
 
     // Getters and Setters

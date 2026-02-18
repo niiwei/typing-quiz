@@ -17,6 +17,7 @@ class QuizController {
 
         this.groupMode = false;
         this.groupId = null;
+        this.isReviewMode = false;
         this.groupQuizzes = []; // 分组中的所有测验
         this.currentQuizIndex = 0; // 当前测验索引
         this.groupProgress = new Map(); // 存储各测验的进度 {quizId -> {foundAnswers, filledBlanks, completed}}
@@ -253,12 +254,48 @@ class QuizController {
      */
     async init() {
         try {
+            console.log('[QuizController.init] 开始初始化，quizId:', this.quizId);
+            
             // 检查是否是分组模式
             this.checkGroupMode();
+            console.log('[QuizController.init] groupMode:', this.groupMode, 'groupId:', this.groupId, 'isReviewMode:', this.isReviewMode);
 
             if (this.groupMode) {
+                // 分组模式下，如果URL指定了具体测验ID，优先加载该测验
+                console.log('[QuizController.init] 分组模式，加载分组测验列表');
                 await this.loadGroupQuizzes();
+                // 检查URL中的测验是否在分组中，如果不在则加载第一个
+                const urlQuizId = this.quizId;
+                const quizInGroup = this.groupQuizzes.find(q => q.id == urlQuizId);
+                if (quizInGroup) {
+                    console.log('[QuizController.init] URL测验在分组中，加载:', urlQuizId);
+                    this.currentQuizIndex = this.groupQuizzes.indexOf(quizInGroup);
+                    await this.loadQuizById(urlQuizId);
+                } else {
+                    // URL中的测验不在分组中，加载分组第一个
+                    console.log('[QuizController.init] URL测验不在分组中，加载分组第一个:', this.groupQuizzes[0].id);
+                    this.currentQuizIndex = 0;
+                    await this.loadQuizById(this.groupQuizzes[0].id);
+                }
+            } else if (this.isReviewMode) {
+                // 全局复习模式：加载所有待复习测验列表
+                console.log('[QuizController.init] 全局复习模式，加载今日复习列表');
+                await this.loadGlobalReviewQuizzes();
+                // 检查URL中的测验是否在列表中
+                const urlQuizId = this.quizId;
+                const quizInList = this.groupQuizzes.find(q => q.id == urlQuizId);
+                if (quizInList) {
+                    console.log('[QuizController.init] URL测验在列表中，加载:', urlQuizId);
+                    this.currentQuizIndex = this.groupQuizzes.indexOf(quizInList);
+                    await this.loadQuizById(urlQuizId);
+                } else {
+                    // URL中的测验不在列表中，加载第一个
+                    console.log('[QuizController.init] URL测验不在列表中，加载第一个:', this.groupQuizzes[0].id);
+                    this.currentQuizIndex = 0;
+                    await this.loadQuizById(this.groupQuizzes[0].id);
+                }
             } else {
+                console.log('[QuizController.init] 非分组模式，加载测验:', this.quizId);
                 await this.loadQuizById(this.quizId);
             }
 
@@ -268,8 +305,9 @@ class QuizController {
 
             // 聚焦输入框
             document.getElementById('answer-input').focus();
+            console.log('[QuizController.init] 初始化完成');
         } catch (error) {
-            console.error('初始化失败:', error);
+            console.error('[QuizController.init] 初始化失败:', error);
             alert('加载测验失败,请刷新页面重试');
         }
     }
@@ -281,27 +319,136 @@ class QuizController {
         const params = new URLSearchParams(window.location.search);
         this.groupId = params.get('groupId');
         this.groupMode = !!this.groupId;
+        this.isReviewMode = params.get('mode') === 'review';
     }
 
     /**
      * 加载分组测验列表
+     * 复习模式下加载待复习列表，普通模式下加载所有测验
      */
     async loadGroupQuizzes() {
-        const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`, {
-            headers: this.getAuthHeaders()
-        });
-        if (!response.ok) {
-            throw new Error('加载分组测验失败');
+        console.log('[loadGroupQuizzes] isReviewMode:', this.isReviewMode, 'groupId:', this.groupId);
+        
+        if (this.isReviewMode) {
+            // 复习模式：加载待复习的测验列表
+            const url = `${this.apiBase}/review/groups/${this.groupId}/quizzes`;
+            console.log('[loadGroupQuizzes] 复习模式，请求URL:', url);
+            
+            const response = await fetch(url, {
+                headers: this.getAuthHeaders()
+            });
+            if (!response.ok) {
+                throw new Error('加载分组复习列表失败');
+            }
+            const reviewItems = await response.json();
+            console.log('[loadGroupQuizzes] 复习模式，API返回', reviewItems.length, '个测验');
+            
+            // 过滤：只保留待复习的测验（label为PENDING_LEARN或PENDING_REVIEW）
+            const dueItems = reviewItems.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+            console.log('[loadGroupQuizzes] 过滤后，待复习测验:', dueItems.length);
+            console.log('[loadGroupQuizzes] 按标签统计:', {
+                待学习: dueItems.filter(i => i.label === 'PENDING_LEARN').length,
+                待复习: dueItems.filter(i => i.label === 'PENDING_REVIEW').length
+            });
+            
+            // 转换为 quizzes 格式
+            this.groupQuizzes = dueItems.map(item => ({
+                id: item.quizId,
+                title: item.quizTitle,
+                status: item.status,
+                label: item.label
+            }));
+        } else {
+            // 普通模式：加载分组所有测验
+            const url = `${this.apiBase}/groups/${this.groupId}/quizzes`;
+            console.log('[loadGroupQuizzes] 普通模式，请求URL:', url);
+            
+            const response = await fetch(url, {
+                headers: this.getAuthHeaders()
+            });
+            if (!response.ok) {
+                throw new Error('加载分组测验失败');
+            }
+            this.groupQuizzes = await response.json();
+            console.log('[loadGroupQuizzes] 普通模式，获取到', this.groupQuizzes.length, '个测验');
         }
-        this.groupQuizzes = await response.json();
+
+        console.log('[loadGroupQuizzes] 最终 groupQuizzes.length:', this.groupQuizzes.length);
 
         if (this.groupQuizzes.length === 0) {
             throw new Error('该分组中没有测验');
         }
+    }
 
-        // 加载第一个测验
-        this.currentQuizIndex = 0;
-        await this.loadQuizById(this.groupQuizzes[0].id);
+    /**
+     * 加载全局待复习测验列表
+     */
+    async loadGlobalReviewQuizzes() {
+        const url = `${this.apiBase}/review/quizzes`;
+        console.log('[loadGlobalReviewQuizzes] 请求URL:', url);
+        
+        const response = await fetch(url, {
+            headers: this.getAuthHeaders()
+        });
+        if (!response.ok) {
+            throw new Error('加载今日复习列表失败');
+        }
+        const reviewItems = await response.json();
+        console.log('[loadGlobalReviewQuizzes] API返回', reviewItems.length, '个测验');
+        
+        // 打印第一个LEARNING测验的详情
+        const firstLearning = reviewItems.find(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+        if (firstLearning) {
+            console.log('[loadGlobalReviewQuizzes] 第一个待处理测验详情:', {
+                quizId: firstLearning.quizId,
+                title: firstLearning.quizTitle,
+                status: firstLearning.status,
+                label: firstLearning.label,
+                labelDisplay: firstLearning.labelDisplay
+            });
+        }
+        
+        // 过滤：只保留待复习的测验（label 为 PENDING_LEARN 或 PENDING_REVIEW）
+        const dueItems = reviewItems.filter(item => {
+            const isDue = item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW';
+            return isDue;
+        });
+        console.log('[loadGlobalReviewQuizzes] 过滤后，待复习测验:', dueItems.length);
+        console.log('[loadGlobalReviewQuizzes] 按标签统计:', {
+            待学习: dueItems.filter(i => i.label === 'PENDING_LEARN').length,
+            待复习: dueItems.filter(i => i.label === 'PENDING_REVIEW').length
+        });
+        
+        // 详细统计：按状态和分组
+        const groupStats = {};
+        dueItems.forEach(item => {
+            const key = `${item.status}`;
+            if (!groupStats[key]) groupStats[key] = [];
+            groupStats[key].push({
+                quizId: item.quizId,
+                title: item.quizTitle,
+                label: item.label
+            });
+        });
+        console.log('[loadGlobalReviewQuizzes] 详细列表:', groupStats);
+        
+        // 输出全部待复习测验
+        console.log('[loadGlobalReviewQuizzes] 全部待复习测验列表:');
+        dueItems.forEach((item, index) => {
+            console.log(`  ${index + 1}. quizId=${item.quizId}, title="${item.quizTitle}", userId=${item.userId}, status=${item.status}, label=${item.label}`);
+        });
+        
+        // 转换为 quizzes 格式
+        this.groupQuizzes = dueItems.map(item => ({
+            id: item.quizId,
+            title: item.quizTitle,
+            status: item.status,
+            due: item.due
+        }));
+
+        if (this.groupQuizzes.length === 0) {
+            throw new Error('今日没有待复习测验');
+        }
     }
 
     /**
@@ -402,8 +549,8 @@ class QuizController {
         // 渲染测验信息
         this.renderQuizInfo();
 
-        // 分组模式：渲染分组进度
-        if (this.groupMode) {
+        // 复习模式：渲染复习进度
+        if (this.groupMode || this.isReviewMode) {
             this.renderGroupProgress();
         }
 
@@ -619,15 +766,17 @@ class QuizController {
     }
 
     /**
-     * 渲染分组进度
+     * 渲染复习进度（分组模式或全局复习模式）
      */
     renderGroupProgress() {
-        if (!this.groupMode || this.groupQuizzes.length <= 1) return;
+        if ((!this.groupMode && !this.isReviewMode) || this.groupQuizzes.length <= 1) return;
+
+        const progressLabel = this.groupMode ? '分组进度' : '今日复习';
 
         let progressHTML = `
             <div id="group-progress" class="group-progress">
                 <div class="group-progress-info">
-                    <span>分组进度: ${this.currentQuizIndex + 1} / ${this.groupQuizzes.length}</span>
+                    <span>${progressLabel}: ${this.currentQuizIndex + 1} / ${this.groupQuizzes.length}</span>
                     <span class="current-quiz-name">${this.quiz.title}</span>
                 </div>
                 <div class="group-nav-hint">
@@ -663,11 +812,12 @@ class QuizController {
             location.reload();
         });
 
-        // 分组模式：键盘导航
-        if (this.groupMode) {
+        // 复习模式：键盘导航（分组模式和全局复习模式都支持）
+        if (this.groupMode || this.isReviewMode) {
             document.addEventListener('keydown', (e) => {
-                // 分组模式下，即使测验结束也允许切换
-                if (!this.groupMode) {
+                // 复习模式下，即使测验结束也允许切换
+                if (this.groupMode) {
+                    // 分组模式下，如果测验还在进行中，不处理导航
                     if (!this.isQuizActive) return;
                 }
 

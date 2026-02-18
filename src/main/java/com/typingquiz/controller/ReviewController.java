@@ -1,8 +1,9 @@
 package com.typingquiz.controller;
 
-import com.typingquiz.dto.GroupReviewDTO;
-import com.typingquiz.dto.LearnResponseDTO;
-import com.typingquiz.dto.QuizReviewItemDTO;
+import com.typingquiz.dto.*;
+import com.typingquiz.entity.*;
+import com.typingquiz.repository.QuizRepository;
+import com.typingquiz.service.*;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizReviewStatus;
@@ -206,6 +207,87 @@ public class ReviewController {
     }
 
     /**
+     * 获取全局待复习测验列表（用于全局复习模式）
+     */
+    @GetMapping("/quizzes")
+    public ResponseEntity<?> getGlobalReviewQuizzes(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        
+        Long userId = getCurrentUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "未登录", "message", "请先登录"));
+        }
+
+        try {
+            // 获取用户所有测验的复习状态（只返回有复习状态的）
+            List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
+            
+            // 诊断日志
+            logger.info("[诊断] userId={}, 返回复习状态数: {}", userId, allStatuses.size());
+            if (!allStatuses.isEmpty()) {
+                logger.info("[诊断] 第一个状态: quizId={}, status={}, userId={}", 
+                    allStatuses.get(0).getQuizId(), 
+                    allStatuses.get(0).getStatus(),
+                    allStatuses.get(0).getUserId());
+                logger.info("[诊断] 最后一个状态: quizId={}, status={}, userId={}", 
+                    allStatuses.get(allStatuses.size()-1).getQuizId(), 
+                    allStatuses.get(allStatuses.size()-1).getStatus(),
+                    allStatuses.get(allStatuses.size()-1).getUserId());
+            }
+            
+            // 只返回属于当前用户且有效分组的测验
+            List<QuizReviewItemDTO> result = new ArrayList<>();
+            LocalDateTime now = LocalDateTime.now();
+            int skippedNoGroup = 0;
+            int skippedOtherUser = 0;
+            
+            for (QuizReviewStatus status : allStatuses) {
+                if (status == null || status.getStatus() == ReviewStatus.SUSPENDED) continue;
+                
+                // 获取测验信息
+                Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
+                if (quiz == null) {
+                    skippedNoGroup++;
+                    continue;
+                }
+                
+                // 检查测验是否属于当前用户（关键过滤）
+                if (quiz.getUserId() != null && !quiz.getUserId().equals(userId)) {
+                    skippedOtherUser++;
+                    logger.info("[诊断] 跳过其他用户的测验: quizId={}, title={}, quizOwnerId={}, currentUserId={}", 
+                        quiz.getId(), quiz.getTitle(), quiz.getUserId(), userId);
+                    continue;
+                }
+                
+                // 检查测验是否属于有效分组（排除孤儿测验）
+                if (quiz.getGroups() == null || quiz.getGroups().isEmpty()) {
+                    skippedNoGroup++;
+                    logger.info("[诊断] 跳过无分组的测验: quizId={}, title={}", quiz.getId(), quiz.getTitle());
+                    continue;
+                }
+                
+                QuizReviewItemDTO dto = convertToItemDTO(quiz, status, now);
+                result.add(dto);
+            }
+            
+            logger.info("[诊断] 总复习状态: {}, 其他用户测验: {}, 无分组: {}, 有效测验: {}", 
+                allStatuses.size(), skippedOtherUser, skippedNoGroup, result.size());
+            
+            // 排序：今日到期优先，然后是新测验，再是学习中，最后是其他
+            result.sort((a, b) -> {
+                if (a.isDue() && !b.isDue()) return -1;
+                if (!a.isDue() && b.isDue()) return 1;
+                return Integer.compare(getStatusPriority(a.getStatus()), getStatusPriority(b.getStatus()));
+            });
+            
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("获取全局复习列表失败: userId={}", userId, e);
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
      * 获取今日复习总览
      */
     @GetMapping("/today")
@@ -308,13 +390,12 @@ public class ReviewController {
         dto.setBuried(status.isBuried());
         dto.setBuriedUntil(status.getBuriedUntil());
         
-        // 判定是否到期：必须是非搁置且 (下次复习时间为空 或 下次复习时间已过)
-        // 额外保护：如果间隔天数异常大（>36500天），即使数据库查出来了，也判定为未到期（防止脏数据）
-        boolean isDue = !status.isBuried() && 
-                        (status.getNextReviewDate() == null || !status.getNextReviewDate().isAfter(now)) &&
-                        (status.getIntervalDays() == null || status.getIntervalDays() < 36500);
-        
-        dto.setDue(isDue);
+        // 使用统一的标签判断逻辑（包含时区处理）
+        ReviewLabel label = status.getLabel(now);
+        dto.setLabel(label.name());
+        dto.setLabelDisplay(label.getDisplayName());
+        dto.setDue(label.isDueToday());
+        dto.setUserId(status.getUserId());  // 设置userId用于诊断
         
         return dto;
     }
@@ -514,9 +595,20 @@ public class ReviewController {
                 return 0;
             });
             
-            QuizReviewStatus selected = accessibleStatuses.get(0);
-            logger.info("[抽取检查] 最终选中测验: {}", selected.getQuizId());
-            return convertToNextQuizMap(selected);
+            // 遍历排序后的列表，找到第一个实际存在的测验
+            for (QuizReviewStatus status : accessibleStatuses) {
+                Long quizId = status.getQuizId();
+                // 验证测验是否存在
+                if (quizRepository.existsById(quizId)) {
+                    logger.info("[抽取检查] 最终选中测验: {}", quizId);
+                    return convertToNextQuizMap(status);
+                } else {
+                    logger.warn("[抽取检查] 测验 {} 不存在，跳过", quizId);
+                }
+            }
+            
+            logger.info("[抽取检查] 所有候选测验都不存在");
+            return null;
         } catch (Exception e) {
             logger.error("获取下一个测验失败", e);
             return null;

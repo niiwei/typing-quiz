@@ -894,6 +894,118 @@ MODIFY COLUMN buried_until DATETIME(6) NULL;
 
 ---
 
-*文档版本: 2.1*
-*更新时间: 2026-02-16*
+## 附录：调试经验教训（2026-02-18）
+
+### 问题复盘：全局复习测验数量错误
+
+**症状**：全局复习显示 48 个测验，用户实际只有 29 个（待复习 19 个）。
+
+**诊断过程**：
+1. ❌ 前端日志输出 `userId`，发现全是 6，误以为测验都属于当前用户
+2. ❌ 怀疑 `QuizReviewStatus` 表数据有问题，但不确定具体问题
+3. ✅ 直接查询数据库：`SELECT quiz_id, quiz_owner_id FROM quiz_review_status JOIN quiz WHERE user_id=6 AND quiz_owner_id!=6`
+4. ✅ 发现 40 条异常记录：用户 6 的复习状态关联了其他用户的测验
+5. ✅ 定位根因：`ReviewController` 只检查了 `QuizReviewStatus.userId`，未检查 `Quiz.userId`
+
+### 根本原因
+
+**DTO 字段来源误导排查方向。**
+
+前端显示的 `userId` 来自 `QuizReviewStatus.userId`（复习状态所属用户），而非 `Quiz.userId`（测验创建者）：
+- `QuizReviewStatus.userId = 6`（当前用户的复习状态）
+- `Quiz.userId = 2,3,4,5,7`（测验实际属于其他用户）
+
+这导致前端日志显示所有测验的 `userId` 都是 6，掩盖了真实问题。
+
+### 正确调试思路
+
+遇到"数据归属混乱"问题，应遵循以下检查顺序：
+
+1. **直接查询数据库关联**（关键步骤）
+   ```sql
+   -- 检查复习状态与测验的归属是否一致
+   SELECT 
+       qrs.quiz_id,
+       qrs.user_id as status_user_id,
+       q.user_id as quiz_owner_id
+   FROM quiz_review_status qrs
+   JOIN quiz q ON qrs.quiz_id = q.id
+   WHERE qrs.user_id = ? AND q.user_id != ?;
+   ```
+
+2. **检查 DTO 字段来源**
+   - 前端显示的字段到底来自哪个表？
+   - 是否存在"张冠李戴"的情况？
+
+3. **检查业务逻辑过滤条件**
+   - 是否只过滤了一个表的 `userId`？
+   - 关联查询是否需要双重过滤？
+
+### 教训总结
+
+| 误区 | 正确做法 |
+|------|----------|
+| 前端日志显示 `userId=6` 就认为测验属于当前用户 | 追查 DTO 字段的实际来源 |
+| 只关注代码逻辑，忽略数据库原始数据 | 用 SQL 直接验证数据关联关系 |
+| 假设 `QuizReviewStatus.userId` 等于 `Quiz.userId` | 多表关联时，每个表的 `userId` 都需要检查 |
+
+**黄金法则**：**数据归属问题，直接查数据库关联，不要被 DTO 字段误导。**
+
+---
+
+## 附录：调试经验教训（2026-02-16）
+
+### 问题复盘
+
+**症状**：测验的 `nextReviewDate` 始终显示 `00:00:00`，被无限次错误抽取。
+
+**诊断过程**：
+1. ❌ 怀疑 Java 代码中 `LocalDate` 与 `LocalDateTime` 混用
+2. ❌ 统一代码中所有时间字段为 `LocalDateTime`
+3. ❌ 重新编译、清理导入、重启应用
+4. ❌ 问题依然存在
+5. ✅ 检查数据库字段类型：`DESCRIBE quiz_review_status`
+6. ✅ 发现 `next_review_date` 字段类型为 `DATE` 而非 `DATETIME(6)`
+7. ✅ 执行 `ALTER TABLE` 修改字段类型后问题解决
+
+### 根本原因
+
+**过分关注代码层，忽略了数据库物理层。**
+
+即使 Java 代码正确设置了 `2026-02-20T18:17:34`：
+- 数据库字段为 `DATE` 类型时，写入瞬间会被强制截断为 `2026-02-20`
+- 查询返回时 Jackson 序列化为 `2026-02-20T00:00:00`
+
+### 正确调试思路
+
+遇到"数据精度丢失"问题，应遵循以下检查顺序：
+
+1. **检查数据库物理层**（5秒）
+   ```sql
+   DESCRIBE table_name;
+   -- 确认字段类型是否为 DATETIME/TIMESTAMP 而非 DATE
+   ```
+
+2. **检查实体类映射**（30秒）
+   ```java
+   @Column(columnDefinition = "DATETIME(6)")
+   private LocalDateTime fieldName;
+   ```
+
+3. **检查代码逻辑**（如有必要）
+
+### 教训总结
+
+| 误区 | 正确做法 |
+|------|----------|
+| 只看到 `LocalDateTime.now()` 就认为代码没问题 | 检查数据库物理字段类型 |
+| 在代码层反复修修补补 | 先用 SQL 确认数据存储是否正常 |
+| 假设 `ddl-auto=update` 会自动修改字段 | 主动执行 `DESCRIBE` 验证字段类型 |
+
+**黄金法则**：**数据精度问题，先查数据库，再查代码。**
+
+---
+
+*文档版本: 2.3*
+*更新时间: 2026-02-18*
 *创建时间: 2026-02-15*
