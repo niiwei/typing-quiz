@@ -35,7 +35,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId)")
+           "AND q.userId = :userId")
     List<QuizReviewStatus> findUserAccessibleStatuses(@Param("userId") Long userId);
 
     /**
@@ -49,7 +49,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING, com.typingquiz.entity.ReviewStatus.LEARNING) " +
            "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
            "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
@@ -67,7 +67,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs.status, COUNT(qrs) FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "GROUP BY qrs.status")
     List<Object[]> countByStatus(@Param("userId") Long userId);
 
@@ -77,7 +77,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT COUNT(qrs) FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING, com.typingquiz.entity.ReviewStatus.LEARNING) " +
            "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
            "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now)")
@@ -89,7 +89,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status = com.typingquiz.entity.ReviewStatus.LEARNING " +
            "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
            "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
@@ -102,7 +102,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status IN (com.typingquiz.entity.ReviewStatus.REVIEW, com.typingquiz.entity.ReviewStatus.RELEARNING) " +
            "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
            "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now) " +
@@ -115,7 +115,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status = com.typingquiz.entity.ReviewStatus.NEW " +
            "ORDER BY qrs.createdAt ASC")
     List<QuizReviewStatus> findNewCards(@Param("userId") Long userId);
@@ -126,7 +126,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT COUNT(qrs) FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status = com.typingquiz.entity.ReviewStatus.LEARNING " +
            "AND (qrs.nextReviewDate IS NULL OR qrs.nextReviewDate <= :now) " +
            "AND (qrs.buriedUntil IS NULL OR qrs.buriedUntil <= :now)")
@@ -138,7 +138,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT COUNT(qrs) FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status = :status")
     Long countByUserIdAndStatus(@Param("userId") Long userId, @Param("status") ReviewStatus status);
 
@@ -148,7 +148,7 @@ public interface QuizReviewStatusRepository extends JpaRepository<QuizReviewStat
     @Query("SELECT qrs.nextReviewDate, COUNT(qrs) FROM QuizReviewStatus qrs " +
            "JOIN Quiz q ON qrs.quizId = q.id " +
            "WHERE qrs.userId = :userId " +
-           "AND (q.userId IS NULL OR q.userId = :userId) " +
+           "AND q.userId = :userId " +
            "AND qrs.status = com.typingquiz.entity.ReviewStatus.REVIEW " +
            "AND qrs.nextReviewDate BETWEEN :startDate AND :endDate " +
            "GROUP BY qrs.nextReviewDate " +

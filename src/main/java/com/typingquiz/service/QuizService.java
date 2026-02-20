@@ -293,7 +293,10 @@ public class QuizService {
         if (fillBlankQuizRepository.existsByQuizId(id)) {
             fillBlankQuizRepository.deleteByQuizId(id);
         }
-        
+
+        // 删除关联的复习状态记录
+        quizReviewStatusRepository.deleteByQuizId(id);
+
         quizRepository.deleteById(id);
     }
 

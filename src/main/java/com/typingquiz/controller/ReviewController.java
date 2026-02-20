@@ -643,10 +643,11 @@ public class ReviewController {
             // 遍历排序后的列表，找到第一个实际存在的测验
             for (QuizReviewStatus status : accessibleStatuses) {
                 Long quizId = status.getQuizId();
-                // 验证测验是否存在
-                if (quizRepository.existsById(quizId)) {
+                // 验证测验是否存在且属于当前用户
+                Map<String, Object> quizMap = convertToNextQuizMap(status, userId);
+                if (quizMap != null) {
                     logger.info("[抽取检查] 最终选中测验: {}", quizId);
-                    return convertToNextQuizMap(status);
+                    return quizMap;
                 } else {
                     logger.warn("[抽取检查] 测验 {} 不存在，跳过", quizId);
                 }
@@ -671,11 +672,15 @@ public class ReviewController {
         }
     }
 
-    private Map<String, Object> convertToNextQuizMap(QuizReviewStatus status) {
+    private Map<String, Object> convertToNextQuizMap(QuizReviewStatus status, Long userId) {
         Quiz quiz = quizRepository.findById(status.getQuizId()).orElse(null);
+        // 验证测验属于当前用户
+        if (quiz == null || !userId.equals(quiz.getUserId())) {
+            return null;
+        }
         Map<String, Object> result = new HashMap<>();
         result.put("quizId", status.getQuizId());
-        result.put("quizTitle", quiz != null ? quiz.getTitle() : "未知");
+        result.put("quizTitle", quiz.getTitle());
         result.put("status", status.getStatus());
         return result;
     }

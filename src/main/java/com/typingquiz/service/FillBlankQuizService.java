@@ -41,16 +41,7 @@ public class FillBlankQuizService {
      * 创建填空题
      */
     public FillBlankQuiz createFillBlankQuiz(Long quizId, FillBlankQuizDTO dto) {
-        // 验证测验存在
-        Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + quizId));
-        
-        // 验证测验类型
-        if (quiz.getQuizType() != QuizType.FILL_BLANK) {
-            throw new RuntimeException("测验类型不是填空题");
-        }
-        
-        // 验证填空数据
+        // 验证填空数据（测验存在性和类型已在主流程验证）
         if (dto.getFullText() == null || dto.getFullText().trim().isEmpty()) {
             throw new IllegalArgumentException("完整文本不能为空");
         }
