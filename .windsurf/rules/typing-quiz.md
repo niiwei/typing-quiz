@@ -129,7 +129,22 @@ trigger: always_on
 - **Token验证**: 使用typingquiz_token作为localStorage key
 
 ## 20. 项目参考文档
+
 快速了解项目可查阅以下文档：
+
+### 对外文档（document_trail/）
+- **README.md** - 项目简介与快速开始
+- **CONTRIBUTING.md** - 开发贡献指南（Git工作流、提交规范）
+- **CODE_STYLE.md** - 代码规范指南
+- **DEPLOYMENT.md** - 部署操作指南（云端Docker部署）
+- **SECURITY.md** - 安全政策说明
+- **docs/API.md** - REST API接口文档
+- **docs/DB_SCHEMA.md** - 数据库表结构设计
+
+### 内部详细文档（docs/internal/）
 - **AI_DEVELOPMENT_GUIDE.md** - 项目开发全貌（技术栈、项目结构、API端点、开发规范、部署流程）
 - **PROJECT_MANAGEMENT.md** - 项目管理与回滚指引（分支策略、版本管理、发布流程、回滚方案）
-- **docs/IMPLEMENTATION_PLAN.md** - 复习功能实施计划（功能架构、状态流转、API设计）
+- **REVIEW_SYSTEM_DESIGN.md** - 复习系统设计与算法说明
+- **REVIEW_FEATURE_DESIGN.md** - 复习功能实施计划（功能架构、状态流转、API设计）
+- **ARCHITECTURE_DETAIL.md** - 系统架构详细设计
+- **CHANGELOG_HISTORY.md** - 完整版本历史记录
