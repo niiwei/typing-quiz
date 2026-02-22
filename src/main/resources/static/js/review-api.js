@@ -15,7 +15,7 @@ const ReviewAPI = {
      * 获取所有待复习的项目列表
      */
     async getDueItems() {
-        return api.get('/review/due');
+        return api.get('/review/quizzes');
     },
 
     /**
