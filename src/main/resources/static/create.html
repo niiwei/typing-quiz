@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建测验 - Typing Quiz</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+</head>
+<body class="create-page">
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link">首页</a>
+            <a href="quizzes.html" class="nav-link">测验</a>
+            <a href="create.html" class="nav-link active">创建</a>
+            <a href="manage.html" class="nav-link">管理</a>
+            <div id="userSection" style="display: none; margin-left: 1rem;">
+                <button onclick="Auth.logout()" class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);">退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="quiz-container" class="fade-in">
+        <div class="manage-header">
+            <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">创建新测验</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-small" style="border-color: var(--border);" onclick="showImportModal()">导入 JSON</button>
+                <button class="btn btn-small" onclick="saveQuiz()">保存测验</button>
+            </div>
+        </div>
+
+        <form id="quiz-form" onsubmit="return false;">
+            <div class="form-group">
+                <label class="form-label">测验标题 *</label>
+                <input type="text" id="quiz-title" class="form-input" placeholder="例如：世界各国首都" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">测验描述</label>
+                <textarea id="quiz-description" class="form-input" style="height: 60px;" placeholder="简要描述测ย内容..."></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="form-group">
+                    <label class="form-label">时间限制 (秒)</label>
+                    <input type="number" id="quiz-time-limit" class="form-input" placeholder="留空为无限制" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属分组</label>
+                    <select id="quiz-group-select" class="form-input" style="background: transparent;">
+                        <option value="">默认分组</option>
+                        <!-- 动态填充 -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">测验类型</label>
+                <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                    <label style="font-size: 0.8rem; cursor: pointer;">
+                        <input type="radio" name="quiz-type" value="TYPING" checked onchange="toggleTypeFields()"> 打字题
+                    </label>
+                    <label style="font-size: 0.8rem; cursor: pointer;">
+                        <input type="radio" name="quiz-type" value="FILL_BLANK" onchange="toggleTypeFields()"> 填空题
+                    </label>
+                </div>
+            </div>
+
+            <!-- 打字题特定字段 -->
+            <div id="typing-fields">
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label class="form-label" style="margin-bottom: 0;">答案列表 (每行一个)</label>
+                        <button class="btn btn-small" type="button" onclick="insertCommentSymbol('quiz-answers')" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                    </div>
+                    <textarea id="quiz-answers" class="form-input" style="height: 200px;" placeholder="北京##首都&#10;东京##首都&#10;巴黎"></textarea>
+                </div>
+            </div>
+
+            <!-- 填空题特定字段 -->
+            <div id="fill-blank-fields" style="display: none; border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 1.5rem;">
+                <div class="form-group">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button class="btn btn-small" type="button" onclick="wrapSelectionWithBrackets()" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">🔍 挖空选中文字 ([])</button>
+                        <button class="btn btn-small" type="button" onclick="insertCommentSymbol('fill-blank-full-text')" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                    </div>
+                    <textarea id="fill-blank-full-text" class="form-input" style="height: 150px;" placeholder="请输入完整文本，例如：中国的首都是[北京##首都]" oninput="updateFillPreview()"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">填空预览</label>
+                    <div id="fill-blank-preview" style="padding: 1rem; background: var(--hover); font-size: 0.8rem; min-height: 3rem; color: var(--text-muted); border-radius: 4px; line-height: 1.8;">
+                        预览内容将在此显示...
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 导入模态框 (简单版) -->
+    <div id="import-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div style="background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px;">
+            <h3 style="margin-bottom: 1rem; font-weight: 300;">导入测验 JSON</h3>
+            <textarea id="import-json" class="form-input" style="height: 200px; font-family: monospace; font-size: 0.7rem;" placeholder='[{"title": "...", "answers": [...]}]'></textarea>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-small" onclick="processImport()">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/manage.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // 加载分组选项
+            try {
+                const groups = await fetch('/api/groups', { headers: Auth.getAuthHeaders() }).then(res => res.json());
+                const select = document.getElementById('quiz-group-select');
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = g.name;
+                    select.appendChild(opt);
+                });
+            } catch (e) { console.error('加载分组失败'); }
+        });
+
+        function toggleTypeFields() {
+            const type = document.querySelector('input[name="quiz-type"]:checked').value;
+            document.getElementById('typing-fields').style.display = type === 'TYPING' ? 'block' : 'none';
+            document.getElementById('fill-blank-fields').style.display = type === 'FILL_BLANK' ? 'block' : 'none';
+        }
+
+        function insertCommentSymbol(id) {
+            const el = document.getElementById(id);
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+            el.value = text.slice(0, start) + '##' + text.slice(end);
+            el.focus();
+            el.setSelectionRange(start + 2, start + 2);
+        }
+
+        function wrapSelectionWithBrackets() {
+            const el = document.getElementById('fill-blank-full-text');
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            const text = el.value;
+            if (start === end) return;
+            const selected = text.slice(start, end);
+            el.value = text.slice(0, start) + '[' + selected + ']' + text.slice(end);
+            updateFillPreview();
+        }
+
+        function updateFillPreview() {
+            const text = document.getElementById('fill-blank-full-text').value;
+            const preview = document.getElementById('fill-blank-preview');
+            // 简单的预览正则替换
+            preview.textContent = text.replace(/\[([^\]#]+)(##[^\]]+)?\]/g, '______');
+        }
+
+        function showImportModal() { document.getElementById('import-modal').style.display = 'flex'; }
+        function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; }
+
+        async function processImport() {
+            const json = document.getElementById('import-json').value;
+            try {
+                const data = JSON.parse(json);
+                // 这里调用 manage.js 中的导入逻辑或直接 API
+                const response = await fetch('/api/quizzes/batch', {
+                    method: 'POST',
+                    headers: Auth.getAuthHeaders(),
+                    body: JSON.stringify(Array.isArray(data) ? data : [data])
+                });
+                if (response.ok) {
+                    alert('导入成功');
+                    window.location.href = 'manage.html';
+                } else {
+                    alert('导入失败');
+                }
+            } catch (e) { alert('JSON 格式错误'); }
+        }
+
+        async function saveQuiz() {
+            const title = document.getElementById('quiz-title').value;
+            if (!title) { alert('请输入标题'); return; }
+
+            const type = document.querySelector('input[name="quiz-type"]:checked').value;
+            const description = document.getElementById('quiz-description').value;
+            const timeLimit = document.getElementById('quiz-time-limit').value;
+            const groupId = document.getElementById('quiz-group-select').value;
+
+            let quizData = {
+                title,
+                description,
+                timeLimit: timeLimit ? parseInt(timeLimit) : null,
+                quizType: type
+            };
+
+            if (type === 'TYPING') {
+                quizData.answers = document.getElementById('quiz-answers').value
+                    .split('\n')
+                    .filter(line => line.trim())
+                    .map(line => {
+                        const parts = line.split('##');
+                        return { content: parts[0].trim(), comment: parts[1] ? parts[1].trim() : null };
+                    });
+            } else {
+                quizData.content = document.getElementById('fill-blank-full-text').value;
+            }
+
+            try {
+                const response = await fetch('/api/quizzes', {
+                    method: 'POST',
+                    headers: Auth.getAuthHeaders(),
+                    body: JSON.stringify(quizData)
+                });
+                
+                if (response.ok) {
+                    const quiz = await response.json();
+                    if (groupId) {
+                        // 如果选了分组，关联到分组
+                        await fetch(`/api/groups/${groupId}/quizzes/${quiz.id}`, {
+                            method: 'POST',
+                            headers: Auth.getAuthHeaders()
+                        });
+                    }
+                    alert('保存成功');
+                    window.location.href = 'manage.html';
+                }
+            } catch (e) { alert('保存失败'); }
+        }
+    </script>
+</body>
+</html>

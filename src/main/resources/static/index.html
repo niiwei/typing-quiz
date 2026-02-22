@@ -8,49 +8,44 @@
     <link rel="stylesheet" href="css/navigation.css">
 </head>
 <body>
-    <!-- 导航栏 -->
     <nav class="navbar">
-        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <a href="home.html" class="navbar-brand">Typing Quiz</a>
         <div class="navbar-nav">
             <a href="home.html" class="nav-link">首页</a>
-            <a href="quizzes.html" class="nav-link">测验列表</a>
-            <a href="review.html" class="nav-link">今日复习</a>
-            <a href="manage.html" class="nav-link">管理测验</a>
-            <a href="database.html" class="nav-link">数据库管理</a>
+            <a href="quizzes.html" class="nav-link">测验</a>
+            <a href="create.html" class="nav-link">创建</a>
+            <a href="manage.html" class="nav-link">管理</a>
+            <div id="userSection" style="display: none; margin-left: 1rem;">
+                <button onclick="Auth.logout()" class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);">退出</button>
+            </div>
         </div>
     </nav>
+
+    <div class="progress-bar"><div id="progress-fill" class="progress-fill"></div></div>
 
     <div id="quiz-container">
         <!-- 测验信息 -->
         <div id="quiz-header">
             <h1 id="quiz-title">加载中...</h1>
-            <p id="quiz-description"></p>
-        </div>
-
-        <!-- 计时器和得分 -->
-        <div id="quiz-stats">
-            <div id="timer">
-                <span class="label">时间:</span>
+            <div id="quiz-stats">
                 <span id="time-display">--:--</span>
+                <span id="score-display" style="font-size: 0.8rem; color: var(--text-muted); margin-left: 1rem;">0/0</span>
             </div>
-            <div id="score">
-                <span class="label">得分:</span>
-                <span id="score-display">0/0</span>
-            </div>
+            <p id="quiz-description" style="margin-top: 1rem;"></p>
         </div>
 
-        <!-- 输入框 -->
+        <!-- 输入区域 -->
         <div id="input-section">
             <input type="text" 
                    id="answer-input" 
-                   placeholder="输入答案..." 
+                   placeholder="在此输入..." 
                    autocomplete="off"
                    spellcheck="false" />
-            <button id="give-up-btn" class="give-up-btn" onclick="giveUp()">放弃</button>
-            <div id="feedback-message"></div>
+            <div id="feedback-message" style="font-size: 0.7rem; height: 1rem; margin-top: 0.5rem;"></div>
+            <button id="give-up-btn" class="btn btn-small give-up-btn" onclick="giveUp()">放弃并结算</button>
         </div>
 
-        <!-- 答案显示区 -->
+        <!-- 答案网格 -->
         <div id="answers-grid">
             <!-- 动态生成答案格子 -->
         </div>
@@ -63,13 +58,29 @@
 
         <!-- 结果面板 -->
         <div id="results-panel" style="display: none;">
-            <h2>测验完成!</h2>
-            <div id="final-stats"></div>
-            <div id="missed-answers-section">
-                <h3>未答出的答案:</h3>
-                <div id="missed-answers"></div>
+            <h2 style="font-weight: 200; font-size: 3rem; margin-bottom: 1rem;">测验完成</h2>
+            <div class="home-stats">
+                <div class="stat-box">
+                    <span class="stat-num" id="final-accuracy">0%</span>
+                    <span class="stat-label">准确率</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="final-score">0</span>
+                    <span class="stat-label">得分</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="final-time">00:00</span>
+                    <span class="stat-label">总用时</span>
+                </div>
             </div>
-            <button id="restart-btn">重新开始</button>
+            <div id="missed-answers-section" style="text-align: left; margin: 3rem 0;">
+                <h3 style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--error); margin-bottom: 1rem; text-transform: uppercase;">未答出项</h3>
+                <div id="missed-answers" class="answers-grid"></div>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="restart-btn" class="btn">重新开始</button>
+                <a href="quizzes.html" class="btn" style="border-color: var(--text-muted); color: var(--text-muted);">返回列表</a>
+            </div>
         </div>
     </div>
 
@@ -81,38 +92,37 @@
     <script src="js/main.js?v=20260216-9"></script>
 
     <!-- 复习评级面板 - 仅复习模式显示 -->
-    <div id="rating-panel" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 24px; box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 100;">
-        <div style="text-align: center; font-size: 1.1rem; color: #312E81; margin-bottom: 16px;">根据记忆程度选择评级</div>
-        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-            <button class="rating-btn rating-again" onclick="submitRating(1)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%); color: white;">
-                重来
-                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">&lt;10分钟</span>
-            </button>
-            <button class="rating-btn rating-hard" onclick="submitRating(2)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #FDBA74 0%, #F97316 100%); color: white;">
-                困难
-                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">10分钟</span>
-            </button>
-            <button class="rating-btn rating-good" onclick="submitRating(3)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #6EE7B7 0%, #10B981 100%); color: white;">
-                良好
-                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">1天</span>
-            </button>
-            <button class="rating-btn rating-easy" onclick="submitRating(4)" style="padding: 16px 24px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #67E8F9 0%, #06B6D4 100%); color: white;">
-                简单
-                <span style="display: block; font-size: 0.8rem; margin-top: 4px;">4天</span>
-            </button>
+    <div id="rating-panel" class="rating-panel" style="display: none;">
+        <div style="text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;">根据记忆程度选择评级 (1-4)</div>
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <div class="rating-btn rating-again" onclick="submitRating(1)">
+                <span>重来</span>
+                <span class="interval">&lt;10分钟</span>
+            </div>
+            <div class="rating-btn rating-hard" onclick="submitRating(2)">
+                <span>困难</span>
+                <span class="interval">10分钟</span>
+            </div>
+            <div class="rating-btn rating-good" onclick="submitRating(3)">
+                <span>良好</span>
+                <span class="interval">1天</span>
+            </div>
+            <div class="rating-btn rating-easy" onclick="submitRating(4)">
+                <span>简单</span>
+                <span class="interval">4天</span>
+            </div>
         </div>
-        <div style="text-align: center; margin-top: 12px; font-size: 0.85rem; color: #5c677d;">快捷键: 1/2/3/4 或 空格键选择"良好"</div>
     </div>
 
     <!-- 复习完成弹窗 -->
-    <div id="review-completion-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; justify-content: center; align-items: center;">
-        <div style="background: white; padding: 32px; border-radius: 16px; text-align: center; max-width: 400px;">
-            <div style="font-size: 4rem; margin-bottom: 16px;">🎉</div>
-            <h3 style="font-size: 1.5rem; color: #312E81; margin-bottom: 8px;">复习完成!</h3>
-            <p id="review-completion-message" style="color: #5c677d; margin-bottom: 24px;">今日复习任务已全部完成</p>
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button onclick="returnToReviewPage()" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; background: #4F46E5; color: white;">返回复习页</button>
-                <button onclick="continueReview()" style="padding: 12px 24px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 500; cursor: pointer; background: #F3F4F6; color: #312E81;">继续复习</button>
+    <div id="review-completion-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 200; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div style="text-align: center; max-width: 400px; animation: fadeIn 0.4s ease-out;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">✨</div>
+            <h3 style="font-weight: 200; font-size: 2rem; color: var(--text-main); margin-bottom: 0.5rem;">复习完成</h3>
+            <p id="review-completion-message" style="color: var(--text-muted); margin-bottom: 2rem; font-size: 0.9rem;">今日复习任务已全部完成</p>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button onclick="returnToHome()" class="btn">返回首页</button>
+                <button onclick="continueReview()" class="btn" style="border-color: var(--text-muted); color: var(--text-muted);">继续复习</button>
             </div>
         </div>
     </div>
@@ -244,9 +254,9 @@
             document.getElementById('review-completion-modal').style.display = 'flex';
         }
 
-        // 返回复习页
-        function returnToReviewPage() {
-            window.location.href = 'review.html';
+        // 返回首页
+        function returnToHome() {
+            window.location.href = 'home.html';
         }
 
         // 继续复习

@@ -8,31 +8,24 @@ class UIRenderer {
      */
     static renderAnswersGrid(answers, foundAnswers) {
         const grid = document.getElementById('answers-grid');
-        // 强制使用网格布局（避免残留的 display:block 导致单列）
-        grid.style.display = 'grid';
-        grid.style.gridTemplateColumns = '';
-        grid.style.gap = '';
         grid.innerHTML = '';
 
         answers.forEach(answer => {
             const item = document.createElement('div');
-            item.className = 'answer-item not-found';
+            item.className = 'answer-item'; // 使用新版 CSS 类名
             item.id = `answer-${answer.id}`;
             item.dataset.content = answer.content;
             item.dataset.comment = answer.comment || '';
             
-            // 构建显示内容（答案 + 注释）
-            let displayText = answer.content;
-            if (answer.comment) {
-                displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
-            }
-            
             if (foundAnswers.has(answer.id)) {
-                item.classList.remove('not-found');
                 item.classList.add('found');
+                let displayText = answer.content;
+                if (answer.comment) {
+                    displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
+                }
                 item.innerHTML = displayText;
             } else {
-                item.textContent = '?';
+                item.textContent = '•'; // 使用新版占位符
             }
             
             grid.appendChild(item);
@@ -48,7 +41,6 @@ class UIRenderer {
             const content = item.dataset.content;
             const comment = item.dataset.comment;
             
-            item.classList.remove('not-found');
             item.classList.add('found');
             
             // 构建显示内容
@@ -84,8 +76,7 @@ class UIRenderer {
         answers.forEach(answer => {
             const item = document.getElementById(`answer-${answer.id}`);
             if (item && !foundAnswers.has(answer.id)) {
-                item.classList.remove('not-found');
-                item.classList.add('missed');
+                item.classList.add('missed'); // 使用新版红色样式
                 
                 // 构建显示内容
                 if (answer.comment) {
@@ -104,14 +95,15 @@ class UIRenderer {
         // 隐藏输入区域
         document.getElementById('input-section').style.display = 'none';
         
-        // 填空题：保留题目区域显示（不隐藏 fill-blank-section）
-        // 打字题：保留答案网格（用于显示放弃后的红/绿状态）
+        // 隐藏进度条
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar) progressBar.style.display = 'none';
+
         const answersGrid = document.getElementById('answers-grid');
         if (answersGrid) {
             if (stats && stats.quizType === 'FILL_BLANK') {
                 answersGrid.style.display = 'none';
             } else {
-                // 强制显示打字题答案网格（避免残留的 display:none）
                 answersGrid.style.display = 'grid';
             }
         }
@@ -120,14 +112,10 @@ class UIRenderer {
         const resultsPanel = document.getElementById('results-panel');
         resultsPanel.style.display = 'block';
 
-        // 显示统计信息
-        const finalStats = document.getElementById('final-stats');
-        const giveUpText = stats.isGiveUp ? ' (已放弃)' : '';
-        finalStats.innerHTML = `
-            <p>正确答案: <strong>${stats.found}/${stats.total}</strong>${giveUpText}</p>
-            <p>准确率: <strong>${stats.accuracy}%</strong></p>
-            <p>用时: <strong>${this.formatTime(stats.timeElapsed)}</strong></p>
-        `;
+        // 更新结果统计
+        document.getElementById('final-accuracy').textContent = `${stats.accuracy}%`;
+        document.getElementById('final-score').textContent = stats.found;
+        document.getElementById('final-time').textContent = this.formatTime(stats.timeElapsed);
 
         // 显示未答出的答案
         const missedContainer = document.getElementById('missed-answers');
@@ -136,7 +124,7 @@ class UIRenderer {
         if (missedAnswers.length > 0) {
             missedAnswers.forEach(answer => {
                 const item = document.createElement('div');
-                item.className = 'missed-answer';
+                item.className = 'answer-item missed';
                 if (answer.comment) {
                     item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
                 } else {
@@ -145,7 +133,7 @@ class UIRenderer {
                 missedContainer.appendChild(item);
             });
         } else {
-            missedContainer.innerHTML = '<p style="color: #28a745; font-weight: bold;">恭喜!全部答对!</p>';
+            missedContainer.innerHTML = '<p style="color: var(--success); font-weight: bold; width: 100%; text-align: center;">恭喜! 全部答对!</p>';
         }
     }
 

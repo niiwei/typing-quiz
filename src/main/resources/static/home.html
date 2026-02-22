@@ -6,563 +6,179 @@
     <title>Typing Quiz - 打字测验</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        /* 使用系统字体栈，避免网络加载 */
-        :root {
-            --home-accent: #6366F1;
-            --home-accent-dark: #4F46E5;
-            --home-ink: #0F172A;
-            --home-muted: #64748B;
-            --home-card: rgba(255, 255, 255, 0.95);
-            --home-shadow: 0 4px 24px rgba(99, 102, 241, 0.15);
-            --home-border: rgba(99, 102, 241, 0.15);
-        }
-
-        body.home-page #quiz-container {
-            padding: 0;
-            overflow: hidden;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(6px);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-        }
-
         body.home-page {
-            font-family: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg);
         }
-
         .home-hero {
-            padding: 60px 60px 40px;
-            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #C7D2FE 100%);
-            position: relative;
-            overflow: hidden;
+            text-align: center;
+            margin-bottom: 4rem;
+            padding: 4rem 0;
         }
-
-        .home-hero::after {
-            content: "";
-            position: absolute;
-            inset: -20% 5% auto auto;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.2), transparent 70%);
-            border-radius: 50%;
-            filter: blur(40px);
-            opacity: 0.6;
-        }
-
-        .home-hero::before {
-            content: "";
-            position: absolute;
-            inset: auto auto -15% -20%;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 60%);
-            filter: blur(30px);
-        }
-
-        .home-hero-inner {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 36px;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .home-hero h1 {
-            font-size: clamp(2.4rem, 3.6vw, 3.4rem);
-            color: var(--home-ink);
-            margin-bottom: 16px;
-            letter-spacing: 0.5px;
-        }
-
-        .hero-title-accent {
-            background: linear-gradient(120deg, #1d4ed8, #0ea5e9);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-        }
-
-        .home-hero p {
-            color: var(--home-muted);
-            font-size: 1.05rem;
-            line-height: 1.7;
-        }
-
-        .hero-badges {
+        .home-stats {
             display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 3rem 0;
             flex-wrap: wrap;
-            gap: 12px;
-            margin: 24px 0 0;
         }
-
-        .hero-badge {
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--home-accent-dark);
-            font-weight: 500;
-            font-size: 0.85rem;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+        .stat-box {
+            text-align: center;
+            min-width: 120px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
         }
-
-        .hero-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            margin-top: 28px;
-        }
-
-        .hero-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .hero-meta-card {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 14px;
-            padding: 12px 14px;
-            border: 1px solid var(--home-border);
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        .hero-meta-title {
-            font-weight: 700;
-            color: var(--home-ink);
-        }
-
-        .hero-meta-desc {
-            color: var(--home-muted);
-            font-size: 0.82rem;
-            margin-top: 4px;
-        }
-
-        .hero-actions a {
-            text-decoration: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-        }
-
-        .hero-primary {
-            background: var(--home-accent-dark);
-            color: white;
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
-        }
-
-        .hero-secondary {
-            border: 2px solid rgba(99, 102, 241, 0.3);
-            color: var(--home-accent-dark);
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        .hero-actions a:hover {
-            transform: translateY(-2px);
-        }
-
-        .home-showcase {
-            background: rgba(255, 255, 255, 0.75);
-            border-radius: 24px;
-            padding: 28px;
-            box-shadow: var(--home-shadow);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-        }
-
-        .showcase-grid {
-            display: grid;
-            gap: 16px;
-        }
-
-        .showcase-card {
-            display: flex;
-            gap: 16px;
-            padding: 16px;
-            border-radius: 16px;
-            background: var(--home-card);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .showcase-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
-        }
-
-        .showcase-icon {
-            font-size: 1.8rem;
-        }
-
-        .showcase-title {
-            font-weight: 700;
-            color: var(--home-ink);
-        }
-
-        .showcase-desc {
-            color: var(--home-muted);
-            font-size: 0.92rem;
-            margin-top: 6px;
-        }
-
-        .home-section {
-            padding: 40px 60px 60px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .section-kicker {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: var(--home-accent-dark);
-        }
-
-        .section-title {
-            font-size: 1.4rem;
-            color: var(--home-ink);
-            margin-bottom: 20px;
-        }
-
-        .menu-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 24px;
-        }
-
-        .menu-card {
-            background: white;
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
-            cursor: pointer;
-            transition: all 0.25s ease;
-            text-decoration: none;
-            color: inherit;
+        .stat-num {
+            font-size: 3rem;
+            font-weight: 200;
             display: block;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(99, 102, 241, 0.1);
+            line-height: 1;
         }
-
-        .menu-card::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent 60%);
-            opacity: 0;
-            transition: opacity 0.2s ease;
+        .stat-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            margin-top: 0.5rem;
         }
-
-        .menu-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
-            border-color: rgba(99, 102, 241, 0.25);
-        }
-
-        .menu-card:hover::after {
-            opacity: 1;
-        }
-
-        .menu-icon {
-            font-size: 2rem;
-            margin-bottom: 14px;
-        }
-
-        .menu-title {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--home-ink);
-            margin-bottom: 6px;
-        }
-
-        .menu-desc {
-            color: var(--home-muted);
-            font-size: 0.9rem;
-        }
-
-        .features {
-            margin-top: 36px;
-            padding: 24px;
-            background: rgba(15, 23, 42, 0.04);
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-        }
-
-        .feature-highlight {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 24px;
-        }
-
-        .feature-highlight-card {
-            padding: 16px;
-            border-radius: 16px;
-            background: white;
-            border: 1px solid var(--home-border);
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        .feature-highlight-title {
-            font-weight: 700;
-            color: var(--home-ink);
-        }
-
-        .feature-highlight-desc {
-            margin-top: 8px;
-            font-size: 0.9rem;
-            color: var(--home-muted);
-        }
-
-        .feature-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-        }
-
-        .feature-item {
-            padding: 10px 12px;
-            background: white;
-            border-radius: 12px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-        }
-
-        @media (max-width: 768px) {
-            .home-hero,
-            .home-section {
-                padding: 40px 24px;
-            }
-
-            .hero-actions {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .hero-auth,
-            .hero-user {
-                margin-top: 20px;
-                display: flex;
-                gap: 12px;
-            }
-
-            .auth-btn {
-                padding: 10px 20px;
-                border-radius: 10px;
-                font-weight: 600;
-                text-decoration: none;
-                transition: all 0.3s ease;
-                font-size: 14px;
-            }
-
-            .login-btn {
-                background: rgba(99, 102, 241, 0.1);
-                border: 1px solid rgba(99, 102, 241, 0.3);
-                color: var(--home-accent-dark);
-            }
-
-            .login-btn:hover {
-                background: rgba(99, 102, 241, 0.2);
-            }
-
-            .register-btn {
-                background: var(--home-accent-dark);
-                color: white;
-                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-            }
-
-            .register-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
-            }
-
-            .user-greeting {
-                color: var(--home-muted);
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-            }
-
-            #userName {
-                color: var(--home-accent-dark);
-                font-weight: 600;
-                margin-left: 4px;
-            }
-
-            .logout-btn {
-                background: rgba(239, 68, 68, 0.1);
-                border: 1px solid rgba(239, 68, 68, 0.3);
-                color: #EF4444;
-                cursor: pointer;
-                font-family: inherit;
-            }
-
-            .logout-btn:hover {
-                background: rgba(239, 68, 68, 0.2);
-            }
-
-            .section-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        .home-section {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
         }
     </style>
 </head>
 <body class="home-page">
-    <div id="quiz-container">
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link active">首页</a>
+            <a href="quizzes.html" class="nav-link">测验</a>
+            <a href="create.html" class="nav-link">创建</a>
+            <a href="manage.html" class="nav-link">管理</a>
+            <div id="userSection" style="display: none; margin-left: 1rem;">
+                <button onclick="Auth.logout()" class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);">退出</button>
+            </div>
+        </div>
+    </nav>
+
+    <div id="home-container">
         <section class="home-hero">
-            <div class="home-hero-inner">
-                <div>
-                    <div class="logo">🎮</div>
-                    <h1><span class="hero-title-accent">Typing Quiz</span> 训练中心</h1>
-                    <p>把打字训练做成一段节奏感十足的旅程。统一管理题库、快速进入测验，用清晰的反馈驱动稳定进步。</p>
-                    <div class="hero-badges">
-                        <span class="hero-badge">实时匹配</span>
-                        <span class="hero-badge">填空多行显示</span>
-                        <span class="hero-badge">分组筛选</span>
-                    </div>
-                    <div class="hero-actions">
-                        <a href="quizzes.html" class="hero-primary">立即开始测验</a>
-                        <a href="manage.html" class="hero-secondary">管理我的题库</a>
-                    </div>
-                    <div id="authSection" class="hero-auth">
-                        <a href="login.html" class="auth-btn login-btn">登录</a>
-                        <a href="register.html" class="auth-btn register-btn">注册</a>
-                    </div>
-                    <div id="userSection" class="hero-user" style="display: none;">
-                        <span class="user-greeting">你好，<span id="userName"></span></span>
-                        <button onclick="Auth.logout()" class="auth-btn logout-btn">退出</button>
-                    </div>
-                    <div class="hero-meta">
-                        <div class="hero-meta-card">
-                            <div class="hero-meta-title">计时挑战</div>
-                            <div class="hero-meta-desc">支持限时与速度模式</div>
-                        </div>
-                        <div class="hero-meta-card">
-                            <div class="hero-meta-title">本地存储</div>
-                            <div class="hero-meta-desc">断网也能继续训练</div>
-                        </div>
-                        <div class="hero-meta-card">
-                            <div class="hero-meta-title">多题型</div>
-                            <div class="hero-meta-desc">打字题 + 填空题</div>
-                        </div>
-                    </div>
+            <h1 style="font-weight: 300; letter-spacing: 0.2em; font-size: 1.5rem; margin-bottom: 1rem;">每日目标</h1>
+            <div class="home-stats">
+                <div class="stat-box">
+                    <span class="stat-num" id="new-count">0</span>
+                    <span class="stat-label">新测验</span>
                 </div>
-                <div class="home-showcase">
-                    <div class="showcase-grid">
-                        <div class="showcase-card">
-                            <div class="showcase-icon">⚡</div>
-                            <div>
-                                <div class="showcase-title">节奏型训练</div>
-                                <div class="showcase-desc">快速输入、即时反馈，形成流畅的答题节奏。</div>
-                            </div>
-                        </div>
-                        <div class="showcase-card">
-                            <div class="showcase-icon">🧠</div>
-                            <div>
-                                <div class="showcase-title">多样题型</div>
-                                <div class="showcase-desc">打字题 + 填空题，支持答案提示与注释展示。</div>
-                            </div>
-                        </div>
-                        <div class="showcase-card">
-                            <div class="showcase-icon">📊</div>
-                            <div>
-                                <div class="showcase-title">清晰统计</div>
-                                <div class="showcase-desc">用时、得分与完成度一目了然。</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="review-count" style="color: var(--warning);">0</span>
+                    <span class="stat-label">待复习</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="learning-count">0</span>
+                    <span class="stat-label">学习中</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="suspended-count">0</span>
+                    <span class="stat-label">已暂停</span>
                 </div>
             </div>
+            <button class="btn" id="start-review-btn" onclick="startDailyReview()">开始复习流</button>
         </section>
 
         <section class="home-section">
-            <div class="section-header">
-                <div>
-                    <div class="section-kicker">Quick Start</div>
-                    <h2 class="section-title">快速入口</h2>
-                </div>
-                <div class="hero-badges">
-                    <span class="hero-badge">同步查看题库</span>
-                    <span class="hero-badge">多维度筛选</span>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase;">最近活动</h2>
+                <a href="quizzes.html" style="font-size: 0.6rem; color: var(--text-muted); text-decoration: none;">查看全部</a>
             </div>
-            <div class="menu-grid">
-                <a href="quizzes.html" class="menu-card">
-                    <div class="menu-icon">📋</div>
-                    <div class="menu-title">开始测验</div>
-                    <div class="menu-desc">选择测验并开始答题</div>
-                </a>
-
-                <a href="manage.html" class="menu-card">
-                    <div class="menu-icon">⚙️</div>
-                    <div class="menu-title">管理测验</div>
-                    <div class="menu-desc">创建、编辑、删除测验</div>
-                </a>
-
-                <a href="database.html" class="menu-card">
-                    <div class="menu-icon">🗄️</div>
-                    <div class="menu-title">数据库管理</div>
-                    <div class="menu-desc">查询和检索测验数据</div>
-                </a>
-            </div>
-
-            <div class="features">
-                <h3>✨ 特色功能</h3>
-                <div class="feature-list">
-                    <div class="feature-item">✅ 即时答案匹配</div>
-                    <div class="feature-item">✅ 大小写不敏感</div>
-                    <div class="feature-item">✅ 无序答题</div>
-                    <div class="feature-item">✅ 时间限制</div>
-                    <div class="feature-item">✅ 详细统计</div>
-                    <div class="feature-item">✅ 数据持久化</div>
-                </div>
-                <div class="feature-highlight">
-                    <div class="feature-highlight-card">
-                        <div class="feature-highlight-title">多行填空可读性</div>
-                        <div class="feature-highlight-desc">长答案自动拆分展示，保持清晰对齐与阅读体验。</div>
-                    </div>
-                    <div class="feature-highlight-card">
-                        <div class="feature-highlight-title">题库结构化管理</div>
-                        <div class="feature-highlight-desc">按分组与类型快速筛选，减少维护成本。</div>
-                    </div>
-                    <div class="feature-highlight-card">
-                        <div class="feature-highlight-title">可视化训练反馈</div>
-                        <div class="feature-highlight-desc">即时反馈与统计汇总，让进步路径可视化。</div>
-                    </div>
-                </div>
+            <div id="recent-activity-list">
+                <div class="loading" style="text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-muted);">数据加载中...</div>
             </div>
         </section>
     </div>
+
     <script src="js/api.js"></script>
-    <script src="js/daily-reminder.js"></script>
+    <script src="js/review-api.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 未登录直接跳转到登录页
+        document.addEventListener('DOMContentLoaded', async () => {
             if (!Auth.isLoggedIn()) {
                 window.location.href = 'login.html';
                 return;
             }
 
-            const authSection = document.getElementById('authSection');
+            // 更新用户信息显示
             const userSection = document.getElementById('userSection');
-            const userName = document.getElementById('userName');
+            if (userSection) userSection.style.display = 'block';
 
-            if (Auth.isLoggedIn()) {
-                authSection.style.display = 'none';
-                userSection.style.display = 'flex';
-                const user = Auth.getUser();
-                userName.textContent = user ? user.username : '用户';
-            } else {
-                authSection.style.display = 'flex';
-                userSection.style.display = 'none';
-            }
+            // 加载统计数据
+            await loadHomeSummary();
+            // 加载最近活动（模拟逻辑或从存储获取）
+            await loadRecentActivity();
         });
+
+        async function loadHomeSummary() {
+            try {
+                const summary = await ReviewAPI.getTodaySummary();
+                document.getElementById('new-count').textContent = summary.pendingLearnCount || 0;
+                document.getElementById('review-count').textContent = summary.pendingReviewCount || 0;
+                document.getElementById('learning-count').textContent = summary.scheduledCount || 0;
+                document.getElementById('suspended-count').textContent = summary.suspendedCount || 0;
+
+                const startBtn = document.getElementById('start-review-btn');
+                if ((summary.pendingLearnCount + summary.pendingReviewCount) === 0) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '今日已完成';
+                    startBtn.style.opacity = '0.5';
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        async function loadRecentActivity() {
+            // 这里可以根据实际 API 调整，目前先从 localStorage 的 quizHistory 中获取
+            const container = document.getElementById('recent-activity-list');
+            const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+            
+            if (history.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-muted);">暂无活动记录</div>';
+                return;
+            }
+
+            container.innerHTML = history.slice(0, 5).map(item => `
+                <div class="list-item">
+                    <div class="list-info">
+                        <span class="title">${item.title}</span>
+                        <span class="sub">${item.accuracy}% 准确率 • 用时 ${item.time}</span>
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">${formatTimeAgo(item.timestamp)}</span>
+                </div>
+            `).join('');
+        }
+
+        function formatTimeAgo(timestamp) {
+            const diff = Date.now() - timestamp;
+            const minutes = Math.floor(diff / 60000);
+            if (minutes < 1) return '刚刚';
+            if (minutes < 60) return `${minutes}分钟前`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}小时前`;
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        async function startDailyReview() {
+            try {
+                const items = await ReviewAPI.getDueItems();
+                if (items.length === 0) {
+                    alert('今日无待复习测验');
+                    return;
+                }
+                const quizIds = items.map(item => item.quizId);
+                sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+                window.location.href = `index.html?id=${quizIds[0]}&mode=review`;
+            } catch (error) {
+                alert('获取复习列表失败');
+            }
+        }
     </script>
 </body>
 </html>

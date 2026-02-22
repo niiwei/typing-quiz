@@ -164,7 +164,7 @@ const DailyReminder = {
      */
     startReview() {
         this.dismiss();
-        window.location.href = 'review.html';
+        window.location.href = 'home.html';
     },
 
     /**

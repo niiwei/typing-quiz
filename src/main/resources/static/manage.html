@@ -281,223 +281,149 @@
     </style>
 </head>
 <body>
-    <!-- 导航栏 -->
     <nav class="navbar">
-        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <a href="home.html" class="navbar-brand">Typing Quiz</a>
         <div class="navbar-nav">
             <a href="home.html" class="nav-link">首页</a>
-            <a href="quizzes.html" class="nav-link">测验列表</a>
-            <a href="review.html" class="nav-link">今日复习</a>
-            <a href="manage.html" class="nav-link active">管理测验</a>
-            <a href="database.html" class="nav-link">数据库管理</a>
+            <a href="quizzes.html" class="nav-link">测验</a>
+            <a href="create.html" class="nav-link">创建</a>
+            <a href="manage.html" class="nav-link active">管理</a>
+            <div id="userSection" style="display: none; margin-left: 1rem;">
+                <button onclick="Auth.logout()" class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);">退出</button>
+            </div>
         </div>
     </nav>
 
-    <div class="manage-container">
-        <div class="header">
-            <h1>测验管理</h1>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" onclick="exportAllQuizzes()">导出所有测验</button>
-                <button class="btn btn-secondary" onclick="showImportModal()">导入测验</button>
-                <button class="btn btn-primary" onclick="showCreateModal()">创建新测验</button>
+    <div id="quiz-container" class="fade-in">
+        <div class="manage-header">
+            <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">测验与分组管理</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-small" style="border-color: var(--border);" onclick="exportAllQuizzes()">全部导出</button>
+                <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
             </div>
         </div>
 
-        <!-- 分组管理区域 -->
-        <div class="header" style="margin-top: 40px; border-top: 1px solid #dee2e6; padding-top: 20px;">
-            <h2>测验分组</h2>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="showGroupModal()">创建新分组</button>
-            </div>
+        <!-- 批量操作栏 (极简风格) -->
+        <div id="bulk-actions-bar" class="bulk-actions" style="display: none;">
+            <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAll(this)">
+            <span id="selected-count" style="margin-right: auto;">已选 0 项</span>
+            <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="bulkDelete()">批量删除</button>
+            <button class="btn btn-small" onclick="showBulkGroupModal()">批量移动</button>
         </div>
 
-        <div class="quiz-table" style="margin-bottom: 40px;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>分组名称</th>
-                        <th>描述</th>
-                        <th>包含测验数</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="group-list">
-                    <tr>
-                        <td colspan="6" style="text-align: center;">加载中...</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">分组列表</h2>
+        <div id="group-list">
+            <!-- 动态填充 -->
+            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">分组加载中...</div>
         </div>
 
-        <div class="header">
-            <h2>所有测验</h2>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="quiz-group-filter" onchange="filterQuizzes()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
-                    <option value="all">全部分组</option>
-                </select>
-                <select id="quiz-type-filter" onchange="filterQuizzes()" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px;">
-                    <option value="all">全部类型</option>
-                    <option value="TYPING">打字题</option>
-                    <option value="FILL_BLANK">填空题</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- 批量操作工具栏 -->
-        <div id="bulk-actions-bar" class="bulk-actions-bar">
-            <span class="bulk-count">已选择 <span id="selected-count">0</span> 个测验</span>
-            <button class="btn btn-secondary" onclick="selectAll()">全选</button>
-            <button class="btn btn-secondary" onclick="clearSelection()">取消选择</button>
-            <div style="border-left: 2px solid #F59E0B; padding-left: 15px; display: flex; gap: 10px;">
-                <button class="btn btn-danger" onclick="bulkDelete()">批量删除</button>
-                <button class="btn btn-primary" onclick="showBulkGroupModal()">批量分组</button>
-            </div>
-        </div>
-
-        <div class="quiz-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">
-                            <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAll(this)">
-                        </th>
-                        <th>ID</th>
-                        <th>标题</th>
-                        <th>类型</th>
-                        <th>分组</th>
-                        <th>答案数</th>
-                        <th>时间限制</th>
-                        <th>创建时间</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody id="quiz-list">
-                    <tr>
-                        <td colspan="9" style="text-align: center;">加载中...</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 3rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">所有测验</h2>
+        <div id="quiz-list">
+            <!-- 动态填充 -->
+            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">测验加载中...</div>
         </div>
     </div>
 
-    <!-- 创建/编辑模态框 -->
-    <div id="quiz-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="modal-title">创建测验</h2>
-            <form id="quiz-form" onsubmit="return false;">
-                <input type="hidden" id="quiz-id">
-                
-                <div class="form-group">
-                    <label for="quiz-title">标题 *</label>
-                    <input type="text" id="quiz-title" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quiz-description">描述</label>
-                    <textarea id="quiz-description"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="quiz-time-limit">时间限制(秒,留空表示无限制)</label>
-                    <input type="number" id="quiz-time-limit" min="0">
-                </div>
-                
-                <div class="form-group">
-                    <label for="quiz-type">测验类型 *</label>
-                    <select id="quiz-type" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;" onchange="toggleQuizTypeFields()">
-                        <option value="TYPING">打字题 - 输入答案</option>
-                        <option value="FILL_BLANK">填空题 - 文本填空</option>
-                    </select>
-                </div>
-                
-                <!-- 打字题答案列表 -->
-                <div id="typing-answers-section" class="form-group">
-                    <label>答案列表 (每行一个，注释用##分隔)</label>
-                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                        <button type="button" class="btn btn-secondary" onclick="wrapAnswerWithComment()" style="padding: 5px 15px; font-size: 0.9em;">📝 注释选中文字</button>
-                    </div>
-                    <textarea id="quiz-answers" placeholder="北京##首都&#10;东京##首都&#10;首尔"></textarea>
-                </div>
-                
-                <!-- 填空题编辑区域 -->
-                <div id="fill-blank-section" style="display: none;">
-                    <div class="form-group">
-                        <label>完整文本 (选中文字后点击按钮，或手动用[]包围，注释用##包围)</label>
-                        <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-                            <button type="button" class="btn btn-secondary" onclick="wrapSelectionWithBrackets()" style="padding: 5px 15px; font-size: 0.9em;">🔍 挖空选中文字</button>
-                            <button type="button" class="btn btn-secondary" onclick="wrapSelectionWithComment()" style="padding: 5px 15px; font-size: 0.9em;">📝 注释选中文字</button>
-                        </div>
-                        <textarea id="fill-blank-full-text" placeholder="例如: 中国的首都是[北京##首都]，日本的首都[东京##首都]" style="min-height: 80px;"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>预览 (挖空后的文本)</label>
-                        <div id="fill-blank-preview" style="padding: 10px; background: #f8f9fa; border-radius: 5px; min-height: 40px;"></div>
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="generateFillBlanks()" style="margin-bottom: 15px;">生成填空预览</button>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">取消</button>
-                    <button type="submit" class="btn btn-primary" onclick="saveQuiz()">保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 分组模态框 -->
-    <div id="group-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="group-modal-title">创建分组</h2>
-            <form id="group-form" onsubmit="return false;">
-                <input type="hidden" id="group-id">
-                
-                <div class="form-group">
-                    <label for="group-name">分组名称 *</label>
-                    <input type="text" id="group-name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="group-description">描述</label>
-                    <textarea id="group-description"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label>选择要包含的测验</label>
-                    <div id="quiz-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
-                        加载中...
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-secondary" onclick="closeGroupModal()">取消</button>
-                    <button type="submit" class="btn btn-primary" onclick="saveGroup()">保存</button>
-                </div>
-            </form>
+    <!-- 分组模态框 (极简版) -->
+    <div id="group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div style="background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px;">
+            <h3 id="group-modal-title" style="margin-bottom: 1.5rem; font-weight: 300;">新建分组</h3>
+            <input type="hidden" id="group-id">
+            <div class="form-group">
+                <label class="form-label">名称 *</label>
+                <input type="text" id="group-name" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">描述</label>
+                <textarea id="group-description" class="form-input" style="height: 60px;"></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeGroupModal()">取消</button>
+                <button class="btn btn-small" onclick="saveGroup()">确认</button>
+            </div>
         </div>
     </div>
 
     <!-- 批量分组模态框 -->
-    <div id="bulk-group-modal" class="modal">
-        <div class="modal-content">
-            <h2>批量分组</h2>
-            <p style="color: #666; margin-bottom: 20px;">将选中的 <span id="bulk-selected-count">0</span> 个测验添加到分组</p>
-            
+    <div id="bulk-group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div style="background: white; padding: 2rem; max-width: 400px; width: 90%; border-radius: 4px;">
+            <h3 style="margin-bottom: 1.5rem; font-weight: 300;">移动到分组</h3>
             <div class="form-group">
-                <label for="bulk-group-select">选择目标分组</label>
-                <select id="bulk-group-select" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
-                    <option value="">加载中...</option>
+                <select id="bulk-group-select" class="form-input">
+                    <!-- 动态填充 -->
                 </select>
             </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary" onclick="closeBulkGroupModal()">取消</button>
-                <button type="button" class="btn btn-primary" onclick="bulkAddToGroup()">确认添加</button>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeBulkGroupModal()">取消</button>
+                <button class="btn btn-small" onclick="bulkAddToGroup()">确认移动</button>
             </div>
         </div>
     </div>
 
+    <script src="js/api.js"></script>
+    <script src="js/manage.js"></script>
+    <script>
+        // 覆盖 manage.js 中的渲染逻辑以匹配极简风格
+        function renderQuizList(quizzes) {
+            const container = document.getElementById('quiz-list');
+            if (quizzes.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem;">暂无测验</div>';
+                return;
+            }
+            container.innerHTML = quizzes.map(quiz => `
+                <div class="list-item">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <input type="checkbox" class="quiz-checkbox" value="${quiz.id}" onchange="updateSelectedCount()">
+                        <div class="list-info">
+                            <span class="title">${quiz.title}</span>
+                            <span class="sub">ID: ${quiz.id} • ${quiz.quizType === 'TYPING' ? '打字题' : '填空题'}</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--border); color: var(--text-muted);" onclick="editQuiz(${quiz.id})">编辑</button>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);" onclick="deleteQuiz(${quiz.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('bulk-actions-bar').style.display = 'flex';
+        }
+
+        function renderGroupList(groups) {
+            const container = document.getElementById('group-list');
+            if (groups.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem;">暂无分组</div>';
+                return;
+            }
+            container.innerHTML = groups.map(group => `
+                <div class="list-item">
+                    <div class="list-info">
+                        <span class="title">${group.name}</span>
+                        <span class="sub">${group.quizIds ? group.quizIds.length : 0} 个测验 • ${group.description || '无描述'}</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--border); color: var(--text-muted);" onclick="editGroup(${group.id})">编辑</button>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);" onclick="deleteGroup(${group.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSelectedCount() {
+            const checked = document.querySelectorAll('.quiz-checkbox:checked').length;
+            document.getElementById('selected-count').textContent = `已选 ${checked} 项`;
+        }
+
+        function toggleSelectAll(el) {
+            document.querySelectorAll('.quiz-checkbox').forEach(cb => cb.checked = el.checked);
+            updateSelectedCount();
+        }
+
+        // 重新定义编辑跳转，因为创建页已独立
+        function editQuiz(id) {
+            window.location.href = `create.html?id=${id}`;
+        }
+    </script>
+</body>
     <script src="js/manage.js"></script>
 </body>
 </html>

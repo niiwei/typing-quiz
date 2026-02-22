@@ -22,6 +22,7 @@ class QuizController {
         this.currentQuizIndex = 0; // 当前测验索引
         this.groupProgress = new Map(); // 存储各测验的进度 {quizId -> {foundAnswers, filledBlanks, completed}}
         this.groupScores = new Map();
+        this.currentQuizStatus = null;
     }
 
     getAuthHeaders() {
@@ -261,109 +262,46 @@ class QuizController {
             console.log('[QuizController.init] groupMode:', this.groupMode, 'groupId:', this.groupId, 'isReviewMode:', this.isReviewMode);
 
             if (this.groupMode) {
-                // 分组模式：从 sessionStorage 获取分组测验列表
-                console.log('[QuizController.init] 分组模式，groupId:', this.groupId);
-                
+                // 分组模式
+                await this.loadGroupQuizzes();
                 const storedList = sessionStorage.getItem(`groupQuizList_${this.groupId}`);
-                let quizList = [];
-                
-                if (storedList) {
-                    try {
-                        quizList = JSON.parse(storedList);
-                        console.log('[QuizController.init] 从 sessionStorage 获取分组列表:', quizList.length, '个测验');
-                    } catch (e) {
-                        console.error('[QuizController.init] 解析 sessionStorage 失败:', e);
-                    }
-                }
-                
-                // 如果 sessionStorage 没有列表，需要重新获取
-                if (quizList.length === 0) {
-                    console.log('[QuizController.init] sessionStorage 为空，重新获取分组列表');
-                    await this.loadGroupQuizzes();
-                    quizList = this.groupQuizzes.map(q => q.id);
-                    sessionStorage.setItem(`groupQuizList_${this.groupId}`, JSON.stringify(quizList));
-                } else {
-                    // 加载测验数据
-                    await this.loadGroupQuizzes();
-                }
-                
-                // 计算进度
-                const urlQuizId = this.quizId;
-                const currentIndex = quizList.indexOf(urlQuizId);
-                
-                // 保存原始列表长度用于显示
+                let quizList = storedList ? JSON.parse(storedList) : this.groupQuizzes.map(q => q.id);
                 this.groupQuizTotal = quizList.length;
+                const currentIndex = quizList.indexOf(Number(this.quizId));
                 
                 if (currentIndex >= 0) {
-                    // 当前测验在列表中
                     this.currentQuizIndex = currentIndex;
-                    console.log('[QuizController.init] 分组进度:', currentIndex + 1, '/', quizList.length);
-                    await this.loadQuizById(urlQuizId);
+                    await this.loadQuizById(this.quizId);
                 } else if (this.groupQuizzes.length > 0) {
-                    // 当前测验不在列表中（已完成），加载第一个未完成的
                     this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
-                    console.log('[QuizController.init] 测验已完成，分组进度:', this.currentQuizIndex + 1, '/', quizList.length);
                     await this.loadQuizById(this.groupQuizzes[0].id);
                 } else {
-                    // 列表为空，全部完成
-                    console.log('[QuizController.init] 分组全部完成');
                     sessionStorage.removeItem(`groupQuizList_${this.groupId}`);
                     alert('该分组复习任务已全部完成！');
-                    window.location.href = 'review.html';
+                    window.location.href = 'home.html';
+                    return;
                 }
             } else if (this.isReviewMode) {
-                // 全局复习模式：从 sessionStorage 获取测验列表
-                console.log('[QuizController.init] 全局复习模式');
-                
+                // 全局复习模式
+                await this.loadGlobalReviewQuizzes();
                 const storedList = sessionStorage.getItem('reviewQuizList');
-                let quizList = [];
-                
-                if (storedList) {
-                    try {
-                        quizList = JSON.parse(storedList);
-                        console.log('[QuizController.init] 从 sessionStorage 获取列表:', quizList.length, '个测验');
-                    } catch (e) {
-                        console.error('[QuizController.init] 解析 sessionStorage 失败:', e);
-                    }
-                }
-                
-                // 如果 sessionStorage 没有列表，需要重新获取
-                if (quizList.length === 0) {
-                    console.log('[QuizController.init] sessionStorage 为空，重新获取列表');
-                    await this.loadGlobalReviewQuizzes();
-                    quizList = this.groupQuizzes.map(q => q.id);
-                    sessionStorage.setItem('reviewQuizList', JSON.stringify(quizList));
-                } else {
-                    // 加载测验数据
-                    await this.loadGlobalReviewQuizzes();
-                }
-                
-                // 计算进度
-                const urlQuizId = this.quizId;
-                const currentIndex = quizList.indexOf(urlQuizId);
-                
-                // 保存原始列表长度用于显示
+                let quizList = storedList ? JSON.parse(storedList) : this.groupQuizzes.map(q => q.id);
                 this.reviewQuizTotal = quizList.length;
-                
+                const currentIndex = quizList.indexOf(Number(this.quizId));
+
                 if (currentIndex >= 0) {
-                    // 当前测验在列表中
                     this.currentQuizIndex = currentIndex;
-                    console.log('[QuizController.init] 进度:', currentIndex + 1, '/', quizList.length);
-                    await this.loadQuizById(urlQuizId);
+                    await this.loadQuizById(this.quizId);
                 } else if (this.groupQuizzes.length > 0) {
-                    // 当前测验不在列表中（已完成），加载第一个未完成的
                     this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
-                    console.log('[QuizController.init] 测验已完成，进度:', this.currentQuizIndex + 1, '/', quizList.length);
                     await this.loadQuizById(this.groupQuizzes[0].id);
                 } else {
-                    // 列表为空，全部完成
-                    console.log('[QuizController.init] 全部完成');
                     sessionStorage.removeItem('reviewQuizList');
                     alert('今日复习任务已全部完成！');
-                    window.location.href = 'review.html';
+                    window.location.href = 'home.html';
+                    return;
                 }
             } else {
-                console.log('[QuizController.init] 非分组模式，加载测验:', this.quizId);
                 await this.loadQuizById(this.quizId);
             }
 
@@ -372,7 +310,8 @@ class QuizController {
             this.isQuizActive = true;
 
             // 聚焦输入框
-            document.getElementById('answer-input').focus();
+            const input = document.getElementById('answer-input');
+            if (input) input.focus();
             console.log('[QuizController.init] 初始化完成');
         } catch (error) {
             console.error('[QuizController.init] 初始化失败:', error);
@@ -392,131 +331,38 @@ class QuizController {
 
     /**
      * 加载分组测验列表
-     * 复习模式下加载待复习列表，普通模式下加载所有测验
      */
     async loadGroupQuizzes() {
-        console.log('[loadGroupQuizzes] isReviewMode:', this.isReviewMode, 'groupId:', this.groupId);
-        
         if (this.isReviewMode) {
-            // 复习模式：加载待复习的测验列表
-            const url = `${this.apiBase}/review/groups/${this.groupId}/quizzes`;
-            console.log('[loadGroupQuizzes] 复习模式，请求URL:', url);
-            
-            const response = await fetch(url, {
+            const response = await fetch(`${this.apiBase}/review/groups/${this.groupId}/quizzes`, {
                 headers: this.getAuthHeaders()
             });
-            if (!response.ok) {
-                throw new Error('加载分组复习列表失败');
-            }
-            const reviewItems = await response.json();
-            console.log('[loadGroupQuizzes] 复习模式，API返回', reviewItems.length, '个测验');
-            
-            // 过滤：只保留待复习的测验（label为PENDING_LEARN或PENDING_REVIEW）
-            const dueItems = reviewItems.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
-            console.log('[loadGroupQuizzes] 过滤后，待复习测验:', dueItems.length);
-            console.log('[loadGroupQuizzes] 按标签统计:', {
-                待学习: dueItems.filter(i => i.label === 'PENDING_LEARN').length,
-                待复习: dueItems.filter(i => i.label === 'PENDING_REVIEW').length
-            });
-            
-            // 转换为 quizzes 格式
-            this.groupQuizzes = dueItems.map(item => ({
-                id: item.quizId,
-                title: item.quizTitle,
-                status: item.status,
-                label: item.label
-            }));
+            if (!response.ok) throw new Error('加载分组复习列表失败');
+            const items = await response.json();
+            const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+            this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
         } else {
-            // 普通模式：加载分组所有测验
-            const url = `${this.apiBase}/groups/${this.groupId}/quizzes`;
-            console.log('[loadGroupQuizzes] 普通模式，请求URL:', url);
-            
-            const response = await fetch(url, {
+            const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`, {
                 headers: this.getAuthHeaders()
             });
-            if (!response.ok) {
-                throw new Error('加载分组测验失败');
-            }
+            if (!response.ok) throw new Error('加载分组测验失败');
             this.groupQuizzes = await response.json();
-            console.log('[loadGroupQuizzes] 普通模式，获取到', this.groupQuizzes.length, '个测验');
         }
-
-        console.log('[loadGroupQuizzes] 最终 groupQuizzes.length:', this.groupQuizzes.length);
-
-        if (this.groupQuizzes.length === 0) {
-            throw new Error('该分组中没有测验');
-        }
+        if (this.groupQuizzes.length === 0) throw new Error('该分组中没有测验');
     }
 
     /**
      * 加载全局待复习测验列表
      */
     async loadGlobalReviewQuizzes() {
-        const url = `${this.apiBase}/review/quizzes`;
-        console.log('[loadGlobalReviewQuizzes] 请求URL:', url);
-        
-        const response = await fetch(url, {
+        const response = await fetch(`${this.apiBase}/review/quizzes`, {
             headers: this.getAuthHeaders()
         });
-        if (!response.ok) {
-            throw new Error('加载今日复习列表失败');
-        }
-        const reviewItems = await response.json();
-        console.log('[loadGlobalReviewQuizzes] API返回', reviewItems.length, '个测验');
-        
-        // 打印第一个LEARNING测验的详情
-        const firstLearning = reviewItems.find(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
-        if (firstLearning) {
-            console.log('[loadGlobalReviewQuizzes] 第一个待处理测验详情:', {
-                quizId: firstLearning.quizId,
-                title: firstLearning.quizTitle,
-                status: firstLearning.status,
-                label: firstLearning.label,
-                labelDisplay: firstLearning.labelDisplay
-            });
-        }
-        
-        // 过滤：只保留待复习的测验（label 为 PENDING_LEARN 或 PENDING_REVIEW）
-        const dueItems = reviewItems.filter(item => {
-            const isDue = item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW';
-            return isDue;
-        });
-        console.log('[loadGlobalReviewQuizzes] 过滤后，待复习测验:', dueItems.length);
-        console.log('[loadGlobalReviewQuizzes] 按标签统计:', {
-            待学习: dueItems.filter(i => i.label === 'PENDING_LEARN').length,
-            待复习: dueItems.filter(i => i.label === 'PENDING_REVIEW').length
-        });
-        
-        // 详细统计：按状态和分组
-        const groupStats = {};
-        dueItems.forEach(item => {
-            const key = `${item.status}`;
-            if (!groupStats[key]) groupStats[key] = [];
-            groupStats[key].push({
-                quizId: item.quizId,
-                title: item.quizTitle,
-                label: item.label
-            });
-        });
-        console.log('[loadGlobalReviewQuizzes] 详细列表:', groupStats);
-        
-        // 输出全部待复习测验
-        console.log('[loadGlobalReviewQuizzes] 全部待复习测验列表:');
-        dueItems.forEach((item, index) => {
-            console.log(`  ${index + 1}. quizId=${item.quizId}, title="${item.quizTitle}", userId=${item.userId}, status=${item.status}, label=${item.label}`);
-        });
-        
-        // 转换为 quizzes 格式
-        this.groupQuizzes = dueItems.map(item => ({
-            id: item.quizId,
-            title: item.quizTitle,
-            status: item.status,
-            due: item.due
-        }));
-
-        if (this.groupQuizzes.length === 0) {
-            throw new Error('今日没有待复习测验');
-        }
+        if (!response.ok) throw new Error('加载今日复习列表失败');
+        const items = await response.json();
+        const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+        this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
+        if (this.groupQuizzes.length === 0) throw new Error('今日没有待复习测验');
     }
 
     /**
@@ -525,21 +371,13 @@ class QuizController {
     resetQuizUI() {
         this.foundAnswers.clear();
         this.filledBlanks.clear();
-        
-        // 重置输入框
         const input = document.getElementById('answer-input');
         if (input) {
             input.value = '';
             input.disabled = false;
         }
-        
-        // 重置放弃按钮
         const giveUpBtn = document.getElementById('give-up-btn');
-        if (giveUpBtn) {
-            giveUpBtn.disabled = false;
-        }
-        
-        // 清除反馈
+        if (giveUpBtn) giveUpBtn.disabled = false;
         UIRenderer.showFeedback('', '');
     }
 
@@ -547,43 +385,26 @@ class QuizController {
      * 加载填空题数据
      */
     async loadFillBlankQuiz() {
-        try {
-            const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`, {
-                headers: this.getAuthHeaders()
-            });
-            if (!response.ok) {
-                throw new Error('加载填空题数据失败');
-            }
-            this.fillBlankQuiz = await response.json();
-        } catch (error) {
-            console.error('加载填空题失败:', error);
-            throw error;
-        }
+        const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`, {
+            headers: this.getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('加载填空题数据失败');
+        this.fillBlankQuiz = await response.json();
     }
 
     /**
      * 根据ID加载测验
      */
     async loadQuizById(quizId) {
-        // 停止之前的计时器
-        if (this.timer) {
-            this.timer.stop();
-            this.timer = null;
-        }
-
+        if (this.timer) this.timer.stop();
         this.quizId = quizId;
-        this.quiz = null;
-        this.answers = [];
-        this.foundAnswers = new Set();
-        this.fillBlankQuiz = null;
-        this.filledBlanks = new Map();
+        this.foundAnswers.clear();
+        this.filledBlanks.clear();
 
         const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`, {
             headers: this.getAuthHeaders()
         });
-        if (!quizResponse.ok) {
-            throw new Error('测验不存在');
-        }
+        if (!quizResponse.ok) throw new Error('测验不存在');
         this.quiz = await quizResponse.json();
         this.quizType = this.quiz.quizType || 'TYPING';
 
@@ -593,186 +414,72 @@ class QuizController {
             const answersResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}/answers`, {
                 headers: this.getAuthHeaders()
             });
-            if (!answersResponse.ok) {
-                throw new Error('加载答案失败');
-            }
+            if (!answersResponse.ok) throw new Error('加载答案失败');
             this.answers = await answersResponse.json();
         }
 
-        // 重置UI状态
         this.resetQuizUI();
-
-        // 恢复分组进度（如果有）
-        if (this.groupMode) {
-            const { completed, isGiveUp } = this.restoreQuizProgress(quizId);
-            if (completed) {
-                // 如果已完成，显示结果面板
-                this.showCompletedQuizResult(isGiveUp);
-            }
-        }
-
-        // 根据测验类型渲染UI
         this.renderQuizTypeUI();
-
-        // 渲染测验信息
         this.renderQuizInfo();
-
-        // 复习模式：渲染复习进度
-        if (this.groupMode || this.isReviewMode) {
-            this.renderGroupProgress();
-        }
-
-        // 重启计时器
+        if (this.groupMode || this.isReviewMode) this.renderGroupProgress();
         this.startTimer();
         this.isQuizActive = true;
     }
 
-    /**
-     * 根据测验类型渲染UI
-     */
     renderQuizTypeUI() {
         const answersGrid = document.getElementById('answers-grid');
         const fillBlankSection = document.getElementById('fill-blank-section');
-        const inputSection = document.getElementById('input-section');
-
         if (this.quizType === 'FILL_BLANK') {
-            // 隐藏打字题UI，显示填空题UI
-            answersGrid.style.display = 'none';
-            fillBlankSection.style.display = 'block';
+            if (answersGrid) answersGrid.style.display = 'none';
+            if (fillBlankSection) fillBlankSection.style.display = 'block';
             this.renderFillBlankQuiz();
         } else {
-            // 显示打字题UI
-            // 清除可能残留的内联样式，确保使用 CSS 中的 grid 布局
-            answersGrid.style.display = '';
-            answersGrid.style.gridTemplateColumns = '';
-            answersGrid.style.gap = '';
-            fillBlankSection.style.display = 'none';
-            UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers);
+            if (answersGrid) {
+                answersGrid.style.display = 'grid';
+                UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers);
+            }
+            if (fillBlankSection) fillBlankSection.style.display = 'none';
             UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
         }
     }
 
-    /**
-     * 渲染填空题（放弃专用）- 未答题显示红色框
-     */
-    renderFillBlankQuizForGiveUp(originallyFilledIndices) {
-        const questionEl = document.getElementById('fill-blank-question');
-        const textEl = document.getElementById('fill-blank-text');
-
-        if (!this.fillBlankQuiz) return;
-
-        // 渲染题目区域
-        questionEl.textContent = '题目: ' + (this.quiz.title || '填空题');
-
-        // 按位置从后往前处理，避免索引偏移问题
-        const blanks = this.fillBlankQuiz.blanks || [];
-        let result = this.fillBlankQuiz.fullText;
-
-        // 按 startIndex 降序排序（从后往前替换）
-        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
-            .sort((a, b) => b.startIndex - a.startIndex);
-
-        sortedBlanks.forEach(item => {
-            const originalIndex = item.originalIndex;
-            // 原本是未填写的（在放弃时需要标记为红色）
-            const wasOriginallyEmpty = !originallyFilledIndices.has(originalIndex);
-            const correctAnswer = item.correctAnswer || '';
-            const comment = item.comment || '';
-
-            // 为放弃场景创建特殊的wrapper样式
-            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
-                'data-mode="giveup" ' +
-                'data-was-empty="' + (wasOriginallyEmpty ? '1' : '0') + '" ' +
-                'data-blank-index="' + originalIndex + '" ' +
-                'data-answer="' + encodeURIComponent(correctAnswer) + '" ' +
-                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
-                'data-comment="' + encodeURIComponent(comment) + '"></span>';
-
-            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
-        });
-
-        // 将换行符替换为带额外间距的 div
-        result = result.replace(/\n/g, '<div class="manual-break"></div>');
-
-        textEl.innerHTML = result;
-        this.replaceFillBlankWrappers(textEl);
-
-        // 为放弃模式的空格添加特殊样式
-        document.querySelectorAll('.fill-blank-wrapper[data-mode="giveup"]').forEach(wrapper => {
-            const wasEmpty = wrapper.getAttribute('data-was-empty') === '1';
-            if (wasEmpty) {
-                // 未答出的显示红色边框
-                wrapper.style.border = '2px solid #ef4444';
-                wrapper.style.backgroundColor = '#fee2e2';
-            } else {
-                // 已答出的显示绿色边框
-                wrapper.style.border = '2px solid #22c55e';
-                wrapper.style.backgroundColor = '#dcfce7';
-            }
-            wrapper.style.borderRadius = '4px';
-            wrapper.style.padding = '2px 6px';
-        });
+    renderQuizInfo() {
+        const titleEl = document.getElementById('quiz-title');
+        const descEl = document.getElementById('quiz-description');
+        if (titleEl) titleEl.textContent = this.quiz.title;
+        if (descEl) descEl.textContent = this.quiz.description || '';
     }
 
-    /**
-     * 渲染填空题
-     */
+    renderGroupProgress() {
+        const total = this.quizType === 'FILL_BLANK' 
+            ? (this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0)
+            : (this.answers ? this.answers.length : 0);
+        const found = this.quizType === 'FILL_BLANK' ? this.filledBlanks.size : this.foundAnswers.size;
+        const progress = total > 0 ? found / total : 0;
+        const fillEl = document.getElementById('progress-fill');
+        if (fillEl) fillEl.style.width = (progress * 100) + '%';
+    }
+
     renderFillBlankQuiz() {
-        const questionEl = document.getElementById('fill-blank-question');
         const textEl = document.getElementById('fill-blank-text');
-
-        if (!this.fillBlankQuiz) return;
-
-        // 渲染题目区域
-        questionEl.textContent = '题目: ' + (this.quiz.title || '填空题');
-
-        // 按位置从后往前处理，避免索引偏移问题
+        if (!this.fillBlankQuiz || !textEl) return;
         const blanks = this.fillBlankQuiz.blanks || [];
         let result = this.fillBlankQuiz.fullText;
-
-        // 按 startIndex 降序排序（从后往前替换）
         const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
             .sort((a, b) => b.startIndex - a.startIndex);
 
         sortedBlanks.forEach(item => {
             const isFilled = this.filledBlanks.has(item.originalIndex);
-            const correctAnswer = item.correctAnswer || '';
-            const comment = item.comment || '';
             const userAnswer = isFilled ? (this.filledBlanks.get(item.originalIndex) || '') : '';
-
-            const wrapperHTML = '<span class="fill-blank-wrapper" ' +
-                'data-mode="play" ' +
-                'data-filled="' + (isFilled ? '1' : '0') + '" ' +
-                'data-blank-index="' + item.originalIndex + '" ' +
-                'data-answer="' + encodeURIComponent(userAnswer) + '" ' +
-                'data-correct="' + encodeURIComponent(correctAnswer) + '" ' +
-                'data-comment="' + encodeURIComponent(comment) + '"></span>';
-
+            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="play" data-filled="${isFilled ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(userAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
             result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
         });
-
-        // 将换行符替换为带额外间距的 div
-        result = result.replace(/\n/g, '<div class="manual-break"></div>');
-
-        textEl.innerHTML = result;
+        textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
         this.replaceFillBlankWrappers(textEl);
     }
 
-    /**
-     * 聚焦填空题输入框
-     */
-    focusFillBlankInput() {
-        document.getElementById('answer-input').focus();
-    }
-
-    /**
-     * 处理填空题输入
-     */
     handleInput(input) {
-        if (!input || input.trim() === '') {
-            return;
-        }
-
+        if (!input || input.trim() === '') return;
         if (this.quizType === 'FILL_BLANK') {
             this.handleFillBlankInput(input.trim());
         } else {
@@ -780,237 +487,163 @@ class QuizController {
         }
     }
 
-    /**
-     * 处理填空题输入 - 单个输入框
-     */
     handleFillBlankInput(userAnswer) {
-        // 检查是否匹配任何未填写的空格
         const blanks = this.fillBlankQuiz.blanks || [];
-        
         for (let i = 0; i < blanks.length; i++) {
-            // 只检查未填写的空格
-            if (this.filledBlanks.has(i)) {
-                continue;
-            }
-            
-            const blank = blanks[i];
-            // 不区分大小写匹配
-            if (userAnswer.toLowerCase() === blank.correctAnswer.toLowerCase()) {
-                // 找到匹配的空格
+            if (this.filledBlanks.has(i)) continue;
+            if (userAnswer.toLowerCase() === blanks[i].correctAnswer.toLowerCase()) {
                 this.filledBlanks.set(i, userAnswer);
-                
-                // 显示反馈
                 UIRenderer.showFeedback('正确!', 'success');
                 this.clearInput();
-                
-                // 重新渲染填空题
                 this.renderFillBlankQuiz();
                 this.updateFillBlankScore();
-
-                // 检查是否完成所有填空
-                if (this.filledBlanks.size === blanks.length) {
-                    this.endQuiz();
-                }
+                if (this.filledBlanks.size === blanks.length) this.endQuiz();
                 return;
             }
         }
     }
 
-    /**
-     * 更新填空题得分
-     */
     updateFillBlankScore() {
         const found = this.filledBlanks.size;
         const total = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
         UIRenderer.updateScore(found, total);
+        this.renderGroupProgress();
     }
 
-    /**
-     * 渲染测验信息
-     */
-    renderQuizInfo() {
-        document.getElementById('quiz-title').textContent = this.quiz.title;
-        document.getElementById('quiz-description').textContent = this.quiz.description || '';
-    }
+    async endQuiz(isGiveUp = false) {
+        if (!this.isQuizActive) return;
+        this.isQuizActive = false;
+        if (this.timer) this.timer.stop();
 
-    /**
-     * 渲染复习进度（分组模式或全局复习模式）
-     */
-    renderGroupProgress() {
-        if ((!this.groupMode && !this.isReviewMode) || this.groupQuizzes.length <= 1) return;
+        const input = document.getElementById('answer-input');
+        if (input) { input.disabled = true; input.blur(); }
 
-        const progressLabel = this.groupMode ? '分组进度' : '今日复习';
-        
-        // 使用保存的原始总数
-        let totalCount = this.groupQuizzes.length;
-        if (this.groupMode && this.groupQuizTotal) {
-            totalCount = this.groupQuizTotal;
-        } else if (this.isReviewMode && this.reviewQuizTotal) {
-            totalCount = this.reviewQuizTotal;
+        const timeElapsed = this.timer ? this.timer.getTimeElapsed() : 0;
+        const total = this.quizType === 'FILL_BLANK' ? (this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0) : (this.answers ? this.answers.length : 0);
+        const found = this.quizType === 'FILL_BLANK' ? (this.filledBlanks ? this.filledBlanks.size : 0) : (this.foundAnswers ? this.foundAnswers.size : 0);
+        const accuracy = total > 0 ? Math.round((found / total) * 100) : 0;
+
+        const stats = { quizId: this.quizId, found, total, accuracy, timeElapsed, isGiveUp, quizType: this.quizType };
+        let missedAnswers = [];
+        if (this.quizType === 'FILL_BLANK') {
+            missedAnswers = this.fillBlankQuiz.blanks.filter((_, i) => !this.filledBlanks.has(i)).map(b => ({ content: b.correctAnswer, comment: b.comment }));
+        } else {
+            missedAnswers = this.answers.filter(a => !this.foundAnswers.has(a.id));
         }
 
-        let progressHTML = `
-            <div id="group-progress" class="group-progress">
-                <div class="group-progress-info">
-                    <span>${progressLabel}: ${this.currentQuizIndex + 1} / ${totalCount}</span>
-                    <span class="current-quiz-name">${this.quiz.title}</span>
-                </div>
-                <div class="group-nav-hint">
-                    按 ← → 切换测验
-                </div>
-            </div>
-        `;
-
-        // 添加到页面顶部
-        const header = document.getElementById('quiz-header');
-        const existingProgress = document.getElementById('group-progress');
-        if (existingProgress) {
-            existingProgress.remove();
+        if (isGiveUp) {
+            if (this.quizType === 'FILL_BLANK') this.renderFillBlankQuizForGiveUp(new Set(this.filledBlanks.keys()));
+            else UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
         }
-        header.insertAdjacentHTML('afterend', progressHTML);
+
+        UIRenderer.showResults(stats, missedAnswers);
+        if (this.isReviewMode) {
+            const panel = document.getElementById('rating-panel');
+            if (panel) { panel.style.display = 'block'; await this.loadQuizStatus(); }
+        }
+        this.saveToLocalHistory(stats);
+        this.saveRecordToServer(stats);
     }
 
-    /**
-     * 设置事件监听器
-     */
+    async saveRecordToServer(stats) {
+        try {
+            await fetch(`${this.apiBase}/quizzes/${this.quizId}/record`, {
+                method: 'POST',
+                headers: this.getAuthHeaders(),
+                body: JSON.stringify({ score: stats.found, totalScore: stats.total, timeElapsed: stats.timeElapsed, accuracy: stats.accuracy, isGiveUp: stats.isGiveUp })
+            });
+        } catch (e) { console.error('保存记录失败'); }
+    }
+
+    saveToLocalHistory(stats) {
+        const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+        history.unshift({ quizId: stats.quizId, title: this.quiz ? this.quiz.title : '未知', accuracy: stats.accuracy, time: UIRenderer.formatTime(stats.timeElapsed), timestamp: Date.now() });
+        localStorage.setItem('quiz_history', JSON.stringify(history.slice(0, 20)));
+    }
+
+    async loadQuizStatus() {
+        try {
+            const res = await fetch(`${this.apiBase}/review/quizzes/${this.quizId}/status`, { headers: this.getAuthHeaders() });
+            if (res.ok) {
+                this.currentQuizStatus = await res.json();
+                this.updateRatingIntervals(this.currentQuizStatus);
+            }
+        } catch (e) { console.error('加载状态失败'); }
+    }
+
+    updateRatingIntervals(status) {
+        const intervals = this.calculateIntervals(status);
+        const selectors = { 1: '.rating-again .interval', 2: '.rating-hard .interval', 3: '.rating-good .interval', 4: '.rating-easy .interval' };
+        for (let r in selectors) {
+            const el = document.querySelector(selectors[r]);
+            if (el) el.textContent = intervals[r];
+        }
+    }
+
+    calculateIntervals(status) {
+        const status_type = status.status;
+        const ease = status.easeFactor || 2500;
+        const currentInterval = status.intervalDays || 0;
+        const learningStep = status.learningStep || 0;
+        const MAX_INTERVAL = 365;
+        let intervals = {};
+        if (status_type === 'NEW' || status_type === 'LEARNING' || status_type === 'RELEARNING') {
+            if (learningStep === 0) intervals = { 1: '<10m', 2: '<10m', 3: '10m', 4: '1d' };
+            else if (learningStep === 1) intervals = { 1: '<10m', 2: '10m', 3: '1h', 4: '1d' };
+            else intervals = { 1: '<10m', 2: '1h', 3: '1d', 4: '4d' };
+        } else {
+            const format = (d) => d >= 1 ? Math.round(d) + 'd' : Math.round(d * 24) + 'h';
+            intervals[1] = '<10m';
+            intervals[2] = format(Math.min(MAX_INTERVAL, Math.max(1, currentInterval * 1.2)));
+            intervals[3] = format(Math.min(MAX_INTERVAL, Math.max(1, currentInterval * ease / 1000)));
+            intervals[4] = format(Math.min(MAX_INTERVAL, Math.max(1, currentInterval * ease / 1000 * 1.3)));
+        }
+        return intervals;
+    }
+
     setupEventListeners() {
         const input = document.getElementById('answer-input');
-
-        // 监听输入事件(实时检查)
-        input.addEventListener('input', (e) => {
-            if (this.isQuizActive) {
-                this.handleInput(e.target.value);
-            }
-        });
-
-        // 重新开始按钮
-        document.getElementById('restart-btn').addEventListener('click', () => {
-            location.reload();
-        });
-
-        // 复习模式：键盘导航（分组模式和全局复习模式都支持）
+        if (input) input.addEventListener('input', (e) => { if (this.isQuizActive) this.handleInput(e.target.value); });
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) restartBtn.addEventListener('click', () => location.reload());
         if (this.groupMode || this.isReviewMode) {
             document.addEventListener('keydown', (e) => {
-                // 复习模式下，即使测验结束也允许切换
-                if (this.groupMode) {
-                    // 分组模式下，如果测验还在进行中，不处理导航
-                    if (!this.isQuizActive) return;
-                }
-
-                if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    this.navigatePrevQuiz();
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    this.navigateNextQuiz();
-                }
+                if (e.key === 'ArrowLeft') { e.preventDefault(); this.navigatePrevQuiz(); }
+                else if (e.key === 'ArrowRight') { e.preventDefault(); this.navigateNextQuiz(); }
             });
         }
     }
 
-    /**
-     * 切换到上一个测验
-     */
     navigatePrevQuiz() {
         if (this.currentQuizIndex > 0) {
-            // 如果当前测验未完成才保存进度
-            if (!this.isQuizCompleted()) {
-                this.saveCurrentQuizProgress();
-            }
             this.currentQuizIndex--;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
         }
     }
 
-    /**
-     * 切换到下一个测验
-     */
     navigateNextQuiz() {
         if (this.currentQuizIndex < this.groupQuizzes.length - 1) {
-            // 如果当前测验未完成才保存进度
-            if (!this.isQuizCompleted()) {
-                this.saveCurrentQuizProgress();
-            }
             this.currentQuizIndex++;
             this.loadQuizById(this.groupQuizzes[this.currentQuizIndex].id);
         }
     }
 
-    /**
-     * 检查当前测验是否已完成
-     */
-    isQuizCompleted() {
-        const progress = this.groupProgress.get(this.quizId);
-        return progress && progress.completed;
+    clearInput() {
+        const input = document.getElementById('answer-input');
+        if (input) input.value = '';
+        setTimeout(() => UIRenderer.showFeedback('', ''), 1000);
     }
 
-    /**
-     * 保存当前测验进度
-     */
-    saveCurrentQuizProgress() {
-        const totalAnswers = this.answers ? this.answers.length : 0;
-        const totalBlanks = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
-
-        const progress = {
-            quizId: this.quizId,
-            quizTitle: this.quiz.title,
-            quizType: this.quizType,
-            foundAnswers: Array.from(this.foundAnswers), // 保存已找到的答案ID
-            filledBlanks: Object.fromEntries(this.filledBlanks), // 保存填空题进度
-            completed: (totalAnswers > 0 && this.foundAnswers.size === totalAnswers) ||
-                      (totalBlanks > 0 && this.filledBlanks.size === totalBlanks),
-            isGiveUp: false
-        };
-
-        console.log('保存当前进度:', progress);
-        // 保存或更新进度
-        this.groupProgress.set(this.quizId, progress);
+    startTimer() {
+        const timeLimit = this.quiz.timeLimit;
+        this.timer = new TimerModule(timeLimit, () => this.endQuiz());
+        this.timer.start();
     }
 
-    /**
-     * 保存放弃状态
-     */
-    saveGiveUpProgress() {
-        const progress = {
-            quizId: this.quizId,
-            quizTitle: this.quiz.title,
-            quizType: this.quizType,
-            foundAnswers: Array.from(this.foundAnswers),
-            filledBlanks: Object.fromEntries(this.filledBlanks),
-            completed: true,
-            isGiveUp: true
-        };
-
-        console.log('保存放弃状态:', progress);
-        this.groupProgress.set(this.quizId, progress);
+    giveUp() {
+        if (confirm('确定要放弃吗?将显示所有答案。')) this.endQuiz(true);
     }
 
-    /**
-     * 恢复测验进度
-     */
-    restoreQuizProgress(quizId) {
-        const progress = this.groupProgress.get(quizId);
-        console.log('restoreQuizProgress:', quizId, progress);
-
-        if (!progress) return { completed: false, isGiveUp: false };
-
-        // 恢复打字题进度
-        if (progress.foundAnswers && progress.foundAnswers.length > 0) {
-            this.foundAnswers = new Set(progress.foundAnswers);
-        }
-
-        // 恢复填空题进度
-        if (progress.filledBlanks && progress.filledBlanks.size > 0) {
-            this.filledBlanks = new Map(progress.filledBlanks);
-        }
-
-        console.log('恢复结果:', { completed: progress.completed, isGiveUp: progress.isGiveUp });
-        return { completed: progress.completed, isGiveUp: progress.isGiveUp };
-    }
-
-    /**
-     * 检查答案
-     */
     async checkAnswer(input) {
         try {
             const response = await fetch(`${this.apiBase}/answers/validate`, {
@@ -1021,11 +654,8 @@ class QuizController {
                     input: input
                 })
             });
-
             const result = await response.json();
-
             if (result.valid) {
-                // 检查是否已经找到
                 if (this.foundAnswers.has(result.answerId)) {
                     UIRenderer.showFeedback('已回答', 'duplicate');
                     this.clearInput();
@@ -1038,232 +668,40 @@ class QuizController {
         }
     }
 
-    /**
-     * 标记答案为已找到
-     */
     markAnswerFound(answerId, displayContent) {
         this.foundAnswers.add(answerId);
-        
-        // 更新UI
         UIRenderer.highlightAnswer(answerId);
         UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
         UIRenderer.showFeedback('正确!', 'success');
-        
-        // 清空输入框
         this.clearInput();
-
-        // 检查是否完成
+        this.renderGroupProgress();
         if (this.foundAnswers.size === this.answers.length) {
             this.endQuiz();
         }
     }
 
-    /**
-     * 清空输入框
-     */
-    clearInput() {
-        const input = document.getElementById('answer-input');
-        input.value = '';
-        
-        // 清除反馈消息
-        setTimeout(() => {
-            UIRenderer.showFeedback('', '');
-        }, 1000);
-    }
+    renderFillBlankQuizForGiveUp(originallyFilledIndices) {
+        const textEl = document.getElementById('fill-blank-text');
+        if (!this.fillBlankQuiz || !textEl) return;
+        const blanks = this.fillBlankQuiz.blanks || [];
+        let result = this.fillBlankQuiz.fullText;
+        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
+            .sort((a, b) => b.startIndex - a.startIndex);
 
-    /**
-     * 启动计时器
-     */
-    startTimer() {
-        const timeLimit = this.quiz.timeLimit;
-        
-        this.timer = new TimerModule(timeLimit, () => {
-            this.endQuiz();
+        sortedBlanks.forEach(item => {
+            const wasOriginallyEmpty = !originallyFilledIndices.has(item.originalIndex);
+            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="giveup" data-was-empty="${wasOriginallyEmpty ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(item.correctAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
+            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
         });
-        
-        this.timer.start();
-    }
+        textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
+        this.replaceFillBlankWrappers(textEl);
 
-    /**
-     * 结束测验
-     */
-    endQuiz(isGiveUp = false) {
-        this.isQuizActive = false;
-
-        if (this.timer) {
-            this.timer.stop();
-        }
-
-        // 禁用输入框和放弃按钮
-        document.getElementById('answer-input').disabled = true;
-        document.getElementById('give-up-btn').disabled = true;
-
-        // 禁用填空题输入框
-        if (this.quizType === 'FILL_BLANK') {
-            document.querySelectorAll('.fill-blank-input').forEach(input => {
-                input.disabled = true;
-            });
-        }
-
-        // 计算统计数据
-        let found, total;
-        if (this.quizType === 'FILL_BLANK') {
-            found = this.filledBlanks.size;
-            total = this.fillBlankQuiz ? this.fillBlankQuiz.blanksCount : 0;
-        } else {
-            found = this.foundAnswers.size;
-            total = this.answers.length;
-        }
-
-        const stats = {
-            found: found,
-            total: total,
-            accuracy: total > 0 ? Math.round((found / total) * 100) : 0,
-            timeElapsed: this.timer ? this.timer.getElapsedTime() : 0,
-            quizType: this.quizType,
-            isGiveUp: isGiveUp
-        };
-
-        // 获取未答出的答案
-        let missedAnswers = [];
-        if (this.quizType === 'FILL_BLANK') {
-            // 如果是放弃，显示所有正确答案
-            if (isGiveUp) {
-                // 保存原本已填写的空格索引
-                const originallyFilledIndices = new Set(this.filledBlanks.keys());
-
-                // 填充所有空格
-                this.fillBlankQuiz.blanks.forEach((blank, index) => {
-                    this.filledBlanks.set(index, blank.correctAnswer);
-                });
-                // 重新渲染填空题显示（使用放弃专用方法，让未答题显示红色框）
-                this.renderFillBlankQuizForGiveUp(originallyFilledIndices);
-
-                // 所有空格都是"未答出"的（因为是放弃）
-                missedAnswers = this.fillBlankQuiz.blanks.map((blank, index) => ({
-                    id: index,
-                    content: blank.correctAnswer,
-                    displayContent: blank.correctAnswer,
-                    comment: blank.comment
-                }));
-            } else {
-                // 获取未填写的空格正确答案
-                if (this.fillBlankQuiz && this.fillBlankQuiz.blanks) {
-                    missedAnswers = this.fillBlankQuiz.blanks
-                        .map((blank, idx) => ({...blank, originalIndex: idx}))
-                        .filter(item => !this.filledBlanks.has(item.originalIndex))
-                        .map(item => ({
-                            id: item.originalIndex,
-                            content: item.correctAnswer,
-                            displayContent: item.correctAnswer,
-                            comment: item.comment
-                        }));
-                }
-            }
-        } else {
-            missedAnswers = this.answers.filter(
-                answer => !this.foundAnswers.has(answer.id)
-            );
-
-            // 如果是放弃，在答案网格中显示所有答案
-            if (isGiveUp) {
-                UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
-            }
-        }
-
-        // 保存当前测验进度（分组模式）
-        if (this.groupMode) {
-            if (isGiveUp) {
-                this.saveGiveUpProgress();
-            } else {
-                this.saveCurrentQuizProgress();
-            }
-        }
-
-        // 显示结果
-        UIRenderer.showResults(stats, missedAnswers);
-
-        // 复习模式：显示评级面板
-        if (typeof isReviewMode !== 'undefined' && isReviewMode) {
-            setTimeout(() => {
-                showRatingPanel();
-            }, 500);
-        }
-
-        // 分组模式：显示分组结果汇总
-        if (this.groupMode) {
-            this.showGroupResultsSummary();
-        }
-    }
-
-    /**
-     * 显示分组结果汇总
-     */
-    showGroupResultsSummary() {
-        const resultsPanel = document.getElementById('results-panel');
-
-        let summaryHTML = `
-            <div class="group-results-summary">
-                <h3>📊 分组测验结果汇总</h3>
-        `;
-
-        let totalFound = 0;
-        let totalQuestions = 0;
-
-        this.groupProgress.forEach((progress, quizId) => {
-            const found = progress.foundAnswers ? progress.foundAnswers.length : 0;
-            const total = progress.quizType === 'FILL_BLANK'
-                ? (progress.filledBlanks ? progress.filledBlanks.size : 0)
-                : this.groupQuizzes.find(q => q.id === quizId)?.totalAnswers || 0;
-
-            totalFound += found;
-            totalQuestions += total;
-            const accuracy = total > 0 ? Math.round((found / total) * 100) : 0;
-            summaryHTML += `
-                <div class="group-result-item">
-                    <span class="quiz-name">${progress.quizTitle}</span>
-                    <span class="quiz-score">${found}/${total} (${accuracy}%)</span>
-                </div>
-            `;
+        document.querySelectorAll('.fill-blank-wrapper[data-mode="giveup"]').forEach(wrapper => {
+            const wasEmpty = wrapper.getAttribute('data-was-empty') === '1';
+            wrapper.style.border = wasEmpty ? '2px solid #ef4444' : '2px solid #22c55e';
+            wrapper.style.backgroundColor = wasEmpty ? '#fee2e2' : '#dcfce7';
+            wrapper.style.borderRadius = '4px';
+            wrapper.style.padding = '2px 6px';
         });
-
-        // 添加总分
-        const overallAccuracy = totalQuestions > 0 ? Math.round((totalFound / totalQuestions) * 100) : 0;
-        summaryHTML += `
-                <div class="group-result-item" style="background: #667eea; color: white; margin-top: 15px;">
-                    <span class="quiz-name" style="color: white;">总分</span>
-                    <span class="quiz-score" style="color: white;">${totalFound}/${totalQuestions} (${overallAccuracy}%)</span>
-                </div>
-            </div>
-        `;
-
-        resultsPanel.insertAdjacentHTML('beforeend', summaryHTML);
-    }
-
-    /**
-     * 显示所有填空题正确答案
-     */
-    showAllFillBlankAnswers() {
-        if (!this.fillBlankQuiz) return;
-
-        // 填充所有空格
-        this.fillBlankQuiz.blanks.forEach((blank, index) => {
-            if (!this.filledBlanks.has(index)) {
-                this.filledBlanks.set(index, blank.correctAnswer);
-            }
-        });
-
-        // 重新渲染填空题显示
-        this.renderFillBlankQuiz();
-    }
-
-    /**
-     * 放弃测验
-     */
-    giveUp() {
-        if (!confirm('确定要放弃吗?将显示所有答案。')) {
-            return;
-        }
-        this.endQuiz(true);
     }
 }
