@@ -339,37 +339,93 @@ class QuizController {
 
     /**
      * 加载分组测验列表
+     * 优先从 sessionStorage 读取原始列表（确保进度显示正确）
      */
     async loadGroupQuizzes() {
-        if (this.isReviewMode) {
-            const response = await fetch(`${this.apiBase}/review/groups/${this.groupId}/quizzes`, {
-                headers: this.getAuthHeaders()
-            });
-            if (!response.ok) throw new Error('加载分组复习列表失败');
-            const items = await response.json();
-            const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
-            this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
+        // 首先尝试从 sessionStorage 获取原始列表
+        const storageKey = `groupQuizList_${this.groupId}`;
+        const storedList = sessionStorage.getItem(storageKey);
+        
+        if (storedList) {
+            // 使用 sessionStorage 中的原始列表
+            const quizIds = JSON.parse(storedList);
+            this.groupQuizzes = quizIds.map(id => ({ id, title: '' }));
+            // 异步加载测验标题（可选）
+            this.loadQuizTitles(quizIds);
         } else {
-            const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`, {
-                headers: this.getAuthHeaders()
-            });
-            if (!response.ok) throw new Error('加载分组测验失败');
-            this.groupQuizzes = await response.json();
+            // 没有存储的列表，从 API 获取
+            if (this.isReviewMode) {
+                const response = await fetch(`${this.apiBase}/review/groups/${this.groupId}/quizzes`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (!response.ok) throw new Error('加载分组复习列表失败');
+                const items = await response.json();
+                const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+                this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
+            } else {
+                const response = await fetch(`${this.apiBase}/groups/${this.groupId}/quizzes`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (!response.ok) throw new Error('加载分组测验失败');
+                this.groupQuizzes = await response.json();
+            }
+            
+            // 保存到 sessionStorage
+            const quizIds = this.groupQuizzes.map(q => q.id);
+            sessionStorage.setItem(storageKey, JSON.stringify(quizIds));
         }
+        
         if (this.groupQuizzes.length === 0) throw new Error('该分组中没有测验');
     }
 
     /**
+     * 异步加载测验标题
+     */
+    async loadQuizTitles(quizIds) {
+        try {
+            for (let i = 0; i < quizIds.length; i++) {
+                const response = await fetch(`${this.apiBase}/quizzes/${quizIds[i]}`, {
+                    headers: this.getAuthHeaders()
+                });
+                if (response.ok) {
+                    const quiz = await response.json();
+                    this.groupQuizzes[i].title = quiz.title;
+                }
+            }
+        } catch (e) {
+            console.error('加载测验标题失败:', e);
+        }
+    }
+
+    /**
      * 加载全局待复习测验列表
+     * 优先从 sessionStorage 读取原始列表（确保进度显示正确）
      */
     async loadGlobalReviewQuizzes() {
-        const response = await fetch(`${this.apiBase}/review/quizzes`, {
-            headers: this.getAuthHeaders()
-        });
-        if (!response.ok) throw new Error('加载今日复习列表失败');
-        const items = await response.json();
-        const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
-        this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
+        // 首先尝试从 sessionStorage 获取原始列表
+        const storedList = sessionStorage.getItem('reviewQuizList');
+        
+        if (storedList) {
+            // 使用 sessionStorage 中的原始列表
+            const quizIds = JSON.parse(storedList);
+            this.groupQuizzes = quizIds.map(id => ({ id, title: '' }));
+            // 异步加载测验标题
+            this.loadQuizTitles(quizIds);
+        } else {
+            // 没有存储的列表，从 API 获取
+            const response = await fetch(`${this.apiBase}/review/quizzes`, {
+                headers: this.getAuthHeaders()
+            });
+            if (!response.ok) throw new Error('加载今日复习列表失败');
+            const items = await response.json();
+            const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+            this.groupQuizzes = dueItems.map(item => ({ id: item.quizId, title: item.quizTitle }));
+            
+            // 保存到 sessionStorage
+            const quizIds = this.groupQuizzes.map(q => q.id);
+            sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+        }
+        
         if (this.groupQuizzes.length === 0) throw new Error('今日没有待复习测验');
     }
 
@@ -429,7 +485,10 @@ class QuizController {
         this.resetQuizUI();
         this.renderQuizTypeUI();
         this.renderQuizInfo();
-        if (this.groupMode || this.isReviewMode) this.renderGroupProgress();
+        if (this.groupMode || this.isReviewMode) {
+            this.renderGroupProgress();
+            this.renderGroupReviewProgress(); // 渲染分组复习进度
+        }
         this.startTimer();
         this.isQuizActive = true;
     }
@@ -456,6 +515,50 @@ class QuizController {
         const descEl = document.getElementById('quiz-description');
         if (titleEl) titleEl.textContent = this.quiz.title;
         if (descEl) descEl.textContent = this.quiz.description || '';
+    }
+
+    /**
+     * 渲染分组复习进度（如：今日复习: 1/24）
+     */
+    renderGroupReviewProgress() {
+        const progressContainer = document.getElementById('group-review-progress');
+        if (!progressContainer) return;
+        
+        // 只有在分组模式或复习模式下才显示
+        if (!this.groupMode && !this.isReviewMode) {
+            progressContainer.style.display = 'none';
+            return;
+        }
+        
+        // 显示进度容器
+        progressContainer.style.display = 'block';
+        
+        // 计算当前索引和总数
+        const total = this.groupQuizzes ? this.groupQuizzes.length : 0;
+        let current = 0;
+        
+        if (this.groupQuizzes && this.quizId) {
+            // 找到当前测验在分组中的索引
+            const index = this.groupQuizzes.findIndex(q => q.id === parseInt(this.quizId));
+            current = index >= 0 ? index + 1 : 0;
+        }
+        
+        // 更新显示
+        const currentEl = document.getElementById('group-current-index');
+        const totalEl = document.getElementById('group-total-count');
+        const textEl = document.getElementById('group-progress-text');
+        
+        if (currentEl) currentEl.textContent = current;
+        if (totalEl) totalEl.textContent = total;
+        
+        // 添加进度描述文字
+        if (textEl) {
+            if (this.isReviewMode) {
+                textEl.textContent = '今日复习';
+            } else if (this.groupMode) {
+                textEl.textContent = '分组进度';
+            }
+        }
     }
 
     renderGroupProgress() {
