@@ -218,6 +218,11 @@ public class QuizReviewStatus {
                 .withZoneSameInstant(ZoneId.of("Asia/Shanghai"))
                 .toLocalDateTime();
         
+        // 检查脏数据屏蔽（与isUserAccessible保持一致）
+        if (intervalDays != null && intervalDays >= 36500) {
+            return ReviewLabel.SCHEDULED;
+        }
+        
         if (status == ReviewStatus.SUSPENDED) {
             return ReviewLabel.SUSPENDED;
         }
