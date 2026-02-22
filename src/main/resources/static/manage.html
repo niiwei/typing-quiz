@@ -207,7 +207,6 @@
                 <span class="filter-label">分组</span>
                 <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                     <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
-                    <span class="filter-item" data-group="ungrouped" onclick="filterByGroup('ungrouped', this)">未分组</span>
                     <!-- 动态填充其他分组 -->
                 </div>
             </div>
@@ -303,7 +302,7 @@
         // 渲染分组筛选器
         function renderGroupFilters() {
             const container = document.getElementById('group-filters');
-            // 保留"全部"和"未分组"，添加其他分组
+            // 只保留"全部"，添加其他分组
             allGroups.forEach(group => {
                 const span = document.createElement('span');
                 span.className = 'filter-item';
@@ -325,11 +324,7 @@
             // 自动展开
             if (groupId !== 'all') {
                 setTimeout(() => {
-                    if (groupId === 'ungrouped') {
-                        toggleGroup('ungrouped');
-                    } else {
-                        toggleGroup(groupId);
-                    }
+                    toggleGroup(groupId);
                 }, 100);
             }
         }
@@ -375,28 +370,6 @@
             // 处理分组筛选
             if (activeGroupFilter === 'all') {
                 groupsToRender = [...allGroups];
-                // 如果有未分组的测验，添加未分组虚拟分组
-                const ungroupedQuizzes = getUngroupedQuizzes();
-                if (ungroupedQuizzes.length > 0) {
-                    groupsToRender.push({
-                        id: 'ungrouped',
-                        name: '未分组',
-                        description: '未分配到任何分组的测验',
-                        quizIds: ungroupedQuizzes.map(q => q.id),
-                        isVirtual: true
-                    });
-                }
-            } else if (activeGroupFilter === 'ungrouped') {
-                const ungroupedQuizzes = getUngroupedQuizzes();
-                if (ungroupedQuizzes.length > 0) {
-                    groupsToRender = [{
-                        id: 'ungrouped',
-                        name: '未分组',
-                        description: '未分配到任何分组的测验',
-                        quizIds: ungroupedQuizzes.map(q => q.id),
-                        isVirtual: true
-                    }];
-                }
             } else {
                 const group = allGroups.find(g => g.id == activeGroupFilter);
                 if (group) groupsToRender = [group];
@@ -420,10 +393,8 @@
                                 </div>
                             </div>
                             <div class="group-actions">
-                                ${!group.isVirtual ? `
-                                    <button class="btn btn-small" onclick="event.stopPropagation(); exportGroup('${group.id}')">导出</button>
-                                    <button class="btn btn-small" onclick="event.stopPropagation(); editGroup('${group.id}')">编辑</button>
-                                ` : ''}
+                                <button class="btn btn-small" onclick="event.stopPropagation(); exportGroup('${group.id}')">导出</button>
+                                <button class="btn btn-small" onclick="event.stopPropagation(); editGroup('${group.id}')">编辑</button>
                                 <span class="expand-icon">▼</span>
                             </div>
                         </div>
@@ -435,34 +406,19 @@
             }).join('');
         }
 
-        // 获取未分组的测验
-        function getUngroupedQuizzes() {
-            const groupedQuizIds = new Set();
-            allGroups.forEach(group => {
-                if (group.quizIds) {
-                    group.quizIds.forEach(id => groupedQuizIds.add(id));
-                }
-            });
-
-            let ungrouped = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
-
-            // 应用类型筛选
-            if (activeTypeFilter !== 'all') {
-                ungrouped = ungrouped.filter(quiz => quiz.quizType === activeTypeFilter);
-            }
-
-            return ungrouped;
-        }
-
         // 展开/收起分组
         async function toggleGroup(groupId) {
             const content = document.getElementById(`group-content-${groupId}`);
             const card = document.querySelector(`[data-group-id="${groupId}"]`);
+            if (!card) return;
             const icon = card.querySelector('.expand-icon');
+            if (!icon) return;
 
+            if (!content) return;
+            
             if (content.style.display === 'none') {
                 content.style.display = 'block';
-                icon.textContent = '▲';
+                if (icon) icon.textContent = '▲';
                 card.classList.add('expanded');
 
                 if (!expandedGroups.has(groupId)) {
@@ -472,7 +428,7 @@
                 }
             } else {
                 content.style.display = 'none';
-                icon.textContent = '▼';
+                if (icon) icon.textContent = '▼';
                 card.classList.remove('expanded');
             }
         }
@@ -480,15 +436,12 @@
         // 加载分组内的测验
         async function loadGroupQuizzes(groupId) {
             const content = document.getElementById(`group-content-${groupId}`);
+            if (!content) return;
 
             let quizzes = [];
-            if (groupId === 'ungrouped') {
-                quizzes = getUngroupedQuizzes();
-            } else {
-                const group = allGroups.find(g => g.id == groupId);
-                if (group && group.quizIds) {
-                    quizzes = allQuizzes.filter(quiz => group.quizIds.includes(quiz.id));
-                }
+            const group = allGroups.find(g => g.id == groupId);
+            if (group && group.quizIds) {
+                quizzes = allQuizzes.filter(quiz => group.quizIds.includes(quiz.id));
             }
 
             // 应用类型筛选

@@ -50,7 +50,6 @@
                 <span class="filter-label">分组</span>
                 <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                     <span class="filter-item active" onclick="filterByGroup('all', this)">全部</span>
-                    <span class="filter-item" onclick="filterByGroup('ungrouped', this)">未分组</span>
                     <!-- 动态填充 -->
                 </div>
             </div>
@@ -144,23 +143,12 @@
                     filtered = filtered.filter(q => q.quizType === activeType);
                 }
                 if (activeGroup !== 'all') {
-                    if (activeGroup === 'ungrouped') {
-                        // 获取未分组的测验
-                        const groupedQuizIds = new Set();
-                        allGroups.forEach(group => {
-                            if (group.quizIds) {
-                                group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
-                            }
-                        });
-                        filtered = filtered.filter(q => !groupedQuizIds.has(q.id));
+                    const group = allGroups.find(g => g.id === activeGroup);
+                    if (group && group.quizIds) {
+                        const quizIdSet = new Set(group.quizIds.map(id => parseInt(id)));
+                        filtered = filtered.filter(q => quizIdSet.has(q.id));
                     } else {
-                        const group = allGroups.find(g => g.id === activeGroup);
-                        if (group && group.quizIds) {
-                            const quizIdSet = new Set(group.quizIds.map(id => parseInt(id)));
-                            filtered = filtered.filter(q => quizIdSet.has(q.id));
-                        } else {
-                            filtered = [];
-                        }
+                        filtered = [];
                     }
                 }
                 renderSingleList(container, filtered);
@@ -190,16 +178,7 @@
         }
 
         function renderGroupList(container) {
-            const groupedQuizIds = new Set();
-            allGroups.forEach(group => {
-                if (group.quizIds) {
-                    group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
-                }
-            });
-            
-            const ungroupedQuizzes = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
-            
-            if (allGroups.length === 0 && ungroupedQuizzes.length === 0) {
+            if (allGroups.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">暂无测验分组</div>';
                 return;
             }
@@ -218,22 +197,6 @@
                 `;
                 container.appendChild(item);
             });
-            
-            // 渲染未分组虚拟分组（如果有未分组的测验）
-            if (ungroupedQuizzes.length > 0) {
-                const ungroupedItem = document.createElement('div');
-                ungroupedItem.className = 'list-item';
-                ungroupedItem.style.borderLeft = '3px solid var(--warning)';
-                ungroupedItem.onclick = () => window.location.href = `index.html?groupId=ungrouped`;
-                ungroupedItem.innerHTML = `
-                    <div class="list-info">
-                        <span class="title">未分组</span>
-                        <span class="sub">${ungroupedQuizzes.length} 个测验 • 未分配到任何分组的测验</span>
-                    </div>
-                    <span style="font-size: 0.7rem; color: var(--text-muted);">&#8594;</span>
-                `;
-                container.appendChild(ungroupedItem);
-            }
         }
     </script>
 </body>
