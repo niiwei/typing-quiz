@@ -95,17 +95,6 @@
         </form>
     </div>
 
-    <!-- 导入模态框 (简单版) -->
-    <div id="import-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-        <div style="background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px;">
-            <h3 style="margin-bottom: 1rem; font-weight: 300;">导入测验 JSON</h3>
-            <textarea id="import-json" class="form-input" style="height: 200px; font-family: monospace; font-size: 0.7rem;" placeholder='[{"title": "...", "answers": [...]}]'></textarea>
-            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeImportModal()">取消</button>
-                <button class="btn btn-small" onclick="processImport()">确认导入</button>
-            </div>
-        </div>
-    </div>
 
     <script src="js/api.js"></script>
     <script>
@@ -168,14 +157,14 @@
                 }
                 
                 // 填充类型特定数据
-                if (quiz.quizType === 'TYPING' && quiz.answers) {
+                if (quiz.quizType === 'TYPING' && quiz.answerList) {
                     // 将答案数组转换为文本格式
-                    const answersText = quiz.answers.map(a => {
+                    const answersText = quiz.answerList.map(a => {
                         return a.comment ? `${a.content}##${a.comment}` : a.content;
                     }).join('\n');
                     document.getElementById('quiz-answers').value = answersText;
-                } else if (quiz.quizType === 'FILL_BLANK' && quiz.content) {
-                    document.getElementById('fill-blank-full-text').value = quiz.content;
+                } else if (quiz.quizType === 'FILL_BLANK' && quiz.fillBlankQuiz) {
+                    document.getElementById('fill-blank-full-text').value = quiz.fillBlankQuiz.fullText || '';
                     updateFillPreview();
                 }
                 
@@ -219,26 +208,58 @@
             preview.textContent = text.replace(/\[([^\]#]+)(##[^\]]+)?\]/g, '______');
         }
 
-        function showImportModal() { document.getElementById('import-modal').style.display = 'flex'; }
-        function closeImportModal() { document.getElementById('import-modal').style.display = 'none'; }
+        // 导入功能
+        function showImportModal() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = handleFileImport;
+            input.click();
+        }
 
-        async function processImport() {
-            const json = document.getElementById('import-json').value;
+        async function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
             try {
-                const data = JSON.parse(json);
-                // 这里调用 manage.js 中的导入逻辑或直接 API
-                const response = await fetch('/api/quizzes/batch', {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                const isArray = Array.isArray(data);
+                const quizzes = isArray ? data : [data];
+                
+                for (const quiz of quizzes) {
+                    if (!quiz.title || (!quiz.answers && !quiz.answerList)) {
+                        alert('文件格式不正确,请确保包含title和answers字段');
+                        return;
+                    }
+                }
+                
+                const response = await fetch('/api/import-export/quizzes/import', {
                     method: 'POST',
                     headers: Auth.getAuthHeaders(),
-                    body: JSON.stringify(Array.isArray(data) ? data : [data])
+                    body: JSON.stringify(quizzes)
                 });
-                if (response.ok) {
-                    alert('导入成功');
-                    window.location.href = 'manage.html';
-                } else {
-                    alert('导入失败');
+                
+                const result = await response.json();
+                
+                let message = `导入完成!\n成功: ${result.successCount} 个\n失败: ${result.failureCount} 个`;
+                
+                if (result.failures && result.failures.length > 0) {
+                    message += '\n\n失败的测验:\n';
+                    result.failures.forEach(f => {
+                        message += `- ${f.title}: ${f.error}\n`;
+                    });
                 }
-            } catch (e) { alert('JSON 格式错误'); }
+                
+                alert(message);
+                if (result.successCount > 0) {
+                    window.location.href = 'manage.html';
+                }
+            } catch (error) {
+                console.error('导入失败:', error);
+                alert('导入失败: ' + error.message);
+            }
         }
 
         async function saveQuiz() {

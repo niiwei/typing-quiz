@@ -87,20 +87,25 @@ git push
 ## 环境配置
 
 ### 本地开发
-```bash
-# 设置环境变量连接云端 MySQL
-set MYSQL_HOST=47.102.147.127
+#### 1. 快捷启动（推荐）
+- **Windows**: 双击 `start.bat`。它会自动设置环境变量并启动应用。
+- **PowerShell**: 运行 `.\start.ps1`。支持自动释放端口并设置环境变量。
 
-# 启动应用
-./mvnw spring-boot:run
-# 或双击 start.bat
-```
+#### 2. Maven 命令行启动
+适用场景: 无 IDE 环境或需要纯命令行构建时。
+- **CMD**:
+  ```bash
+  set MYSQL_HOST=47.102.147.127 && .\mvnw.cmd spring-boot:run
+  ```
+- **PowerShell**:
+  ```powershell
+  $env:MYSQL_HOST="47.102.147.127"; .\mvnw.cmd spring-boot:run
+  ```
 
-**Windows 启动建议：**
-
-- **优先使用 `start.bat` 启动/重启本地服务**（适合日常开发/快速重启）。
-- `./mvnw spring-boot:run` 依赖本机已正确配置 `JAVA_HOME`，否则会报 `JAVA_HOME not found`。
-- 若需要使用 `./mvnw`，请先配置系统环境变量 `JAVA_HOME`，或在当前终端临时设置后再执行。
+#### 3. IDE 启动 (IntelliJ IDEA)
+- 在 **Run/Debug Configurations** -> **Environment variables** 中添加：
+  `MYSQL_HOST=47.102.147.127`
+- 运行 `TypingQuizApplication.java`。
 
 ### 云端部署
 

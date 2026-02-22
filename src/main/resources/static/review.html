@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今日复习 - Typing Quiz</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #6366F1;
+            --accent: #F97316;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --bg: #EEF2FF;
+            --text: #312E81;
+            --text-muted: #5c677d;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 4px 20px rgba(79, 70, 229, 0.15);
+            --shadow-hover: 0 8px 40px rgba(79, 70, 229, 0.25);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+        }
+
+        .review-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 头部统计区域 */
+        .review-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 16px;
+            padding: 24px 32px;
+            color: white;
+            margin-bottom: 24px;
+        }
+
+        .review-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .review-header h1 .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .stat-value-muted {
+            color: #9ca3af;
+        }
+
+        .stat-item-muted {
+            opacity: 0.7;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        /* 快速开始按钮 */
+        .quick-start {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .start-review-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 40px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .start-review-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .start-review-btn:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 分组复习卡片 */
+        .groups-section {
+            margin-top: 32px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .group-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .group-card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .group-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .group-header:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .group-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .group-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .group-stats {
+            display: flex;
+            gap: 8px;
+        }
+
+        .group-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-new {
+            background: #E0E7FF;
+            color: var(--primary);
+        }
+
+        .badge-learning {
+            background: #FEF3C7;
+            color: #D97706;
+        }
+
+        .badge-review {
+            background: #DBEAFE;
+            color: #2563EB;
+        }
+
+        .badge-relearning {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        .expand-icon {
+            transition: transform 0.3s ease;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .group-card.expanded .expand-icon {
+            transform: rotate(180deg);
+        }
+
+        /* 测验列表 */
+        .quiz-list {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .group-card.expanded .quiz-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .quiz-item {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(79, 70, 229, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .quiz-item:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .quiz-info {
+            flex: 1;
+        }
+
+        .quiz-title {
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .quiz-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 12px;
+        }
+
+        .quiz-status {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-new {
+            background: #E0E7FF;
+            color: var(--primary);
+        }
+
+        /* 待学习（已到期）- 深黄色/橙色 */
+        .status-learning-due {
+            background: #F59E0B;
+            color: white;
+        }
+
+        /* 学习中（未到期）- 极浅黄色 */
+        .status-learning-scheduled {
+            background: #FEF3C7;
+            color: #D97706;
+            opacity: 0.7;
+        }
+
+        .status-review {
+            background: #D1FAE5;
+            color: #059669;
+        }
+
+        .status-relearning {
+            background: #FEE2E2;
+            color: var(--danger);
+        }
+
+        /* 复习中（未到期）样式 */
+        .status-scheduled {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .status-overdue {
+            background: #FECACA;
+            color: #991B1B;
+        }
+
+        /* 重置按钮样式 */
+        .btn-reset {
+            background: #F3F4F6;
+            color: #4B5563;
+        }
+
+        .btn-reset:hover {
+            background: #E5E7EB;
+            color: #1F2937;
+        }
+
+        .quiz-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-bury {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .btn-bury:hover {
+            background: #E5E7EB;
+        }
+
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 分组卡片上的开始复习按钮 */
+        .btn-start-review {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-start-review:hover {
+            background: var(--primary-light);
+            transform: scale(1.1);
+        }
+
+        /* 筛选栏 */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border: 2px solid rgba(79, 70, 229, 0.2);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: white;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:hover,
+        .filter-select:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        /* 操作提示 */
+        .tips-section {
+            margin-top: 32px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .tips-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+
+        .tips-list {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+
+        .tips-list li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link">首页</a>
+            <a href="quizzes.html" class="nav-link">测验列表</a>
+            <a href="review.html" class="nav-link active">今日复习</a>
+            <a href="manage.html" class="nav-link">管理测验</a>
+        </div>
+    </nav>
+
+    <div class="review-container">
+        <!-- 复习统计头部 -->
+        <div class="review-header">
+            <h1>
+                📚 今日复习
+                <span class="badge" id="total-badge">加载中...</span>
+            </h1>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="new-count">-</div>
+                    <div class="stat-label">待学习</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="review-count">-</div>
+                    <div class="stat-label">待复习</div>
+                </div>
+                <div class="stat-item stat-item-muted">
+                    <div class="stat-value stat-value-muted" id="learning-count">-</div>
+                    <div class="stat-label">未到期</div>
+                </div>
+                <div class="stat-item stat-item-muted">
+                    <div class="stat-value stat-value-muted" id="relearning-count">-</div>
+                    <div class="stat-label">已暂停</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速开始按钮 -->
+        <div class="quick-start">
+            <button class="start-review-btn" id="start-btn" onclick="startReview()">
+                <span>▶</span>
+                <span id="start-btn-text">开始复习</span>
+            </button>
+        </div>
+
+        <!-- 分组复习列表 -->
+        <div class="groups-section" id="groups-section">
+            <h2 class="section-title">
+                📂 分组复习
+                <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">
+                    点击分组展开查看测验
+                </span>
+            </h2>
+            <!-- 筛选栏 -->
+            <div class="filter-bar">
+                <select class="filter-select" id="status-filter" onchange="filterByStatus()">
+                    <option value="">全部状态</option>
+                    <option value="NEW">待学习</option>
+                    <option value="LEARNING">学习中</option>
+                    <option value="REVIEW">待复习</option>
+                    <option value="RELEARNING">重学中</option>
+                    <option value="SUSPENDED">已暂停</option>
+                </select>
+                <select class="filter-select" id="group-filter" onchange="filterByGroup()">
+                    <option value="">全部分组</option>
+                </select>
+                <button class="action-btn btn-bury" onclick="showBuriedQuizzes()">查看搁置</button>
+            </div>
+            <div id="groups-container">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 使用提示 -->
+        <div class="tips-section">
+            <div class="tips-title">💡 使用提示</div>
+            <ul class="tips-list">
+                <li><strong>待学习</strong>：从未学习过的新测验</li>
+                <li><strong>学习中</strong>：正在学习阶段的测验（10分钟、1小时、1天后再次复习）</li>
+                <li><strong>待复习</strong>：已到复习日期的测验</li>
+                <li><strong>重学中</strong>：遗忘后重新学习的测验</li>
+                <li>点击"开始复习"会自动选择最优顺序的测验</li>
+                <li>测验完成后，根据记忆程度选择评级按钮</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/review-api.js"></script>
+    <script>
+        let groupSummaries = [];
+        let expandedGroups = new Set();
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 清除旧的复习列表，确保重新进入时使用新列表
+            sessionStorage.removeItem('reviewQuizList');
+            
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            await loadTodaySummary();
+            await loadGroupFilterOptions();
+            await loadGroupSummaries();
+        });
+
+        // 加载分组筛选选项
+        async function loadGroupFilterOptions() {
+            try {
+                const response = await fetch('/api/groups', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('typingquiz_token')}` }
+                });
+                const groups = await response.json();
+                const select = document.getElementById('group-filter');
+                groups.forEach(group => {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.textContent = group.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('加载分组选项失败:', error);
+            }
+        }
+
+        // 按状态筛选
+        async function filterByStatus() {
+            const status = document.getElementById('status-filter').value;
+            if (!status) {
+                await loadGroupSummaries();
+                return;
+            }
+
+            try {
+                const items = await ReviewAPI.filterByStatus(status);
+                renderFilteredItems(items, `状态: ${getStatusText(status, false, null)}`);
+            } catch (error) {
+                console.error('筛选失败:', error);
+            }
+        }
+
+        // 按分组筛选
+        async function filterByGroup() {
+            const groupId = document.getElementById('group-filter').value;
+            if (!groupId) {
+                await loadGroupSummaries();
+                return;
+            }
+
+            try {
+                const items = await ReviewAPI.filterByGroup(groupId);
+                const groupName = document.getElementById('group-filter').selectedOptions[0].text;
+                renderFilteredItems(items, `分组: ${groupName}`);
+            } catch (error) {
+                console.error('筛选失败:', error);
+            }
+        }
+
+        // 查看搁置的测验
+        async function showBuriedQuizzes() {
+            try {
+                const items = await ReviewAPI.getBuriedQuizzes();
+                renderFilteredItems(items, '已搁置的测验');
+            } catch (error) {
+                console.error('获取搁置测验失败:', error);
+            }
+        }
+
+        // 渲染筛选结果
+        function renderFilteredItems(items, title) {
+            const container = document.getElementById('groups-container');
+            if (!items || items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>${title}</h3>
+                        <p>没有符合条件的测验</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="group-card expanded">
+                    <div class="group-header">
+                        <div class="group-info">
+                            <span class="group-name">${title}</span>
+                            <span class="group-badge badge-review">${items.length} 个</span>
+                        </div>
+                    </div>
+                    <div class="quiz-list" style="max-height: none;">
+                        ${items.map(item => createFilteredItemHTML(item)).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 创建筛选结果项HTML
+        function createFilteredItemHTML(item) {
+            const statusClass = getStatusClass(item);
+            const statusText = getStatusText(item);
+
+            return `
+                <div class="quiz-item" onclick="startQuizReview(${item.quizId})">
+                    <div class="quiz-info">
+                        <div class="quiz-title">测验 #${item.quizId}</div>
+                        <div class="quiz-meta">
+                            <span class="quiz-status ${statusClass}">${statusText}</span>
+                            ${item.intervalDays ? `• 间隔: ${formatInterval(item.intervalDays)}` : ''}
+                            ${item.easeFactor ? `• 简易度: ${(item.easeFactor / 1000).toFixed(1)}` : ''}
+                        </div>
+                    </div>
+                    <div class="quiz-actions" onclick="event.stopPropagation()">
+                        <button class="action-btn btn-start" onclick="startQuizReview(${item.quizId})">开始</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 加载今日概览统计
+        async function loadTodaySummary() {
+            try {
+                const summary = await ReviewAPI.getTodaySummary();
+                updateStats(summary);
+            } catch (error) {
+                console.error('加载今日概览失败:', error);
+                if (error.message.includes('Unauthorized')) {
+                    showEmptyState('请先登录后再查看复习任务<br><a href="home.html" style="color: var(--primary); margin-top: 10px; display: inline-block;">去登录 →</a>');
+                } else {
+                    showEmptyState('加载失败，请刷新重试');
+                }
+            }
+        }
+
+        // 更新统计显示
+        function updateStats(summary) {
+            document.getElementById('new-count').textContent = summary.pendingLearnCount || 0;
+            document.getElementById('learning-count').textContent = summary.scheduledCount || 0;
+            document.getElementById('review-count').textContent = summary.pendingReviewCount || 0;
+            document.getElementById('relearning-count').textContent = summary.suspendedCount || 0;
+
+            const total = summary.totalCount || 0;
+            document.getElementById('total-badge').textContent = `共 ${total} 个`;
+
+            // 更新开始按钮状态
+            const startBtn = document.getElementById('start-btn');
+            if (total === 0) {
+                startBtn.disabled = true;
+                document.getElementById('start-btn-text').textContent = '今日无复习任务';
+            }
+        }
+
+        // 加载分组摘要
+        async function loadGroupSummaries() {
+            try {
+                groupSummaries = await ReviewAPI.getGroupSummary();
+                renderGroups();
+            } catch (error) {
+                console.error('加载分组摘要失败:', error);
+                if (error.message.includes('Unauthorized')) {
+                    document.getElementById('groups-container').innerHTML =
+                        '<div class="empty-state">请先登录后再查看复习任务<br><a href="home.html" style="color: var(--primary); margin-top: 10px; display: inline-block;">去登录 →</a></div>';
+                } else {
+                    document.getElementById('groups-container').innerHTML =
+                        '<div class="empty-state">加载失败，请刷新重试</div>';
+                }
+            }
+        }
+
+        // 渲染分组列表
+        function renderGroups() {
+            const container = document.getElementById('groups-container');
+
+            if (!groupSummaries || groupSummaries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎉</div>
+                        <h3>今日无复习任务</h3>
+                        <p>所有测验都已复习完成，休息一下吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = groupSummaries.map(group => createGroupCard(group)).join('');
+        }
+
+        // 创建分组卡片HTML
+        function createGroupCard(group) {
+            console.log('Group data:', group);
+            const totalDue = (group.newCount || 0) + (group.learningCount || 0) + (group.reviewCount || 0) + (group.relearningCount || 0);
+            console.log('totalDue:', totalDue, 'for group:', group.groupName);
+            const isExpanded = expandedGroups.has(group.groupId);
+
+            let badges = [];
+            if (group.newCount > 0) badges.push(`<span class="group-badge badge-new">新 ${group.newCount}</span>`);
+            if (group.learningCount > 0) badges.push(`<span class="group-badge badge-learning">学 ${group.learningCount}</span>`);
+            if (group.reviewCount > 0) badges.push(`<span class="group-badge badge-review">复 ${group.reviewCount}</span>`);
+            if (group.relearningCount > 0) badges.push(`<span class="group-badge badge-relearning">重 ${group.relearningCount}</span>`);
+
+            // 只有在有待复习测验时才显示开始按钮
+            const startButton = totalDue > 0 
+                ? `<button class="btn-start-review" onclick="event.stopPropagation(); startGroupReview(${group.groupId})" title="开始复习该分组">▶</button>` 
+                : '';
+            console.log('startButton HTML:', startButton);
+
+            return `
+                <div class="group-card ${isExpanded ? 'expanded' : ''}" data-group-id="${group.groupId}">
+                    <div class="group-header" onclick="toggleGroup(${group.groupId})">
+                        <div class="group-info">
+                            <span class="group-name">${group.groupName}</span>
+                            <div class="group-stats">${badges.join('')}</div>
+                        </div>
+                        <div class="group-actions">
+                            ${startButton}
+                            <span class="expand-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="quiz-list" id="quiz-list-${group.groupId}">
+                        ${isExpanded ? '<div class="loading">加载中...</div>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 开始分组复习
+        async function startGroupReview(groupId) {
+            try {
+                console.log('[分组复习] 开始获取分组待复习列表, groupId:', groupId);
+                
+                // 先获取该分组的完整测验列表
+                const response = await fetch(`/api/review/groups/${groupId}/quizzes`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('typingquiz_token')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取分组测验列表失败');
+                }
+                
+                const reviewItems = await response.json();
+                console.log('[分组复习] API返回', reviewItems.length, '个测验');
+                
+                // 过滤出待复习的测验
+                const dueItems = reviewItems.filter(item => 
+                    item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW'
+                );
+                console.log('[分组复习] 待复习测验:', dueItems.length);
+                
+                if (dueItems.length === 0) {
+                    alert('该分组暂无待复习测验！');
+                    return;
+                }
+                
+                // 提取测验ID列表并存入 sessionStorage（使用分组特定的key）
+                const quizIds = dueItems.map(item => item.quizId);
+                sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
+                console.log('[分组复习] 已保存测验列表到 sessionStorage:', quizIds.length, '个');
+                
+                // 跳转到第一个测验
+                const firstQuizId = quizIds[0];
+                console.log('[分组复习] 跳转到测验:', firstQuizId);
+                window.location.href = `index.html?id=${firstQuizId}&mode=review&groupId=${groupId}`;
+                
+            } catch (error) {
+                console.error('获取分组测验失败:', error);
+                alert('获取测验失败，请重试');
+            }
+        }
+
+        // 展开/折叠分组
+        async function toggleGroup(groupId) {
+            const card = document.querySelector(`[data-group-id="${groupId}"]`);
+            const isExpanded = card.classList.contains('expanded');
+
+            if (isExpanded) {
+                card.classList.remove('expanded');
+                expandedGroups.delete(groupId);
+            } else {
+                card.classList.add('expanded');
+                expandedGroups.add(groupId);
+                await loadGroupQuizzes(groupId);
+            }
+        }
+
+        // 加载分组下的测验列表
+        async function loadGroupQuizzes(groupId) {
+            try {
+                const items = await ReviewAPI.getGroupReviewItems(groupId);
+                renderQuizItems(groupId, items);
+            } catch (error) {
+                console.error(`加载分组 ${groupId} 测验失败:`, error);
+                document.getElementById(`quiz-list-${groupId}`).innerHTML =
+                    '<div style="padding: 20px; text-align: center; color: var(--danger);">加载失败</div>';
+            }
+        }
+
+        // 渲染测验列表
+        function renderQuizItems(groupId, items) {
+            const container = document.getElementById(`quiz-list-${groupId}`);
+
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">暂无测验</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => createQuizItemHTML(item)).join('');
+        }
+
+        // 创建测验项HTML
+        function createQuizItemHTML(item) {
+            const statusClass = getStatusClass(item);
+            const statusText = getStatusText(item);
+
+            let metaItems = [];
+            
+            // 间隔显示：REVIEW 状态显示 intervalDays，LEARNING/RELEARNING 显示倒计时
+            if (item.status === 'LEARNING' || item.status === 'RELEARNING') {
+                // 学习阶段显示倒计时剩余时间
+                const remainingTime = calculateRemainingTime(item.nextReviewDate);
+                metaItems.push(`间隔: ${remainingTime}`);
+            } else if (item.intervalDays > 0) {
+                metaItems.push(`间隔: ${formatInterval(item.intervalDays)}`);
+            }
+            
+            if (item.reviewCount > 0) {
+                metaItems.push(`已复习 ${item.reviewCount} 次`);
+            }
+            if (item.easeFactor) {
+                metaItems.push(`简易度: ${(item.easeFactor / 1000).toFixed(1)}`);
+            }
+
+            return `
+                <div class="quiz-item" onclick="startQuizReview(${item.quizId})">
+                    <div class="quiz-info">
+                        <div class="quiz-title">${item.quizTitle}</div>
+                        <div class="quiz-meta">
+                            <span class="quiz-status ${statusClass}">${statusText}</span>
+                            ${metaItems.length > 0 ? '• ' + metaItems.join(' • ') : ''}
+                        </div>
+                    </div>
+                    <div class="quiz-actions" onclick="event.stopPropagation()">
+                        <button class="action-btn btn-start" onclick="startQuizReview(${item.quizId})">开始</button>
+                        <button class="action-btn btn-bury" onclick="buryQuiz(${item.quizId}, this)">搁置</button>
+                        <button class="action-btn btn-reset" onclick="resetQuizStatus(${item.quizId}, this)" title="重置学习状态">重置</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 获取状态样式类
+        function getStatusClass(item) {
+            if (item.status === 'REVIEW' && !item.due) return 'status-scheduled';
+            if (item.status === 'LEARNING') {
+                return item.due ? 'status-learning-due' : 'status-learning-scheduled';
+            }
+            if (item.status === 'RELEARNING') {
+                return item.due ? 'status-relearning' : 'status-scheduled';
+            }
+            
+            const classMap = {
+                'NEW': 'status-new',
+                'REVIEW': 'status-review'
+            };
+            return classMap[item.status] || 'status-new';
+        }
+
+        /**
+         * 获取状态显示文本
+         * @param {Object} item 测验项对象
+         */
+        function getStatusText(item) {
+            const isDue = item.due;
+            
+            if (item.status === 'REVIEW') {
+                return isDue ? '待复习' : '复习中';
+            }
+            
+            if (item.status === 'LEARNING') {
+                return isDue ? '待学习' : '学习中';
+            }
+            
+            if (item.status === 'RELEARNING') {
+                return isDue ? '待重学' : '重学中';
+            }
+            
+            const textMap = {
+                'NEW': '新测验'
+            };
+            return textMap[item.status] || item.status;
+        }
+
+        // 格式化间隔显示
+        function formatInterval(days) {
+            if (days < 1) {
+                const hours = Math.round(days * 24);
+                if (hours < 1) {
+                    const minutes = Math.round(days * 24 * 60);
+                    return `${minutes}分钟`;
+                }
+                return `${hours}小时`;
+            }
+            return `${days}天`;
+        }
+
+        // 计算剩余时间（用于学习阶段倒计时）
+        function calculateRemainingTime(nextReviewDate) {
+            if (!nextReviewDate) {
+                return '<10分钟';
+            }
+            
+            const now = new Date();
+            const target = new Date(nextReviewDate);
+            const diff = target - now;  // 毫秒差
+            
+            if (diff <= 0) {
+                return '即将到期';
+            }
+            
+            const minutes = Math.ceil(diff / 60000);  // 转为分钟，向上取整
+            const hours = Math.ceil(diff / 3600000);   // 转为小时，向上取整
+            
+            if (minutes < 60) {
+                return `${minutes}分钟后`;
+            } else if (hours < 24) {
+                return `${hours}小时后`;
+            } else {
+                const days = Math.ceil(diff / 86400000);
+                return `${days}天后`;
+            }
+        }
+
+        // 开始复习
+        async function startReview() {
+            try {
+                console.log('[全局复习] 开始获取待复习列表...');
+                
+                // 先获取完整的待复习测验列表
+                const response = await fetch('/api/review/quizzes', {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('typingquiz_token')
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('获取复习列表失败');
+                }
+                
+                const reviewItems = await response.json();
+                console.log('[全局复习] API返回', reviewItems.length, '个测验');
+                
+                // 过滤出待复习的测验
+                const dueItems = reviewItems.filter(item => 
+                    item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW'
+                );
+                console.log('[全局复习] 待复习测验:', dueItems.length);
+                
+                if (dueItems.length === 0) {
+                    alert('今日复习任务已全部完成！');
+                    return;
+                }
+                
+                // 提取测验ID列表并存入 sessionStorage
+                const quizIds = dueItems.map(item => item.quizId);
+                sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+                console.log('[全局复习] 已保存测验列表到 sessionStorage:', quizIds.length, '个');
+                
+                // 跳转到第一个测验
+                const firstQuizId = quizIds[0];
+                console.log('[全局复习] 跳转到测验:', firstQuizId);
+                window.location.href = `index.html?id=${firstQuizId}&mode=review`;
+                
+            } catch (error) {
+                console.error('[全局复习] 获取复习任务失败:', error);
+                alert('获取复习任务失败，请重试');
+            }
+        }
+
+        // 开始单个测验复习
+        function startQuizReview(quizId) {
+            window.location.href = `index.html?id=${quizId}&mode=review`;
+        }
+
+        // 搁置测验
+        async function buryQuiz(quizId, btn) {
+            if (!confirm('确定要搁置这个测验到明天吗？')) return;
+
+            try {
+                await ReviewAPI.buryQuiz(quizId, 1);
+                btn.closest('.quiz-item').style.opacity = '0.5';
+                btn.textContent = '已搁置';
+                btn.disabled = true;
+            } catch (error) {
+                console.error('搁置测验失败:', error);
+                alert('操作失败，请重试');
+            }
+        }
+
+        // 重置测验状态
+        async function resetQuizStatus(quizId, btn) {
+            if (!confirm('确定要重置该测验的学习进度吗？重置后将变回新测验。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/review/${quizId}/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('typingquiz_token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('重置成功');
+                    location.reload(); // 刷新页面以更新状态
+                } else {
+                    const error = await response.text();
+                    alert('重置失败: ' + error);
+                }
+            } catch (error) {
+                console.error('重置请求失败:', error);
+                alert('重置失败，请检查网络连接');
+            }
+        }
+
+        // 显示空状态
+        function showEmptyState(message) {
+            document.getElementById('groups-container').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <h3>${message}</h3>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

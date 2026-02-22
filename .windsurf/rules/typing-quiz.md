@@ -148,3 +148,24 @@ trigger: always_on
 - **REVIEW_FEATURE_DESIGN.md** - 复习功能实施计划（功能架构、状态流转、API设计）
 - **ARCHITECTURE_DETAIL.md** - 系统架构详细设计
 - **CHANGELOG_HISTORY.md** - 完整版本历史记录
+
+## 21. 本地启动方法
+
+### 快捷启动（推荐）
+- **Windows**: 双击 `start.bat`
+- **PowerShell**: 运行 `.\start.ps1`（自动释放端口并设置环境变量）
+
+### Maven 命令行启动
+- **CMD**:
+  ```bash
+  set MYSQL_HOST=47.102.147.127 && .\mvnw.cmd spring-boot:run
+  ```
+- **PowerShell**:
+  ```powershell
+  $env:MYSQL_HOST="47.102.147.127"; .\mvnw.cmd spring-boot:run
+  ```
+
+### IDE 启动 (IntelliJ IDEA)
+在 **Run/Debug Configurations** -> **Environment variables** 中添加：
+`MYSQL_HOST=47.102.147.127`
+然后运行 `TypingQuizApplication.java`

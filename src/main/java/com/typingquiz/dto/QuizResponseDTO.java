@@ -2,6 +2,7 @@ package com.typingquiz.dto;
 
 import com.typingquiz.entity.QuizType;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 测验响应对象
@@ -17,6 +18,8 @@ public class QuizResponseDTO {
     private LocalDateTime createdAt;
     private QuizType quizType;
     private FillBlankQuizDTO fillBlankQuiz;
+    private List<String> answers;
+    private List<AnswerCreateDTO> answerList;
 
     public QuizResponseDTO() {
     }
@@ -83,5 +86,21 @@ public class QuizResponseDTO {
 
     public void setFillBlankQuiz(FillBlankQuizDTO fillBlankQuiz) {
         this.fillBlankQuiz = fillBlankQuiz;
+    }
+
+    public List<String> getAnswers() {
+        return answers;
+    }
+
+    public void setAnswers(List<String> answers) {
+        this.answers = answers;
+    }
+
+    public List<AnswerCreateDTO> getAnswerList() {
+        return answerList;
+    }
+
+    public void setAnswerList(List<AnswerCreateDTO> answerList) {
+        this.answerList = answerList;
     }
 }

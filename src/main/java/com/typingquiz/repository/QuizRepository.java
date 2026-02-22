@@ -57,4 +57,17 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      * 根据用户ID统计测验数量
      */
     long countByUserId(Long userId);
+
+    /**
+     * 根据用户ID查询测验（轻量级，不加载答案，用于列表展示）
+     */
+    @Query("SELECT q FROM Quiz q WHERE q.userId = :userId ORDER BY q.createdAt DESC")
+    List<Quiz> findByUserIdSimple(@Param("userId") Long userId);
+
+    /**
+     * 查询用户所有测验的答案数量（单次查询，避免N+1）
+     * 返回 Map: quizId -> answerCount
+     */
+    @Query("SELECT q.id, COUNT(a) FROM Quiz q LEFT JOIN q.answers a WHERE q.userId = :userId GROUP BY q.id")
+    List<Object[]> findAnswerCountsByUserId(@Param("userId") Long userId);
 }

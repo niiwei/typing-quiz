@@ -1,5 +1,130 @@
 # Typing Quiz 更新日志
 
+## [v1.8.0] - 2026-02-22
+
+### 极简风UI全面重构
+
+**工作名称**：极极简风设计原型实现
+
+**设计理念**：
+- **空**: 移除所有非必要的装饰、阴影和渐变
+- **息**: 增加留白，让视觉有呼吸感，专注于文字本身
+- **恒**: 使用经典系统字体栈，保证在任何设备上的一致性
+- **信**: 极低饱和度的色彩体系，仅在关键交互处使用色彩
+
+**设计规范 (Design Tokens)**：
+- 背景: `#FFFFFF` (纯白) 或 `#FAFAFA` (极浅灰)
+- 文字: 主色 `#171717` (近黑)，次要 `#737373` (中灰)
+- 品牌色: `#000000` (纯黑) - 用于按钮和强调
+- 反馈色: 正确 `#16A34A` (深绿)，错误 `#DC2626` (深红)，待复习 `#D97706` (琥珀色)
+- 边框: `1px solid #E5E5E5`
+- 圆角: `0px` (硬核极简) 或 `4px` (微圆角)
+
+#### 1. 首页重构 (home.html)
+
+**布局结构**：
+- 顶部：左侧文字 Logo "TYPING QUIZ"，右侧 "SIGN OUT"
+- 主体居中对齐：
+  - 大标题：`TYPING QUIZ` (加粗，大字号)
+  - 副标题：`专注于知识内化的打字训练`
+  - 核心操作：两个等宽线性按钮 `[ START ]` `[ MANAGE ]`
+- 复习看板：置顶展示今日复习统计
+- 状态统计：`新测验`、`待复习`、`学习中`、`已暂停`
+- 最近活动：列表展示最近练习记录（准确率、用时、时间戳）
+
+#### 2. 测验列表重构 (quizzes.html)
+
+**布局结构**：
+- 单列居中窄版布局
+- 筛选区：
+  - 类型筛选：全部/打字/填空（纯文字链接，无边框）
+  - 分组筛选：默认/编程基础/地理常识等（纯文字链接）
+- 列表项：
+  - 移除卡片感，改为极简列表
+  - 每项：标题 (左) | 数量 (右)
+  - 悬停：背景 `#F5F5F5`，出现箭头指示
+- 模式切换：保留"单个测验"与"分组测验"切换入口
+
+#### 3. 答题界面重构 (index.html)
+
+**布局结构**：
+- 顶部：1px 进度条（0-100%）
+- 中间：
+  - 测验标题：巨大细体文字 (`3rem`)，作为核心视觉焦点
+  - 计时器：位于标题下方，灰色加粗 (`1.5rem`)
+- 输入框：
+  - 位于屏幕正中
+  - 仅一条下划线，无边框
+  - 字体加大，输入文字居中
+- 答案区：
+  - 默认显示灰色占位点 `•` 或下划线
+  - 答对后文字直接替换占位符
+- 复习模式：底部浮现评级面板（重来/困难/良好/简单），包含间隔时间预览
+
+#### 4. 结算界面优化
+
+**布局结构**：
+- 内嵌式布局，保留题目区域可见
+- 答案项标记：红色边框（未答出）/ 绿色（已答出）
+- 统计数据内嵌显示
+
+#### 5. 性能优化
+
+**问题分析**：
+- 原测验列表查询：1 + N（测验数）+ M（填空题数）次数据库查询
+- 原分组查询：1 + G（分组数）次数据库查询（懒加载 quizzes）
+
+**优化方案**：
+
+| API | 问题 | 优化方案 | 效果 |
+|-----|------|---------|------|
+| `/api/quizzes` | N+1 查询（填空题详情） | 批量查询答案数量 | 1+N+M → 2 次 |
+| `/api/groups` | N+1 查询（懒加载 quizzes） | JOIN FETCH 一次性加载 | 1+G → 1 次 |
+
+**修改文件**：
+- `QuizRepository.java`: 新增 `findByUserIdSimple()`、`findAnswerCountsByUserId()`
+- `QuizService.java`: 新增 `getAllQuizDTOsForList()` 批量查询方法
+- `QuizGroupRepository.java`: 新增 `findByUserIdWithQuizzes()` JOIN FETCH 查询
+- `QuizGroupService.java`: 使用优化后的查询方法
+- `QuizController.java`: 使用轻量级 DTO 方法
+
+#### 6. 导入功能修复
+
+**问题**：创建页面导入按钮使用旧的模态框方式，与管理页面不一致
+
+**修复**：
+- `create.html`: 替换导入功能为文件选择方式，与管理页面一致
+- 使用 `/api/import-export/quizzes/import` API
+
+#### 7. 编辑功能修复
+
+**问题**：编辑测验时答案数据未正确加载
+
+**根因**：
+- `QuizResponseDTO` 缺少 `answers` 和 `answerList` 字段
+- 前端访问字段名不匹配（`quiz.answers` vs `quiz.answerList`，`quiz.content` vs `quiz.fillBlankQuiz.fullText`）
+
+**修复**：
+- `QuizResponseDTO.java`: 添加 `answers`、`answerList` 字段
+- `QuizService.java`: `toResponseDTO()` 填充答案数据
+- `create.html`: 修正字段访问路径
+
+**修改文件**：
+- `src/main/resources/static/home.html` - 首页重构
+- `src/main/resources/static/quizzes.html` - 测验列表重构
+- `src/main/resources/static/index.html` - 答题界面重构
+- `src/main/resources/static/style.css` - 全局样式重构
+- `src/main/resources/static/prototype.html` - 设计原型参考
+- `src/main/resources/static/create.html` - 导入功能修复、编辑功能修复
+- `src/main/resources/static/manage.html` - 导入功能优化
+- `src/main/java/com/typingquiz/dto/QuizResponseDTO.java` - 添加答案字段
+- `src/main/java/com/typingquiz/service/QuizService.java` - 查询优化、DTO 转换优化
+- `src/main/java/com/typingquiz/repository/QuizRepository.java` - 新增批量查询
+- `src/main/java/com/typingquiz/repository/QuizGroupRepository.java` - JOIN FETCH 优化
+- `src/main/java/com/typingquiz/controller/QuizController.java` - 使用优化方法
+
+---
+
 ## [v1.7.1] - 2026-02-18
 
 ### 问题修复

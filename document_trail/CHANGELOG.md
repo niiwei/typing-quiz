@@ -2,6 +2,66 @@
 
 本文档记录项目的所有版本变更历史。
 
+## [v1.8.0] - 2026-02-22
+
+### 极简风UI全面重构
+
+**工作名称**：极极简风设计原型实现
+
+**设计理念**：
+- **空**: 移除所有非必要的装饰、阴影和渐变
+- **息**: 增加留白，让视觉有呼吸感，专注于文字本身
+- **恒**: 使用经典系统字体栈，保证在任何设备上的一致性
+- **信**: 极低饱和度的色彩体系，仅在关键交互处使用色彩
+
+**主要更新内容**：
+
+1. **全局样式重构**
+   - 纯白背景 (`#FFFFFF`) + 近黑文字 (`#171717`)
+   - 移除所有阴影、渐变、圆角装饰
+   - 统一使用 1px 边框线
+   - 极简色彩体系：品牌色纯黑，反馈色仅用于正确/错误状态
+
+2. **首页重构 (home.html)**
+   - 居中对齐的大标题设计
+   - 复习看板置顶展示今日统计
+   - 状态统计：新测验、待复习、学习中、已暂停
+   - 最近活动列表展示练习记录
+
+3. **测验列表重构 (quizzes.html)**
+   - 单列居中窄版布局
+   - 类型与分组筛选并列，无边框纯文字链接
+   - 列表项移除卡片感，改为极简列表
+   - 悬停背景变化 + 箭头指示
+
+4. **答题界面重构 (index.html)**
+   - 顶部 1px 进度条
+   - 巨大细体测验标题作为视觉焦点
+   - 单下划线输入框，无边框设计
+   - 占位符 `•` 显示未答项
+   - 复习模式底部浮现评级面板
+
+5. **结算界面优化**
+   - 内嵌式布局，保留题目区域可见
+   - 答案项标记红色/绿色边框区分状态
+
+6. **性能优化**
+   - 测验列表查询优化：避免 N+1 问题，批量查询答案数量
+   - 分组查询优化：使用 JOIN FETCH 一次性加载关联测验
+   - 查询次数从 1+N+M 降至 2 次
+
+**修改文件**：
+- `src/main/resources/static/home.html` - 首页重构
+- `src/main/resources/static/quizzes.html` - 测验列表重构
+- `src/main/resources/static/index.html` - 答题界面重构
+- `src/main/resources/static/style.css` - 全局样式重构
+- `src/main/resources/static/prototype.html` - 设计原型参考
+- `src/main/java/com/typingquiz/service/QuizService.java` - 查询优化
+- `src/main/java/com/typingquiz/repository/QuizRepository.java` - 新增批量查询
+- `src/main/java/com/typingquiz/repository/QuizGroupRepository.java` - JOIN FETCH 优化
+
+---
+
 ## [v1.7.2] - 2026-02-21
 
 ### 文档体系重构

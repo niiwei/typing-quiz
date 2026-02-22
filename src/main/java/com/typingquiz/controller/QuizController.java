@@ -81,10 +81,7 @@ public class QuizController {
     @GetMapping
     public ResponseEntity<List<QuizResponseDTO>> getAllQuizzes(HttpServletRequest request) {
         Long userId = getUserIdFromRequest(request);
-        List<Quiz> quizzes = quizService.getAllQuizzes(userId);
-        List<QuizResponseDTO> response = quizzes.stream()
-                .map(quizService::toResponseDTO)
-                .collect(Collectors.toList());
+        List<QuizResponseDTO> response = quizService.getAllQuizDTOsForList(userId);
         return ResponseEntity.ok(response);
     }
 

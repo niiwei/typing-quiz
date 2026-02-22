@@ -24,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -185,9 +187,51 @@ public class QuizService {
     }
 
     /**
-     * 获取所有测验（按用户过滤）
+     * 获取所有测验（按用户过滤）- 用于列表展示，优化查询
      */
     public List<Quiz> getAllQuizzes(Long userId) {
+        if (userId == null) {
+            return new ArrayList<>();
+        }
+        return quizRepository.findByUserIdSimple(userId);
+    }
+
+    /**
+     * 获取所有测验DTO（按用户过滤）- 批量查询答案数量，避免N+1
+     */
+    public List<QuizResponseDTO> getAllQuizDTOsForList(Long userId) {
+        if (userId == null) {
+            return new ArrayList<>();
+        }
+        
+        // 查询测验列表
+        List<Quiz> quizzes = quizRepository.findByUserIdSimple(userId);
+        
+        // 批量查询答案数量
+        List<Object[]> answerCounts = quizRepository.findAnswerCountsByUserId(userId);
+        Map<Long, Integer> countMap = new HashMap<>();
+        for (Object[] row : answerCounts) {
+            countMap.put((Long) row[0], ((Long) row[1]).intValue());
+        }
+        
+        // 组装DTO
+        return quizzes.stream().map(quiz -> {
+            QuizResponseDTO dto = new QuizResponseDTO();
+            dto.setId(quiz.getId());
+            dto.setTitle(quiz.getTitle());
+            dto.setDescription(quiz.getDescription());
+            dto.setTimeLimit(quiz.getTimeLimit());
+            dto.setTotalAnswers(countMap.getOrDefault(quiz.getId(), 0));
+            dto.setCreatedAt(quiz.getCreatedAt());
+            dto.setQuizType(quiz.getQuizType());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 获取所有测验（带答案，用于编辑/导出）
+     */
+    public List<Quiz> getAllQuizzesWithAnswers(Long userId) {
         if (userId == null) {
             return new ArrayList<>();
         }
@@ -301,7 +345,7 @@ public class QuizService {
     }
 
     /**
-     * 将Quiz实体转换为QuizResponseDTO
+     * 将Quiz实体转换为QuizResponseDTO（完整版，用于编辑页面）
      */
     public QuizResponseDTO toResponseDTO(Quiz quiz) {
         QuizResponseDTO dto = new QuizResponseDTO();
@@ -312,6 +356,19 @@ public class QuizService {
         dto.setTotalAnswers(quiz.getAnswers() != null ? quiz.getAnswers().size() : 0);
         dto.setCreatedAt(quiz.getCreatedAt());
         dto.setQuizType(quiz.getQuizType());
+        
+        // 填充答案数据（用于编辑页面）
+        if (quiz.getAnswers() != null && !quiz.getAnswers().isEmpty()) {
+            List<String> answers = quiz.getAnswers().stream()
+                    .map(answer -> answer.getContent())
+                    .collect(Collectors.toList());
+            dto.setAnswers(answers);
+            
+            List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
+                    .map(answer -> new AnswerCreateDTO(answer.getContent(), answer.getComment()))
+                    .collect(Collectors.toList());
+            dto.setAnswerList(answerList);
+        }
         
         // 如果是填空题，获取填空题信息
         if (quiz.getQuizType() == QuizType.FILL_BLANK) {

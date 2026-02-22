@@ -2,6 +2,8 @@ package com.typingquiz.repository;
 
 import com.typingquiz.entity.QuizGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -41,4 +43,10 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
      * 根据测验ID查询包含该测验的所有分组
      */
     List<QuizGroup> findByQuizzesId(Long quizId);
+
+    /**
+     * 根据用户ID查询所有分组（带测验关联，避免N+1）
+     */
+    @Query("SELECT DISTINCT g FROM QuizGroup g LEFT JOIN FETCH g.quizzes WHERE g.userId = :userId ORDER BY g.displayOrder ASC")
+    List<QuizGroup> findByUserIdWithQuizzes(@Param("userId") Long userId);
 }

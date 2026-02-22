@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复习模式 - Typing Quiz</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #6366F1;
+            --accent: #F97316;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --info: #3B82F6;
+            --bg: #EEF2FF;
+            --text: #312E81;
+            --text-muted: #5c677d;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+        }
+
+        /* 复习进度条 */
+        .review-progress {
+            background: white;
+            padding: 12px 20px;
+            border-bottom: 1px solid rgba(79, 70, 229, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .progress-bar {
+            width: 150px;
+            height: 6px;
+            background: #E5E7EB;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .exit-review {
+            padding: 8px 16px;
+            background: #F3F4F6;
+            border: none;
+            border-radius: 8px;
+            color: #6B7280;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .exit-review:hover {
+            background: #E5E7EB;
+        }
+
+        /* 测验状态标签 */
+        .quiz-status-bar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .status-tag {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .tag-new { background: #E0E7FF; color: var(--primary); }
+        .tag-learning { background: #FEF3C7; color: #D97706; }
+        .tag-review { background: #D1FAE5; color: #059669; }
+        .tag-relearning { background: #FEE2E2; color: var(--danger); }
+
+        /* 评级面板 - 默认隐藏 */
+        #rating-panel {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 24px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        #rating-panel.visible {
+            display: block;
+        }
+
+        .rating-title {
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .rating-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .rating-btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 100px;
+        }
+
+        .rating-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .rating-btn .interval {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .rating-again {
+            background: linear-gradient(135deg, #FCA5A5 0%, #EF4444 100%);
+            color: white;
+        }
+
+        .rating-hard {
+            background: linear-gradient(135deg, #FDBA74 0%, #F97316 100%);
+            color: white;
+        }
+
+        .rating-good {
+            background: linear-gradient(135deg, #6EE7B7 0%, #10B981 100%);
+            color: white;
+        }
+
+        .rating-easy {
+            background: linear-gradient(135deg, #67E8F9 0%, #06B6D4 100%);
+            color: white;
+        }
+
+        /* 键盘快捷键提示 */
+        .keyboard-hint {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* 学习阶段提示 */
+        .learning-step-info {
+            background: #FEF3C7;
+            border: 1px solid #FDE68A;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* 完成提示弹窗 */
+        .completion-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .completion-modal.visible {
+            display: flex;
+        }
+
+        .completion-content {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .completion-icon {
+            font-size: 4rem;
+            margin-bottom: 16px;
+        }
+
+        .completion-title {
+            font-size: 1.5rem;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .completion-message {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+
+        /* 操作按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #F3F4F6;
+            color: var(--text);
+        }
+
+        /* 跳过按钮 */
+        .skip-btn {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            padding: 10px 20px;
+            background: white;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* 答案网格 */
+        #answers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            min-height: 100px;
+        }
+
+        .answer-cell {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px 12px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+
+        .answer-cell.correct {
+            background: #dcfce7;
+            border-color: #22c55e;
+            color: #166534;
+        }
+
+        .answer-cell:hover {
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <div class="navbar-nav">
+            <a href="home.html" class="nav-link">首页</a>
+            <a href="quizzes.html" class="nav-link">测验列表</a>
+            <a href="review.html" class="nav-link active">今日复习</a>
+            <a href="manage.html" class="nav-link">管理测验</a>
+        </div>
+    </nav>
+
+    <!-- 复习进度条 -->
+    <div class="review-progress">
+        <div class="progress-info">
+            <span class="progress-text">今日复习</span>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <span class="progress-text" id="progress-text">0 / 0</span>
+        </div>
+        <button class="exit-review" onclick="exitReview()">退出复习</button>
+    </div>
+
+    <!-- 测验状态标签 -->
+    <div class="quiz-status-bar" id="quiz-status-bar">
+        <span class="status-tag tag-new" id="status-tag">新测验</span>
+    </div>
+
+    <!-- 学习阶段提示 -->
+    <div class="learning-step-info" id="learning-step-info" style="display: none;">
+        <span id="learning-step-text">学习阶段 1/3 - 10分钟后再次复习</span>
+    </div>
+
+    <!-- 加载提示 -->
+    <div id="loading-indicator" style="padding: 40px; text-align: center; font-size: 1.2rem; color: var(--text);">
+        加载测验中...
+    </div>
+
+    <!-- 错误提示区域 -->
+    <div id="error-display" style="display: none; padding: 40px; text-align: center; background: #fee2e2; border-radius: 12px; margin: 20px; color: #dc2626;">
+        <h2>加载失败</h2>
+        <p id="error-message"></p>
+        <a href="review.html" style="color: var(--primary); text-decoration: underline;">返回复习页面</a>
+    </div>
+
+    <!-- 原有的测验容器 -->
+    <div id="quiz-container" style="display: none;">
+        <div id="quiz-header">
+            <h1 id="quiz-title">加载中...</h1>
+            <p id="quiz-description"></p>
+        </div>
+
+        <div id="quiz-stats">
+            <div id="timer">
+                <span class="label">时间:</span>
+                <span id="time-display">--:--</span>
+            </div>
+            <div id="score">
+                <span class="label">得分:</span>
+                <span id="score-display">0/0</span>
+            </div>
+        </div>
+
+        <div id="input-section">
+            <input type="text" id="answer-input" placeholder="输入答案..." autocomplete="off" spellcheck="false" />
+            <button id="give-up-btn" class="give-up-btn" onclick="giveUp()">放弃</button>
+            <div id="feedback-message"></div>
+        </div>
+
+        <div id="answers-grid"></div>
+
+        <div id="fill-blank-section" style="display: none;">
+            <div id="fill-blank-question" class="fill-blank-question"></div>
+            <div id="fill-blank-text" class="fill-blank-text"></div>
+        </div>
+
+        <div id="results-panel" style="display: none;">
+            <h2>测验完成!</h2>
+            <div id="final-stats"></div>
+            <div id="missed-answers-section">
+                <h3>未答出的答案:</h3>
+                <div id="missed-answers"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评级面板 -->
+    <div id="rating-panel">
+        <div class="rating-title">根据记忆程度选择评级</div>
+        <div class="rating-buttons">
+            <button class="rating-btn rating-again" onclick="submitRating(1)">
+                重来
+                <span class="interval" id="interval-again">&lt;1分钟</span>
+            </button>
+            <button class="rating-btn rating-hard" onclick="submitRating(2)">
+                困难
+                <span class="interval" id="interval-hard">10分钟</span>
+            </button>
+            <button class="rating-btn rating-good" onclick="submitRating(3)">
+                良好
+                <span class="interval" id="interval-good">1天</span>
+            </button>
+            <button class="rating-btn rating-easy" onclick="submitRating(4)">
+                简单
+                <span class="interval" id="interval-easy">4天</span>
+            </button>
+        </div>
+        <div class="keyboard-hint">快捷键: 1/2/3/4 或 空格键选择"良好"</div>
+    </div>
+
+    <!-- 跳过按钮 -->
+    <button class="skip-btn" id="skip-btn" onclick="skipQuiz()">跳过 (Esc)</button>
+
+    <!-- 完成提示弹窗 -->
+    <div class="completion-modal" id="completion-modal">
+        <div class="completion-content">
+            <div class="completion-icon">🎉</div>
+            <h3 class="completion-title">复习完成!</h3>
+            <p class="completion-message" id="completion-message">今日复习任务已全部完成</p>
+            <div class="action-buttons">
+                <button class="action-btn btn-primary" onclick="returnToReviewPage()">返回复习页</button>
+                <button class="action-btn btn-secondary" onclick="continueReview()">继续复习</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/review-api.js"></script>
+    <script src="js/timer.js"></script>
+    <script src="js/ui-renderer.js"></script>
+
+    <script>
+        // 复习模式全局状态
+        let currentQuizId = null;
+        let currentQuizStatus = null;
+        let todayTotal = 0;
+        let todayCompleted = 0;
+        let isCompleted = false;
+
+        // 学习间隔配置 (与后端一致)
+        const LEARNING_STEPS = [
+            { minutes: 10, label: '10分钟' },
+            { minutes: 60, label: '1小时' },
+            { days: 1, label: '1天' }
+        ];
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('Review quiz page initializing...');
+                console.log('[诊断] 当前URL:', window.location.href);
+                console.log('[诊断] URL参数:', window.location.search);
+                
+                if (!Auth.isLoggedIn()) {
+                    console.log('Not logged in, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // 获取URL参数
+                const params = new URLSearchParams(window.location.search);
+                currentQuizId = params.get('id');
+                const groupId = params.get('groupId');
+                console.log('[诊断] 从URL获取的 currentQuizId:', currentQuizId);
+                console.log('[诊断] 从URL获取的 groupId:', groupId);
+
+                if (!currentQuizId) {
+                    console.log('[诊断] 没有 quiz ID，加载下一个测验');
+                    await loadNextQuiz();
+                } else {
+                    const parsedId = parseInt(currentQuizId);
+                    console.log('[诊断] 准备加载测验 ID:', parsedId);
+                    await loadQuiz(parsedId);
+                }
+
+                // 加载今日进度
+                await loadTodayProgress();
+
+                // 绑定键盘事件
+                document.addEventListener('keydown', handleKeyDown);
+                
+                console.log('Initialization complete');
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>页面加载失败</h2><p>' + error.message + '</p><a href="review.html">返回复习页面</a></div>';
+            }
+        });
+
+        // 加载测验
+        async function loadQuiz(quizId) {
+            console.log('[loadQuiz] 开始加载测验:', quizId);
+            try {
+                console.log('[loadQuiz] 发送 API 请求...');
+                
+                const [quiz, status] = await Promise.all([
+                    fetch(`/api/quizzes/${quizId}`, {
+                        headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+                    }).then(r => {
+                        if (!r.ok) throw new Error('Quiz API error: ' + r.status);
+                        return r.json();
+                    }),
+                    ReviewAPI.getQuizStatus(quizId)
+                ]);
+
+                console.log('[loadQuiz] 测验数据:', quiz);
+                console.log('[loadQuiz] 状态数据:', status);
+
+                currentQuizId = quizId;
+                currentQuizStatus = status;
+
+                // 隐藏加载提示，显示容器
+                document.getElementById('loading-indicator').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
+
+                renderQuiz(quiz);
+                updateQuizStatusUI(status);
+                updateRatingIntervals(status);
+
+                console.log('[loadQuiz] 测验加载完成');
+
+            } catch (error) {
+                console.error('[loadQuiz] 加载测验失败:', error);
+                document.getElementById('loading-indicator').style.display = 'none';
+                document.getElementById('error-display').style.display = 'block';
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+
+        // 渲染测验
+        function renderQuiz(quiz) {
+            document.getElementById('quiz-title').textContent = quiz.title;
+            document.getElementById('quiz-description').textContent = quiz.description || '';
+
+            // 根据测验类型初始化
+            if (quiz.quizType === 'FILL_BLANK') {
+                loadFillBlankQuiz(quiz.id);
+            } else {
+                loadTypingQuiz(quiz);
+            }
+        }
+
+        // 加载打字测验
+        function loadTypingQuiz(quiz) {
+            // 复用原有的渲染逻辑
+            const answers = quiz.answers || [];
+            const answersGrid = document.getElementById('answers-grid');
+            answersGrid.innerHTML = '';
+
+            answers.forEach((answer, index) => {
+                const cell = document.createElement('div');
+                cell.className = 'answer-cell';
+                cell.id = `answer-${index}`;
+                cell.textContent = '?';
+                answersGrid.appendChild(cell);
+            });
+
+            // 初始化输入处理
+            initAnswerInput(answers);
+        }
+
+        // 加载填空题
+        async function loadFillBlankQuiz(quizId) {
+            try {
+                const fillBlank = await fetch(`/api/fill-blank/quiz/${quizId}`, {
+                    headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+                }).then(r => r.json());
+
+                document.getElementById('fill-blank-section').style.display = 'block';
+                document.getElementById('answers-grid').style.display = 'none';
+
+                document.getElementById('fill-blank-question').textContent = fillBlank.question || '';
+                document.getElementById('fill-blank-text').textContent = fillBlank.textContent || '';
+
+                // 初始化填空题输入处理
+                initFillBlankInput(fillBlank.correctAnswer);
+            } catch (error) {
+                console.error('加载填空题失败:', error);
+            }
+        }
+
+        // 初始化答案输入处理
+        function initAnswerInput(answers) {
+            const input = document.getElementById('answer-input');
+            let answeredCount = 0;
+
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.trim().toLowerCase();
+                if (!value) return;
+
+                answers.forEach((answer, index) => {
+                    const cell = document.getElementById(`answer-${index}`);
+                    if (cell && cell.textContent === '?' &&
+                        answer.toLowerCase() === value) {
+                        cell.textContent = answer;
+                        cell.classList.add('correct');
+                        input.value = '';
+                        answeredCount++;
+                        updateScore(answeredCount, answers.length);
+
+                        if (answeredCount === answers.length) {
+                            onQuizComplete();
+                        }
+                    }
+                });
+            });
+        }
+
+        // 初始化填空题输入
+        function initFillBlankInput(correctAnswer) {
+            const input = document.getElementById('answer-input');
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const value = input.value.trim();
+                    if (value.toLowerCase() === correctAnswer.toLowerCase()) {
+                        onQuizComplete();
+                    } else {
+                        showFeedback('答案不正确，请重试', 'error');
+                    }
+                }
+            });
+        }
+
+        // 更新分数显示
+        function updateScore(current, total) {
+            document.getElementById('score-display').textContent = `${current}/${total}`;
+        }
+
+        // 显示反馈
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback-message');
+            feedback.textContent = message;
+            feedback.className = type;
+            setTimeout(() => feedback.textContent = '', 2000);
+        }
+
+        // 测验完成
+        function onQuizComplete() {
+            stopTimer();
+            showRatingPanel();
+        }
+
+        // 显示评级面板
+        function showRatingPanel() {
+            document.getElementById('rating-panel').classList.add('visible');
+            document.getElementById('input-section').style.display = 'none';
+        }
+
+        // 隐藏评级面板
+        function hideRatingPanel() {
+            document.getElementById('rating-panel').classList.remove('visible');
+        }
+
+        // 更新测验状态UI
+        function updateQuizStatusUI(status) {
+            const tag = document.getElementById('status-tag');
+            const tagClass = {
+                'NEW': 'tag-new',
+                'LEARNING': 'tag-learning',
+                'REVIEW': 'tag-review',
+                'RELEARNING': 'tag-relearning'
+            }[status.status] || 'tag-new';
+
+            const tagText = {
+                'NEW': '新测验',
+                'LEARNING': '学习中',
+                'REVIEW': '待复习',
+                'RELEARNING': '重学中'
+            }[status.status] || '新测验';
+
+            tag.className = `status-tag ${tagClass}`;
+            tag.textContent = tagText;
+
+            // 显示学习阶段信息
+            if (status.status === 'LEARNING' || status.status === 'RELEARNING') {
+                const stepInfo = document.getElementById('learning-step-info');
+                const stepText = document.getElementById('learning-step-text');
+                stepInfo.style.display = 'block';
+
+                const step = status.learningStep || 0;
+                const totalSteps = 3;
+                const nextStep = LEARNING_STEPS[step] || LEARNING_STEPS[0];
+                stepText.textContent = `学习阶段 ${step + 1}/${totalSteps} - ${nextStep.label}后再次复习`;
+            }
+        }
+
+        // 更新评级按钮的预计间隔显示
+        function updateRatingIntervals(status) {
+            const status_type = status.status;
+            const ease = status.easeFactor || 2500;
+            const currentInterval = status.intervalDays || 0;
+            const learningStep = status.learningStep || 0;
+
+            let intervals = {};
+
+            if (status_type === 'NEW' || status_type === 'LEARNING' || status_type === 'RELEARNING') {
+                // 学习阶段
+                if (learningStep === 0) {
+                    intervals = { 1: '<10分钟', 2: '<10分钟', 3: '10分钟', 4: '1天' };
+                } else if (learningStep === 1) {
+                    intervals = { 1: '<10分钟', 2: '10分钟', 3: '1小时', 4: '1天' };
+                } else {
+                    intervals = { 1: '<10分钟', 2: '1小时', 3: '1天', 4: '4天' };
+                }
+            } else {
+                // 复习阶段 - SM-2算法计算
+                intervals[1] = '<10分钟'; // 重来
+
+                // 困难: 间隔 * 1.2
+                const hardInterval = Math.max(1, Math.round(currentInterval * 1.2));
+                intervals[2] = formatInterval(hardInterval);
+
+                // 良好: 间隔 * 简易度系数
+                const goodInterval = Math.max(1, Math.round(currentInterval * ease / 1000));
+                intervals[3] = formatInterval(goodInterval);
+
+                // 简单: 间隔 * 简易度系数 * 1.35
+                const easyInterval = Math.max(1, Math.round(currentInterval * ease / 1000 * 1.35));
+                intervals[4] = formatInterval(easyInterval);
+            }
+
+            document.getElementById('interval-again').textContent = intervals[1];
+            document.getElementById('interval-hard').textContent = intervals[2];
+            document.getElementById('interval-good').textContent = intervals[3];
+            document.getElementById('interval-easy').textContent = intervals[4];
+        }
+
+        // 格式化间隔显示
+        function formatInterval(days) {
+            if (days < 1) {
+                const hours = Math.round(days * 24);
+                if (hours < 1) return '<1小时';
+                return `${hours}小时`;
+            } else if (days === 1) {
+                return '1天';
+            } else {
+                return `${days}天`;
+            }
+        }
+
+        // 提交评级
+        async function submitRating(rating) {
+            if (!currentQuizId || isCompleted) return;
+
+            console.log('[评级] 开始提交评级 - quizId:', currentQuizId, 'rating:', rating);
+
+            try {
+                const status = currentQuizStatus?.status;
+                let result;
+
+                if (status === 'NEW' || status === 'LEARNING' || status === 'RELEARNING') {
+                    result = await ReviewAPI.submitLearnRating(currentQuizId, rating);
+                } else {
+                    result = await ReviewAPI.submitReviewRating(currentQuizId, rating);
+                }
+
+                console.log('[评级] 收到响应:', result);
+
+                // 更新进度
+                todayCompleted++;
+                updateProgress();
+
+                if (result.completed) {
+                    console.log('[评级] completed=true，显示完成弹窗');
+                    showCompletionModal();
+                } else if (result.nextQuizId) {
+                    console.log('[评级] nextQuizId=', result.nextQuizId, '加载下一个测验');
+                    loadNextQuizById(result.nextQuizId);
+                } else {
+                    console.log('[评级] nextQuizId 为空，前端自己获取下一个测验');
+                    await loadNextQuiz();
+                }
+
+            } catch (error) {
+                console.error('提交评级失败:', error);
+                alert('提交失败，请重试');
+            }
+        }
+
+        // 根据 ID 加载下一个测验
+        async function loadNextQuizById(quizId) {
+            try {
+                const next = await ReviewAPI.getQuiz(quizId);
+                if (next && next.id) {
+                    hideRatingPanel();
+                    document.getElementById('input-section').style.display = 'block';
+                    document.getElementById('results-panel').style.display = 'none';
+                    document.getElementById('answer-input').value = '';
+
+                    history.replaceState(null, '', `?id=${next.id}`);
+
+                    await loadQuiz(next.id);
+                } else {
+                    await loadNextQuiz();
+                }
+            } catch (error) {
+                console.error('加载下一个测验失败:', error);
+                await loadNextQuiz();
+            }
+        }
+
+        // 加载下一个测验（从 API 获取）
+        async function loadNextQuiz() {
+            try {
+                const next = await ReviewAPI.getNextQuiz();
+                if (next && next.quizId) {
+                    hideRatingPanel();
+                    document.getElementById('input-section').style.display = 'block';
+                    document.getElementById('results-panel').style.display = 'none';
+                    document.getElementById('answer-input').value = '';
+
+                    history.replaceState(null, '', `?id=${next.quizId}`);
+
+                    await loadQuiz(next.quizId);
+                } else {
+                    showCompletionModal();
+                }
+            } catch (error) {
+                console.error('加载下一个测验失败:', error);
+            }
+        }
+
+        // 加载今日进度
+        async function loadTodayProgress() {
+            try {
+                const summary = await ReviewAPI.getTodaySummary();
+                todayTotal = (summary.newCount || 0) + (summary.learningCount || 0) +
+                            (summary.reviewCount || 0) + (summary.relearningCount || 0);
+                updateProgress();
+            } catch (error) {
+                console.error('加载进度失败:', error);
+            }
+        }
+
+        // 更新进度显示
+        function updateProgress() {
+            const percentage = todayTotal > 0 ? (todayCompleted / todayTotal * 100) : 0;
+            document.getElementById('progress-fill').style.width = `${percentage}%`;
+            document.getElementById('progress-text').textContent = `${todayCompleted} / ${todayTotal}`;
+        }
+
+        // 显示完成弹窗
+        function showCompletionModal() {
+            isCompleted = true;
+            document.getElementById('completion-modal').classList.add('visible');
+        }
+
+        // 隐藏完成弹窗
+        function hideCompletionModal() {
+            document.getElementById('completion-modal').classList.remove('visible');
+        }
+
+        // 返回复习列表页
+        function returnToReviewPage() {
+            window.location.href = 'review.html';
+        }
+
+        // 继续复习
+        async function continueReview() {
+            hideCompletionModal();
+            await loadNextQuiz();
+        }
+
+        // 跳过当前测验
+        async function skipQuiz() {
+            if (!currentQuizId) return;
+
+            try {
+                await ReviewAPI.skipLearning();
+                await loadNextQuiz();
+            } catch (error) {
+                console.error('跳过测验失败:', error);
+            }
+        }
+
+        // 退出复习
+        function exitReview() {
+            if (confirm('确定要退出复习吗？当前进度已保存。')) {
+                window.location.href = 'review.html';
+            }
+        }
+
+        // 放弃测验
+        function giveUp() {
+            if (confirm('确定要放弃当前测验吗？')) {
+                showRatingPanel();
+            }
+        }
+
+        // 键盘事件处理
+        function handleKeyDown(e) {
+            // 评级快捷键
+            if (document.getElementById('rating-panel').classList.contains('visible')) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        submitRating(1);
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        submitRating(2);
+                        break;
+                    case '3':
+                    case ' ': // 空格键 = 良好
+                        e.preventDefault();
+                        submitRating(3);
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        submitRating(4);
+                        break;
+                    case 'Escape':
+                        e.preventDefault();
+                        skipQuiz();
+                        break;
+                }
+            }
+        }
+
+        // 计时器相关（简化实现）
+        let timerInterval;
+        let startTime;
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('time-display').textContent =
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 启动计时器
+        startTimer();
+    </script>
+</body>
+</html>

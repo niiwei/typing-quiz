@@ -61,7 +61,7 @@ public class QuizGroupService {
         if (userId == null) {
             return new ArrayList<>();
         }
-        return groupRepository.findByUserIdOrderByDisplayOrderAsc(userId);
+        return groupRepository.findByUserIdWithQuizzes(userId);
     }
 
     /**

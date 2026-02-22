@@ -195,6 +195,8 @@
         <div class="manage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">测验与分组管理</h1>
             <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-small" onclick="showImportModal()">导入</button>
+                <button class="btn btn-small" onclick="exportAllQuizzes()">导出全部</button>
                 <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
             </div>
         </div>
@@ -530,33 +532,16 @@
 
         // 导出分组
         async function exportGroup(groupId) {
-            const group = allGroups.find(g => g.id == groupId);
-            if (!group) return;
-
-            const groupQuizzes = allQuizzes.filter(quiz => group.quizIds && group.quizIds.includes(quiz.id));
-
             try {
-                // 获取测验的详细信息（包括答案）
-                const quizDetails = await Promise.all(
-                    groupQuizzes.map(async quiz => {
-                        const res = await fetch(`/api/quizzes/${quiz.id}`, { headers: getAuthHeaders() });
-                        return res.json();
-                    })
-                );
+                const res = await fetch(`/api/import-export/group/${groupId}/export`, { headers: getAuthHeaders() });
+                if (!res.ok) { alert('导出失败'); return; }
+                const data = await res.json();
 
-                const exportData = quizDetails.map(quiz => ({
-                    title: quiz.title,
-                    description: quiz.description,
-                    quizType: quiz.quizType,
-                    timeLimit: quiz.timeLimit,
-                    answers: quiz.answers
-                }));
-
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${group.name}_测验组_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `group_${groupId}_${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
@@ -567,26 +552,76 @@
         // 导出单个测验
         async function exportQuiz(quizId) {
             try {
-                const res = await fetch(`/api/quizzes/${quizId}`, { headers: getAuthHeaders() });
-                const quiz = await res.json();
+                const res = await fetch(`/api/import-export/quiz/${quizId}/export`, { headers: getAuthHeaders() });
+                if (!res.ok) { alert('导出失败'); return; }
+                const data = await res.json();
 
-                const exportData = {
-                    title: quiz.title,
-                    description: quiz.description,
-                    quizType: quiz.quizType,
-                    timeLimit: quiz.timeLimit,
-                    answers: quiz.answers
-                };
-
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${quiz.title}_测验_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `quiz_${quizId}_${data.title || 'export'}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
             } catch (e) {
                 alert('导出失败');
+            }
+        }
+
+        // 显示导入模态框
+        function showImportModal() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = handleFileImport;
+            input.click();
+        }
+
+        // 处理文件导入
+        async function handleFileImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                
+                // 判断是单个测验还是多个测验
+                const isArray = Array.isArray(data);
+                const quizzes = isArray ? data : [data];
+                
+                // 验证数据格式
+                for (const quiz of quizzes) {
+                    if (!quiz.title || (!quiz.answers && !quiz.answerList)) {
+                        alert('文件格式不正确,请确保包含title和answers字段');
+                        return;
+                    }
+                }
+                
+                // 导入
+                const response = await fetch('/api/import-export/quizzes/import', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(quizzes)
+                });
+                
+                const result = await response.json();
+                
+                // 显示结果
+                let message = `导入完成!\n成功: ${result.successCount} 个\n失败: ${result.failureCount} 个`;
+                
+                if (result.failures && result.failures.length > 0) {
+                    message += '\n\n失败的测验:\n';
+                    result.failures.forEach(f => {
+                        message += `- ${f.title}: ${f.error}\n`;
+                    });
+                }
+                
+                alert(message);
+                loadData();
+            } catch (error) {
+                console.error('导入失败:', error);
+                alert('导入失败: ' + error.message);
             }
         }
 
@@ -709,6 +744,26 @@
                 }
             } catch (e) {
                 alert('保存失败');
+            }
+        }
+
+        // 导出全部测验
+        async function exportAllQuizzes() {
+            try {
+                const res = await fetch('/api/import-export/quizzes/export', { headers: getAuthHeaders() });
+                if (!res.ok) { alert('导出失败'); return; }
+                const data = await res.json();
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `all_quizzes_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert(`成功导出 ${data.length} 个测验`);
+            } catch (e) {
+                alert('导出失败');
             }
         }
     </script>

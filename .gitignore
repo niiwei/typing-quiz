@@ -41,3 +41,6 @@ yarn-error.log
 
 # Build tools (large files)
 tools/
+
+# Reference versions (for comparison only)
+40d8f67-ref/
