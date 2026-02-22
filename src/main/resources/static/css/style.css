@@ -417,11 +417,17 @@ input[type="submit"]:hover {
     transition: all 0.2s ease;
 }
 
-/* 未作答的占位样式 - 灰色矩形框 */
+/* 未作答的占位样式 - 灰色下划线 */
 .fill-blank-placeholder.empty {
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 0 4px;
     color: transparent;
+    height: 1em;
+    min-width: 2em;
+    vertical-align: baseline;
 }
 
 /* 已作答样式 - 极简黑白 */
