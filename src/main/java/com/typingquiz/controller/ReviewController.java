@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,6 +83,9 @@ public class ReviewController {
             // 获取所有复习状态
             List<QuizReviewStatus> allStatuses = quizReviewService.getUserReviewStatuses(userId);
             
+            // 统一使用北京时间
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
+            
             // 按分组统计
             List<GroupReviewDTO> result = groups.stream().map(group -> {
                 GroupReviewDTO dto = new GroupReviewDTO();
@@ -93,43 +97,45 @@ public class ReviewController {
                         .map(Quiz::getId)
                         .collect(Collectors.toList());
                 
-                int newCount = 0;
-                int learningCount = 0;
-                int reviewCount = 0;
-                int relearningCount = 0;
-                int dueTodayCount = 0;
-                LocalDateTime today = LocalDateTime.now();
+                // 使用 ReviewLabel 体系统计（与首页统计一致）
+                int pendingLearnCount = 0;   // 待学习
+                int pendingReviewCount = 0;  // 待复习
+                int scheduledCount = 0;      // 未到期
+                int suspendedCount = 0;      // 已暂停
+                int dueTodayCount = 0;       // 今日到期总数
                 
                 for (QuizReviewStatus status : allStatuses) {
                     if (groupQuizIds.contains(status.getQuizId())) {
                         // 使用统一的准入逻辑进行计数
                         if (status.isUserAccessible()) {
-                            switch (status.getStatus()) {
-                                case NEW:
-                                    newCount++;
-                                    break;
-                                case LEARNING:
-                                    learningCount++;
-                                    break;
-                                case REVIEW:
-                                    reviewCount++;
+                            ReviewLabel label = status.getLabel(now);
+                            switch (label) {
+                                case PENDING_LEARN:
+                                    pendingLearnCount++;
                                     dueTodayCount++;
                                     break;
-                                case RELEARNING:
-                                    relearningCount++;
+                                case PENDING_REVIEW:
+                                    pendingReviewCount++;
                                     dueTodayCount++;
+                                    break;
+                                case SCHEDULED:
+                                    scheduledCount++;
+                                    break;
+                                case SUSPENDED:
+                                    suspendedCount++;
                                     break;
                             }
                         }
                     }
                 }
                 
-                dto.setNewCount(newCount);
-                dto.setLearningCount(learningCount);
-                dto.setReviewCount(reviewCount);
-                dto.setRelearningCount(relearningCount);
+                // 为了保持向后兼容，将新字段映射到旧字段
+                dto.setNewCount(pendingLearnCount);        // 待学习
+                dto.setReviewCount(pendingReviewCount);    // 待复习
+                dto.setLearningCount(scheduledCount);      // 未到期/学习中
+                dto.setRelearningCount(0);                 // 重学已合并到待学习
                 dto.setDueTodayCount(dueTodayCount);
-                dto.setExpandable(newCount + learningCount + reviewCount + relearningCount > 0);
+                dto.setExpandable(pendingLearnCount + pendingReviewCount > 0);
                 
                 return dto;
             }).collect(Collectors.toList());
