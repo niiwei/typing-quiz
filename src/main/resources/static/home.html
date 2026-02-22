@@ -49,6 +49,155 @@
             margin: 0 auto;
             padding: 0 2rem 4rem;
         }
+
+        /* 分组复习卡片样式 */
+        .review-group-card {
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+        .review-group-card:hover {
+            border-color: var(--accent);
+        }
+        .review-group-card.expanded {
+            border-color: var(--accent);
+        }
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .group-header:hover {
+            background: var(--hover);
+        }
+        .group-title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .group-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .group-stats {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .stat-tag {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .stat-tag.new {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .stat-tag.review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .stat-tag.relearning {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .expand-icon {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        .group-content {
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        /* 测验项样式 */
+        .quiz-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .quiz-item:last-child {
+            border-bottom: none;
+        }
+        .quiz-item:hover {
+            background: #fff;
+        }
+        .quiz-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .quiz-title-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .quiz-title {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .quiz-status {
+            font-size: 0.55rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .quiz-status.status-new {
+            background: #fcd34d;
+            color: #78350f;
+        }
+        .quiz-status.status-review {
+            background: #93c5fd;
+            color: #1e3a8a;
+        }
+        .quiz-status.status-relearning {
+            background: #fca5a5;
+            color: #7f1d1d;
+        }
+        .quiz-status.status-suspended {
+            background: var(--border);
+            color: var(--text-muted);
+        }
+        .quiz-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .quiz-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .quiz-actions .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.7rem;
+        }
+        .btn-secondary {
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
     </style>
 </head>
 <body class="home-page">
@@ -91,13 +240,40 @@
             </div>
         </section>
 
-        <section class="home-section">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-                <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em; font-weight: 700;">最近活动</h2>
-                <a href="quizzes.html" style="font-size: 0.65rem; color: var(--text-muted); text-decoration: none;">查看全部</a>
+        <section class="home-section" id="group-review-section">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 0.9rem; color: var(--text-main); letter-spacing: 0.1em; font-weight: 600; margin-bottom: 0.25rem;">分组复习</h2>
+                    <span style="font-size: 0.65rem; color: var(--text-muted);">点击分组展开查看测验</span>
+                </div>
             </div>
-            <div id="recent-activity-list">
-                <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.8rem; color: var(--text-muted);">数据加载中...</div>
+
+            <!-- 筛选器 -->
+            <div class="filter-bar" style="margin-bottom: 1.5rem;">
+                <div class="filter-row">
+                    <span class="filter-label">状态</span>
+                    <div id="status-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <span class="filter-item active" data-status="all" onclick="filterByStatus('all', this)">全部</span>
+                        <span class="filter-item" data-status="PENDING_LEARN" onclick="filterByStatus('PENDING_LEARN', this)">待学习</span>
+                        <span class="filter-item" data-status="PENDING_REVIEW" onclick="filterByStatus('PENDING_REVIEW', this)">待复习</span>
+                        <span class="filter-item" data-status="SUSPENDED" onclick="filterByStatus('SUSPENDED', this)">已暂停</span>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <span class="filter-label">分组</span>
+                    <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button class="btn btn-small" onclick="showBuriedQuizzes()">查看搁置</button>
+                </div>
+            </div>
+
+            <!-- 分组列表 -->
+            <div id="review-groups-container">
+                <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.8rem; color: var(--text-muted);">加载分组复习数据...</div>
             </div>
         </section>
     </div>
@@ -117,8 +293,8 @@
 
             // 加载统计数据
             await loadHomeSummary();
-            // 加载最近活动（模拟逻辑或从存储获取）
-            await loadRecentActivity();
+            // 加载分组复习数据
+            await loadGroupReviewData();
         });
 
         async function loadHomeSummary() {
@@ -140,35 +316,219 @@
             }
         }
 
-        async function loadRecentActivity() {
-            // 这里可以根据实际 API 调整，目前先从 localStorage 的 quizHistory 中获取
-            const container = document.getElementById('recent-activity-list');
-            const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+        // 分组复习数据
+        let allGroupData = [];
+        let allGroups = [];
+        let activeStatus = 'all';
+        let activeGroup = 'all';
+
+        async function loadGroupReviewData() {
+            try {
+                // 获取分组复习摘要
+                const groupSummary = await ReviewAPI.getGroupSummary();
+                allGroupData = groupSummary;
+
+                // 获取所有分组信息用于筛选器
+                const response = await fetch('/api/groups', { headers: Auth.getAuthHeaders() });
+                if (response.ok) {
+                    allGroups = await response.json();
+                    renderGroupFilters();
+                }
+
+                renderGroupReviewList();
+            } catch (error) {
+                console.error('加载分组复习数据失败:', error);
+                document.getElementById('review-groups-container').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: var(--error);">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderGroupFilters() {
+            const container = document.getElementById('group-filters');
+            // 保留"全部"选项，添加分组选项
+            allGroups.forEach(group => {
+                const span = document.createElement('span');
+                span.className = 'filter-item';
+                span.dataset.group = group.id;
+                span.textContent = group.name;
+                span.onclick = () => filterByGroup(group.id, span);
+                container.appendChild(span);
+            });
+        }
+
+        function filterByStatus(status, el) {
+            activeStatus = status;
+            document.querySelectorAll('#status-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            renderGroupReviewList();
+        }
+
+        function filterByGroup(groupId, el) {
+            activeGroup = groupId;
+            document.querySelectorAll('#group-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            renderGroupReviewList();
+        }
+
+        function renderGroupReviewList() {
+            const container = document.getElementById('review-groups-container');
             
-            if (history.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-muted);">暂无活动记录</div>';
+            // 筛选分组
+            let filteredGroups = allGroupData;
+            if (activeGroup !== 'all') {
+                filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
+            }
+            if (activeStatus !== 'all') {
+                filteredGroups = filteredGroups.map(g => ({
+                    ...g,
+                    items: g.items.filter(item => item.label === activeStatus)
+                })).filter(g => g.items.length > 0);
+            }
+
+            if (filteredGroups.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">暂无匹配的分组或测验</div>';
                 return;
             }
 
-            container.innerHTML = history.slice(0, 5).map(item => `
-                <div class="list-item">
-                    <div class="list-info">
-                        <span class="title">${item.title}</span>
-                        <span class="sub">${item.accuracy}% 准确率 • 用时 ${item.time}</span>
+            container.innerHTML = filteredGroups.map(groupData => {
+                const stats = calculateGroupStats(groupData.items);
+                return `
+                    <div class="review-group-card" data-group-id="${groupData.groupId}">
+                        <div class="group-header" onclick="toggleGroup('${groupData.groupId}')">
+                            <div class="group-title-section">
+                                <span class="group-name">${groupData.groupName}</span>
+                                <div class="group-stats">
+                                    ${stats.newCount > 0 ? `<span class="stat-tag new">学 ${stats.newCount}</span>` : ''}
+                                    ${stats.reviewCount > 0 ? `<span class="stat-tag review">复 ${stats.reviewCount}</span>` : ''}
+                                    ${stats.relearningCount > 0 ? `<span class="stat-tag relearning">重 ${stats.relearningCount}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="group-actions">
+                                <button class="btn btn-small" onclick="event.stopPropagation(); startGroupReview('${groupData.groupId}')">分组复习</button>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="group-content" id="group-content-${groupData.groupId}" style="display: none;">
+                            ${renderQuizItems(groupData.items, groupData.groupId)}
+                        </div>
                     </div>
-                    <span style="font-size: 0.7rem; color: var(--text-muted);">${formatTimeAgo(item.timestamp)}</span>
+                `;
+            }).join('');
+        }
+
+        function calculateGroupStats(items) {
+            return {
+                newCount: items.filter(i => i.label === 'PENDING_LEARN').length,
+                reviewCount: items.filter(i => i.label === 'PENDING_REVIEW').length,
+                relearningCount: items.filter(i => i.label === 'RELEARNING' || i.label === 'PENDING_RELEARN').length
+            };
+        }
+
+        function renderQuizItems(items, groupId) {
+            if (items.length === 0) {
+                return '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">该分组下暂无待复习测验</div>';
+            }
+            return items.map(item => `
+                <div class="quiz-item">
+                    <div class="quiz-info">
+                        <div class="quiz-title-section">
+                            <span class="quiz-title">${item.quizTitle}</span>
+                            <span class="quiz-status ${getStatusClass(item.label)}">${getStatusText(item.label)}</span>
+                        </div>
+                        <span class="quiz-meta">间隔: ${item.intervalText || '即将到期'} • 已复习 ${item.reviewCount || 0} 次 • 简易度: ${(item.easeFactor / 1000).toFixed(1)}</span>
+                    </div>
+                    <div class="quiz-actions">
+                        <button class="btn btn-small" onclick="startQuiz(${item.quizId}, '${groupId}')">开始</button>
+                        <button class="btn btn-small btn-secondary" onclick="buryQuiz(${item.quizId})">搁置</button>
+                        <button class="btn btn-small btn-secondary" onclick="resetQuiz(${item.quizId})">重置</button>
+                    </div>
                 </div>
             `).join('');
         }
 
-        function formatTimeAgo(timestamp) {
-            const diff = Date.now() - timestamp;
-            const minutes = Math.floor(diff / 60000);
-            if (minutes < 1) return '刚刚';
-            if (minutes < 60) return `${minutes}分钟前`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours}小时前`;
-            return new Date(timestamp).toLocaleDateString();
+        function getStatusClass(label) {
+            const map = {
+                'PENDING_LEARN': 'status-new',
+                'PENDING_REVIEW': 'status-review',
+                'PENDING_RELEARN': 'status-relearning',
+                'SUSPENDED': 'status-suspended'
+            };
+            return map[label] || 'status-default';
+        }
+
+        function getStatusText(label) {
+            const map = {
+                'PENDING_LEARN': '待学习',
+                'PENDING_REVIEW': '待复习',
+                'PENDING_RELEARN': '待重学',
+                'SUSPENDED': '已暂停'
+            };
+            return map[label] || label;
+        }
+
+        function toggleGroup(groupId) {
+            const content = document.getElementById(`group-content-${groupId}`);
+            const card = document.querySelector(`[data-group-id="${groupId}"]`);
+            const icon = card.querySelector('.expand-icon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+                card.classList.add('expanded');
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+                card.classList.remove('expanded');
+            }
+        }
+
+        function startQuiz(quizId, groupId) {
+            window.location.href = `index.html?id=${quizId}&groupId=${groupId}`;
+        }
+
+        function startGroupReview(groupId) {
+            const group = allGroupData.find(g => g.groupId === groupId);
+            if (!group || group.items.length === 0) {
+                alert('该分组暂无待复习测验');
+                return;
+            }
+            const quizIds = group.items.map(i => i.quizId);
+            sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
+            window.location.href = `index.html?id=${quizIds[0]}&groupId=${groupId}`;
+        }
+
+        async function buryQuiz(quizId) {
+            if (!confirm('确定要搁置这个测验吗？')) return;
+            try {
+                await ReviewAPI.buryQuiz(quizId);
+                await loadGroupReviewData();
+            } catch (error) {
+                alert('搁置失败');
+            }
+        }
+
+        async function resetQuiz(quizId) {
+            if (!confirm('确定要重置这个测验的复习状态吗？')) return;
+            try {
+                await ReviewAPI.resetQuiz(quizId);
+                await loadGroupReviewData();
+            } catch (error) {
+                alert('重置失败');
+            }
+        }
+
+        async function showBuriedQuizzes() {
+            try {
+                const buried = await ReviewAPI.getBuriedQuizzes();
+                if (buried.length === 0) {
+                    alert('暂无搁置的测验');
+                    return;
+                }
+                // 简单显示搁置列表，可以扩展为弹窗
+                const titles = buried.map(b => b.quizTitle).join('\n');
+                alert(`已搁置的测验（共${buried.length}个）:\n${titles}`);
+            } catch (error) {
+                console.error('获取搁置列表失败:', error);
+            }
         }
 
         async function startDailyReview() {
