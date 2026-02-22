@@ -464,8 +464,13 @@ class QuizController {
             : (this.answers ? this.answers.length : 0);
         const found = this.quizType === 'FILL_BLANK' ? this.filledBlanks.size : this.foundAnswers.size;
         const progress = total > 0 ? found / total : 0;
+        
+        // 更新进度条
         const fillEl = document.getElementById('progress-fill');
         if (fillEl) fillEl.style.width = (progress * 100) + '%';
+        
+        // 更新分数文本显示
+        UIRenderer.updateScore(found, total);
     }
 
     renderFillBlankQuiz() {
