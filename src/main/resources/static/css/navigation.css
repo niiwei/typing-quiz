@@ -1,6 +1,6 @@
 /* 统一导航样式 - Minimalist Zen */
 .navbar {
-    padding: 2rem 4rem;
+    padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -8,7 +8,9 @@
     position: sticky;
     top: 0;
     background: var(--bg);
-    z-index: 100;
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .logo {
@@ -19,12 +21,14 @@
     cursor: pointer;
     text-decoration: none;
     color: var(--text-main);
+    flex: 0 0 auto;
 }
 
 .nav-links {
     display: flex;
-    gap: 2rem;
+    gap: 1.5rem;
     align-items: center;
+    flex: 0 0 auto;
 }
 
 .nav-links a {

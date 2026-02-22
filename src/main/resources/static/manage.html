@@ -288,23 +288,23 @@
             <a href="quizzes.html">测验</a>
             <a href="create.html">创建</a>
             <a href="manage.html" class="active">管理</a>
-            <a href="#" onclick="Auth.logout()" style="color: var(--error);">退出</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
         </div>
     </nav>
 
     <div id="quiz-container" class="fade-in">
-        <div class="manage-header">
+        <div class="manage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">测验与分组管理</h1>
             <div style="display: flex; gap: 1rem;">
-                <button class="btn btn-small" style="border-color: var(--border);" onclick="exportAllQuizzes()">全部导出</button>
+                <button class="btn btn-small" onclick="exportAllQuizzes()">全部导出</button>
                 <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
             </div>
         </div>
 
         <!-- 批量操作栏 (极简风格) -->
-        <div id="bulk-actions-bar" class="bulk-actions" style="display: none;">
+        <div id="bulk-actions-bar" class="bulk-actions" style="display: none; align-items: center; gap: 1rem; padding: 1rem; background: var(--hover); margin-bottom: 1.5rem;">
             <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAll(this)">
-            <span id="selected-count" style="margin-right: auto;">已选 0 项</span>
+            <span id="selected-count" style="margin-right: auto; font-size: 0.75rem;">已选 0 项</span>
             <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="bulkDelete()">批量删除</button>
             <button class="btn btn-small" onclick="showBulkGroupModal()">批量移动</button>
         </div>
@@ -336,7 +336,7 @@
                 <textarea id="group-description" class="form-input" style="height: 60px;"></textarea>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeGroupModal()">取消</button>
+                <button class="btn btn-small" onclick="closeGroupModal()">取消</button>
                 <button class="btn btn-small" onclick="saveGroup()">确认</button>
             </div>
         </div>
@@ -352,7 +352,7 @@
                 </select>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                <button class="btn btn-small" style="border-color: var(--border);" onclick="closeBulkGroupModal()">取消</button>
+                <button class="btn btn-small" onclick="closeBulkGroupModal()">取消</button>
                 <button class="btn btn-small" onclick="bulkAddToGroup()">确认移动</button>
             </div>
         </div>
@@ -378,8 +378,8 @@
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--border); color: var(--text-muted);" onclick="editQuiz(${quiz.id})">编辑</button>
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);" onclick="deleteQuiz(${quiz.id})">删除</button>
+                        <button class="btn btn-small" onclick="editQuiz(${quiz.id})">编辑</button>
+                        <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="deleteQuiz(${quiz.id})">删除</button>
                     </div>
                 </div>
             `).join('');
@@ -399,8 +399,8 @@
                         <span class="sub">${group.quizIds ? group.quizIds.length : 0} 个测验 • ${group.description || '无描述'}</span>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--border); color: var(--text-muted);" onclick="editGroup(${group.id})">编辑</button>
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);" onclick="deleteGroup(${group.id})">删除</button>
+                        <button class="btn btn-small" onclick="editGroup(${group.id})">编辑</button>
+                        <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="deleteGroup(${group.id})">删除</button>
                     </div>
                 </div>
             `).join('');
