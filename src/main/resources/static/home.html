@@ -266,8 +266,11 @@
                     <span class="filter-label">状态</span>
                     <div id="status-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                         <span class="filter-item active" data-status="all" onclick="filterByStatus('all', this)">全部</span>
+                        <span class="filter-item" data-status="NEW" onclick="filterByStatus('NEW', this)">新测验</span>
                         <span class="filter-item" data-status="PENDING_LEARN" onclick="filterByStatus('PENDING_LEARN', this)">待学习</span>
+                        <span class="filter-item" data-status="PENDING_RELEARN" onclick="filterByStatus('PENDING_RELEARN', this)">待重学</span>
                         <span class="filter-item" data-status="PENDING_REVIEW" onclick="filterByStatus('PENDING_REVIEW', this)">待复习</span>
+                        <span class="filter-item" data-status="SCHEDULED" onclick="filterByStatus('SCHEDULED', this)">未到期</span>
                         <span class="filter-item" data-status="SUSPENDED" onclick="filterByStatus('SUSPENDED', this)">已暂停</span>
                     </div>
                 </div>
@@ -395,8 +398,11 @@
             }
             if (activeStatus !== 'all') {
                 filteredGroups = filteredGroups.filter(g => {
-                    if (activeStatus === 'PENDING_LEARN') return g.newCount > 0;
-                    if (activeStatus === 'PENDING_REVIEW') return g.reviewCount > 0;
+                    if (activeStatus === 'NEW') return g.newQuizCount > 0;
+                    if (activeStatus === 'PENDING_LEARN') return g.pendingLearnCount > 0;
+                    if (activeStatus === 'PENDING_RELEARN') return g.pendingRelearnCount > 0;
+                    if (activeStatus === 'PENDING_REVIEW') return g.pendingReviewCount > 0;
+                    if (activeStatus === 'SCHEDULED') return g.scheduledCount > 0;
                     if (activeStatus === 'SUSPENDED') return g.suspendedCount > 0;
                     return true;
                 });
@@ -467,7 +473,11 @@
                 const items = await ReviewAPI.getGroupReviewItems(groupId);
                 let filteredItems = items;
                 if (activeStatus !== 'all') {
-                    filteredItems = items.filter(item => item.label === activeStatus);
+                    // 使用 detailedLabel 或 label 进行匹配
+                    filteredItems = items.filter(item => {
+                        const label = item.detailedLabel || item.label;
+                        return label === activeStatus;
+                    });
                 }
                 expandedGroups.set(groupId, filteredItems);
                 renderGroupItems(groupId, filteredItems);
