@@ -203,7 +203,7 @@
         <div class="filter-bar">
             <div class="filter-row">
                 <span class="filter-label">分组</span>
-                <div id="group-filters">
+                <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                     <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
                     <span class="filter-item" data-group="ungrouped" onclick="filterByGroup('ungrouped', this)">未分组</span>
                     <!-- 动态填充其他分组 -->
@@ -211,7 +211,7 @@
             </div>
             <div class="filter-row">
                 <span class="filter-label">分类</span>
-                <div id="type-filters">
+                <div id="type-filters" style="display: flex; gap: 1.5rem;">
                     <span class="filter-item active" data-type="all" onclick="filterByType('all', this)">全部</span>
                     <span class="filter-item" data-type="TYPING" onclick="filterByType('TYPING', this)">打字</span>
                     <span class="filter-item" data-type="FILL_BLANK" onclick="filterByType('FILL_BLANK', this)">填空</span>
@@ -332,6 +332,19 @@
             el.classList.add('active');
             expandedGroups.clear();
             renderGroups();
+
+            // 自动展开所有可见分组
+            if (type !== 'all') {
+                setTimeout(() => {
+                    const visibleGroups = document.querySelectorAll('.group-card');
+                    visibleGroups.forEach(group => {
+                        const groupId = group.dataset.groupId;
+                        if (groupId) {
+                            toggleGroup(groupId);
+                        }
+                    });
+                }, 100);
+            }
         }
 
         // 获取测验所属的分组ID列表
