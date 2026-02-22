@@ -52,6 +52,13 @@ class TimerModule {
     }
 
     /**
+     * 获取已用时间(秒) - 别名，兼容旧代码
+     */
+    getTimeElapsed() {
+        return this.elapsed;
+    }
+
+    /**
      * 获取剩余时间(秒)
      */
     getRemainingTime() {
