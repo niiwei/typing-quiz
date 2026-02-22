@@ -16,13 +16,166 @@
             align-items: center;
             margin-bottom: 2rem;
         }
-        .bulk-actions {
+
+        /* 分组卡片样式 - 复刻首页 */
+        .group-card {
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+            background: #fff;
+            transition: all 0.2s ease;
+        }
+        .group-card:hover {
+            border-color: var(--accent);
+        }
+        .group-card.expanded {
+            border-color: var(--accent);
+        }
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .group-header:hover {
+            background: var(--hover);
+        }
+        .group-title-section {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem;
+            flex-wrap: wrap;
+        }
+        .group-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .group-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .group-stats {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .stat-tag {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .stat-tag.quiz-count {
             background: var(--hover);
+            color: var(--text-muted);
+        }
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .expand-icon {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        .group-content {
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        /* 测验项样式 */
+        .quiz-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .quiz-item:last-child {
+            border-bottom: none;
+        }
+        .quiz-item:hover {
+            background: #fff;
+        }
+        .quiz-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .quiz-title {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .quiz-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .quiz-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .quiz-actions .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.7rem;
+        }
+        .btn-secondary {
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .btn-danger {
+            border-color: var(--error);
+            color: var(--error);
+        }
+        .btn-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        /* 筛选器样式 */
+        .filter-bar {
             margin-bottom: 1.5rem;
+        }
+        .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .filter-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+        .filter-item {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0.25rem 0;
+        }
+        .filter-item:hover, .filter-item.active {
+            color: var(--text-main);
+            border-bottom: 2px solid var(--text-main);
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
         }
     </style>
 </head>
@@ -42,33 +195,37 @@
         <div class="manage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">测验与分组管理</h1>
             <div style="display: flex; gap: 1rem;">
-                <button class="btn btn-small" onclick="exportAllQuizzes()">全部导出</button>
                 <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
             </div>
         </div>
 
-        <!-- 批量操作栏 (极简风格) -->
-        <div id="bulk-actions-bar" class="bulk-actions" style="display: none; align-items: center; gap: 1rem; padding: 1rem; background: var(--hover); margin-bottom: 1.5rem;">
-            <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAll(this)">
-            <span id="selected-count" style="margin-right: auto; font-size: 0.75rem;">已选 0 项</span>
-            <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="bulkDelete()">批量删除</button>
-            <button class="btn btn-small" onclick="showBulkGroupModal()">批量移动</button>
+        <!-- 筛选器 -->
+        <div class="filter-bar">
+            <div class="filter-row">
+                <span class="filter-label">分组</span>
+                <div id="group-filters">
+                    <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
+                    <span class="filter-item" data-group="ungrouped" onclick="filterByGroup('ungrouped', this)">未分组</span>
+                    <!-- 动态填充其他分组 -->
+                </div>
+            </div>
+            <div class="filter-row">
+                <span class="filter-label">分类</span>
+                <div id="type-filters">
+                    <span class="filter-item active" data-type="all" onclick="filterByType('all', this)">全部</span>
+                    <span class="filter-item" data-type="TYPING" onclick="filterByType('TYPING', this)">打字</span>
+                    <span class="filter-item" data-type="FILL_BLANK" onclick="filterByType('FILL_BLANK', this)">填空</span>
+                </div>
+            </div>
         </div>
 
-        <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">分组列表</h2>
-        <div id="group-list">
-            <!-- 动态填充 -->
-            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">分组加载中...</div>
-        </div>
-
-        <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 3rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">所有测验</h2>
-        <div id="quiz-list">
-            <!-- 动态填充 -->
-            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">测验加载中...</div>
+        <!-- 分组列表 -->
+        <div id="groups-container">
+            <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.8rem; color: var(--text-muted);">加载中...</div>
         </div>
     </div>
 
-    <!-- 分组模态框 (极简版) -->
+    <!-- 分组模态框 -->
     <div id="group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
         <div style="background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px;">
             <h3 id="group-modal-title" style="margin-bottom: 1.5rem; font-weight: 300;">新建分组</h3>
@@ -88,86 +245,405 @@
         </div>
     </div>
 
-    <!-- 批量分组模态框 -->
-    <div id="bulk-group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-        <div style="background: white; padding: 2rem; max-width: 400px; width: 90%; border-radius: 4px;">
-            <h3 style="margin-bottom: 1.5rem; font-weight: 300;">移动到分组</h3>
-            <div class="form-group">
-                <select id="bulk-group-select" class="form-input">
-                    <!-- 动态填充 -->
-                </select>
-            </div>
-            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                <button class="btn btn-small" onclick="closeBulkGroupModal()">取消</button>
-                <button class="btn btn-small" onclick="bulkAddToGroup()">确认移动</button>
-            </div>
-        </div>
-    </div>
-
     <script src="js/api.js"></script>
-    <script src="js/manage.js"></script>
     <script>
-        // 覆盖 manage.js 中的渲染逻辑以匹配极简风格
-        function renderQuizList(quizzes) {
-            const container = document.getElementById('quiz-list');
-            if (quizzes.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem;">暂无测验</div>';
+        // 数据存储
+        let allQuizzes = [];
+        let allGroups = [];
+        let expandedGroups = new Map();
+        let activeGroupFilter = 'all';
+        let activeTypeFilter = 'all';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof Auth !== 'undefined' && !Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
                 return;
             }
-            container.innerHTML = quizzes.map(quiz => `
-                <div class="list-item">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <input type="checkbox" class="quiz-checkbox" value="${quiz.id}" onchange="updateSelectedCount()">
-                        <div class="list-info">
-                            <span class="title">${quiz.title}</span>
-                            <span class="sub">ID: ${quiz.id} • ${quiz.quizType === 'TYPING' ? '打字题' : '填空题'}</span>
+            await loadData();
+        });
+
+        // 获取认证头
+        function getAuthHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = localStorage.getItem('typingquiz_token');
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            return headers;
+        }
+
+        // 加载所有数据
+        async function loadData() {
+            try {
+                const [quizzesRes, groupsRes] = await Promise.all([
+                    fetch('/api/quizzes', { headers: getAuthHeaders() }),
+                    fetch('/api/groups', { headers: getAuthHeaders() })
+                ]);
+
+                allQuizzes = await quizzesRes.json();
+                allGroups = await groupsRes.json();
+
+                renderGroupFilters();
+                renderGroups();
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                document.getElementById('groups-container').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: var(--error);">加载失败，请刷新重试</div>';
+            }
+        }
+
+        // 渲染分组筛选器
+        function renderGroupFilters() {
+            const container = document.getElementById('group-filters');
+            // 保留"全部"和"未分组"，添加其他分组
+            allGroups.forEach(group => {
+                const span = document.createElement('span');
+                span.className = 'filter-item';
+                span.dataset.group = group.id;
+                span.textContent = group.name;
+                span.onclick = () => filterByGroup(group.id, span);
+                container.appendChild(span);
+            });
+        }
+
+        // 分组筛选
+        function filterByGroup(groupId, el) {
+            activeGroupFilter = groupId;
+            document.querySelectorAll('#group-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            expandedGroups.clear();
+            renderGroups();
+
+            // 自动展开
+            if (groupId !== 'all') {
+                setTimeout(() => {
+                    if (groupId === 'ungrouped') {
+                        toggleGroup('ungrouped');
+                    } else {
+                        toggleGroup(groupId);
+                    }
+                }, 100);
+            }
+        }
+
+        // 类型筛选
+        function filterByType(type, el) {
+            activeTypeFilter = type;
+            document.querySelectorAll('#type-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            expandedGroups.clear();
+            renderGroups();
+        }
+
+        // 获取测验所属的分组ID列表
+        function getQuizGroupIds(quizId) {
+            const groupIds = [];
+            allGroups.forEach(group => {
+                if (group.quizIds && group.quizIds.includes(quizId)) {
+                    groupIds.push(group.id);
+                }
+            });
+            return groupIds;
+        }
+
+        // 渲染分组列表
+        function renderGroups() {
+            const container = document.getElementById('groups-container');
+            let groupsToRender = [];
+
+            // 处理分组筛选
+            if (activeGroupFilter === 'all') {
+                groupsToRender = [...allGroups];
+                // 如果有未分组的测验，添加未分组虚拟分组
+                const ungroupedQuizzes = getUngroupedQuizzes();
+                if (ungroupedQuizzes.length > 0) {
+                    groupsToRender.push({
+                        id: 'ungrouped',
+                        name: '未分组',
+                        description: '未分配到任何分组的测验',
+                        quizIds: ungroupedQuizzes.map(q => q.id),
+                        isVirtual: true
+                    });
+                }
+            } else if (activeGroupFilter === 'ungrouped') {
+                const ungroupedQuizzes = getUngroupedQuizzes();
+                if (ungroupedQuizzes.length > 0) {
+                    groupsToRender = [{
+                        id: 'ungrouped',
+                        name: '未分组',
+                        description: '未分配到任何分组的测验',
+                        quizIds: ungroupedQuizzes.map(q => q.id),
+                        isVirtual: true
+                    }];
+                }
+            } else {
+                const group = allGroups.find(g => g.id == activeGroupFilter);
+                if (group) groupsToRender = [group];
+            }
+
+            if (groupsToRender.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无匹配的分组或测验</div>';
+                return;
+            }
+
+            container.innerHTML = groupsToRender.map(group => {
+                const quizCount = group.quizIds ? group.quizIds.length : 0;
+                return `
+                    <div class="group-card" data-group-id="${group.id}">
+                        <div class="group-header" onclick="toggleGroup('${group.id}')">
+                            <div class="group-title-section">
+                                <span class="group-name">${group.name}</span>
+                                <span class="group-desc">${group.description || '无描述'}</span>
+                                <div class="group-stats">
+                                    <span class="stat-tag quiz-count">${quizCount} 个测验</span>
+                                </div>
+                            </div>
+                            <div class="group-actions">
+                                ${!group.isVirtual ? `
+                                    <button class="btn btn-small" onclick="event.stopPropagation(); exportGroup('${group.id}')">导出</button>
+                                    <button class="btn btn-small" onclick="event.stopPropagation(); editGroup('${group.id}')">编辑</button>
+                                ` : ''}
+                                <span class="expand-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="group-content" id="group-content-${group.id}" style="display: none;">
+                            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">加载中...</div>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-small" onclick="editQuiz(${quiz.id})">编辑</button>
-                        <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="deleteQuiz(${quiz.id})">删除</button>
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('bulk-actions-bar').style.display = 'flex';
+                `;
+            }).join('');
         }
 
-        function renderGroupList(groups) {
-            const container = document.getElementById('group-list');
-            if (groups.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem;">暂无分组</div>';
+        // 获取未分组的测验
+        function getUngroupedQuizzes() {
+            const groupedQuizIds = new Set();
+            allGroups.forEach(group => {
+                if (group.quizIds) {
+                    group.quizIds.forEach(id => groupedQuizIds.add(id));
+                }
+            });
+
+            let ungrouped = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
+
+            // 应用类型筛选
+            if (activeTypeFilter !== 'all') {
+                ungrouped = ungrouped.filter(quiz => quiz.quizType === activeTypeFilter);
+            }
+
+            return ungrouped;
+        }
+
+        // 展开/收起分组
+        async function toggleGroup(groupId) {
+            const content = document.getElementById(`group-content-${groupId}`);
+            const card = document.querySelector(`[data-group-id="${groupId}"]`);
+            const icon = card.querySelector('.expand-icon');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+                card.classList.add('expanded');
+
+                if (!expandedGroups.has(groupId)) {
+                    await loadGroupQuizzes(groupId);
+                } else {
+                    renderGroupQuizzes(groupId, expandedGroups.get(groupId));
+                }
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+                card.classList.remove('expanded');
+            }
+        }
+
+        // 加载分组内的测验
+        async function loadGroupQuizzes(groupId) {
+            const content = document.getElementById(`group-content-${groupId}`);
+
+            let quizzes = [];
+            if (groupId === 'ungrouped') {
+                quizzes = getUngroupedQuizzes();
+            } else {
+                const group = allGroups.find(g => g.id == groupId);
+                if (group && group.quizIds) {
+                    quizzes = allQuizzes.filter(quiz => group.quizIds.includes(quiz.id));
+                }
+            }
+
+            // 应用类型筛选
+            if (activeTypeFilter !== 'all') {
+                quizzes = quizzes.filter(quiz => quiz.quizType === activeTypeFilter);
+            }
+
+            expandedGroups.set(groupId, quizzes);
+            renderGroupQuizzes(groupId, quizzes);
+        }
+
+        // 渲染分组内的测验
+        function renderGroupQuizzes(groupId, quizzes) {
+            const content = document.getElementById(`group-content-${groupId}`);
+
+            if (quizzes.length === 0) {
+                content.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">该分组下暂无测验</div>';
                 return;
             }
-            container.innerHTML = groups.map(group => `
-                <div class="list-item">
-                    <div class="list-info">
-                        <span class="title">${group.name}</span>
-                        <span class="sub">${group.quizIds ? group.quizIds.length : 0} 个测验 • ${group.description || '无描述'}</span>
+
+            content.innerHTML = quizzes.map(quiz => {
+                const createdDate = quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString('zh-CN') : '未知';
+                const typeText = quiz.quizType === 'TYPING' ? '打字' : '填空';
+                const answerCount = quiz.totalAnswers || 0;
+
+                return `
+                    <div class="quiz-item">
+                        <div class="quiz-info">
+                            <span class="quiz-title">${quiz.title}</span>
+                            <span class="quiz-meta">${typeText} • ${answerCount} 个答案 • 创建于 ${createdDate}</span>
+                        </div>
+                        <div class="quiz-actions">
+                            <button class="btn btn-small btn-secondary" onclick="exportQuiz(${quiz.id})">导出</button>
+                            <button class="btn btn-small btn-secondary" onclick="editQuiz(${quiz.id})">编辑</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteQuiz(${quiz.id})">删除</button>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-small" onclick="editGroup(${group.id})">编辑</button>
-                        <button class="btn btn-small" style="border-color: var(--error); color: var(--error);" onclick="deleteGroup(${group.id})">删除</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function updateSelectedCount() {
-            const checked = document.querySelectorAll('.quiz-checkbox:checked').length;
-            document.getElementById('selected-count').textContent = `已选 ${checked} 项`;
+        // 导出分组
+        async function exportGroup(groupId) {
+            const group = allGroups.find(g => g.id == groupId);
+            if (!group) return;
+
+            const groupQuizzes = allQuizzes.filter(quiz => group.quizIds && group.quizIds.includes(quiz.id));
+
+            try {
+                // 获取测验的详细信息（包括答案）
+                const quizDetails = await Promise.all(
+                    groupQuizzes.map(async quiz => {
+                        const res = await fetch(`/api/quizzes/${quiz.id}`, { headers: getAuthHeaders() });
+                        return res.json();
+                    })
+                );
+
+                const exportData = quizDetails.map(quiz => ({
+                    title: quiz.title,
+                    description: quiz.description,
+                    quizType: quiz.quizType,
+                    timeLimit: quiz.timeLimit,
+                    answers: quiz.answers
+                }));
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${group.name}_测验组_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('导出失败');
+            }
         }
 
-        function toggleSelectAll(el) {
-            document.querySelectorAll('.quiz-checkbox').forEach(cb => cb.checked = el.checked);
-            updateSelectedCount();
+        // 导出单个测验
+        async function exportQuiz(quizId) {
+            try {
+                const res = await fetch(`/api/quizzes/${quizId}`, { headers: getAuthHeaders() });
+                const quiz = await res.json();
+
+                const exportData = {
+                    title: quiz.title,
+                    description: quiz.description,
+                    quizType: quiz.quizType,
+                    timeLimit: quiz.timeLimit,
+                    answers: quiz.answers
+                };
+
+                const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${quiz.title}_测验_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('导出失败');
+            }
         }
 
-        // 重新定义编辑跳转，因为创建页已独立
+        // 编辑分组
+        async function editGroup(id) {
+            const group = allGroups.find(g => g.id == id);
+            if (!group) return;
+
+            document.getElementById('group-id').value = id;
+            document.getElementById('group-name').value = group.name;
+            document.getElementById('group-description').value = group.description || '';
+            document.getElementById('group-modal-title').textContent = '编辑分组';
+            showGroupModal();
+        }
+
+        // 编辑测验
         function editQuiz(id) {
             window.location.href = `create.html?id=${id}`;
         }
+
+        // 删除测验
+        async function deleteQuiz(id) {
+            if (!confirm('确定删除该测验吗？')) return;
+            try {
+                const res = await fetch(`/api/quizzes/${id}`, { 
+                    method: 'DELETE', 
+                    headers: getAuthHeaders() 
+                });
+                if (res.ok) {
+                    await loadData();
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+
+        // 分组模态框操作
+        function showGroupModal() {
+            document.getElementById('group-modal').style.display = 'flex';
+        }
+
+        function closeGroupModal() {
+            document.getElementById('group-modal').style.display = 'none';
+            document.getElementById('group-id').value = '';
+            document.getElementById('group-name').value = '';
+            document.getElementById('group-description').value = '';
+            document.getElementById('group-modal-title').textContent = '新建分组';
+        }
+
+        async function saveGroup() {
+            const id = document.getElementById('group-id').value;
+            const name = document.getElementById('group-name').value.trim();
+            const description = document.getElementById('group-description').value.trim();
+
+            if (!name) {
+                alert('请输入名称');
+                return;
+            }
+
+            const data = { name, description };
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/groups/${id}` : '/api/groups';
+
+            try {
+                const res = await fetch(url, {
+                    method,
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeGroupModal();
+                    await loadData();
+                }
+            } catch (e) {
+                alert('保存失败');
+            }
+        }
     </script>
-</body>
-    <script src="js/manage.js"></script>
 </body>
 </html>
