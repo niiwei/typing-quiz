@@ -11,12 +11,20 @@ public class GroupReviewDTO {
     private Long groupId;
     private String groupName;
     
-    // 各状态数量
-    private int newCount;      // 新测验
-    private int learningCount; // 学习中
-    private int reviewCount;   // 待复习
-    private int relearningCount; // 重新学习中
-    private int dueTodayCount; // 今日到期
+    // 各状态数量（细化标签）
+    private int newQuizCount;      // 新测验（NEW且未到期）
+    private int pendingLearnCount; // 待学习（LEARNING且已到期）
+    private int pendingRelearnCount; // 待重学（RELEARNING且已到期）
+    private int pendingReviewCount; // 待复习（REVIEW且已到期）
+    private int scheduledCount;    // 未到期（学习中/复习中但时间未到）
+    private int suspendedCount;    // 已暂停
+    
+    // 向后兼容的字段（保留原字段名供旧代码使用）
+    private int newCount;      // 映射到 pendingLearnCount
+    private int learningCount; // 映射到 scheduledCount
+    private int reviewCount;   // 映射到 pendingReviewCount
+    private int relearningCount; // 映射到 pendingRelearnCount
+    private int dueTodayCount; // 今日到期总数
     
     // 是否可展开（包含测验详情）
     private boolean expandable;
@@ -81,6 +89,54 @@ public class GroupReviewDTO {
 
     public void setDueTodayCount(int dueTodayCount) {
         this.dueTodayCount = dueTodayCount;
+    }
+
+    public int getNewQuizCount() {
+        return newQuizCount;
+    }
+
+    public void setNewQuizCount(int newQuizCount) {
+        this.newQuizCount = newQuizCount;
+    }
+
+    public int getPendingLearnCount() {
+        return pendingLearnCount;
+    }
+
+    public void setPendingLearnCount(int pendingLearnCount) {
+        this.pendingLearnCount = pendingLearnCount;
+    }
+
+    public int getPendingRelearnCount() {
+        return pendingRelearnCount;
+    }
+
+    public void setPendingRelearnCount(int pendingRelearnCount) {
+        this.pendingRelearnCount = pendingRelearnCount;
+    }
+
+    public int getPendingReviewCount() {
+        return pendingReviewCount;
+    }
+
+    public void setPendingReviewCount(int pendingReviewCount) {
+        this.pendingReviewCount = pendingReviewCount;
+    }
+
+    public int getScheduledCount() {
+        return scheduledCount;
+    }
+
+    public void setScheduledCount(int scheduledCount) {
+        this.scheduledCount = scheduledCount;
+    }
+
+    public int getSuspendedCount() {
+        return suspendedCount;
+    }
+
+    public void setSuspendedCount(int suspendedCount) {
+        this.suspendedCount = suspendedCount;
     }
 
     public boolean isExpandable() {

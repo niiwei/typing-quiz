@@ -98,10 +98,12 @@ public class ReviewController {
                         .collect(Collectors.toList());
                 
                 // 使用 ReviewLabel 体系统计（与首页统计一致）
-                int pendingLearnCount = 0;   // 待学习
-                int pendingReviewCount = 0;  // 待复习
-                int scheduledCount = 0;      // 未到期
-                int suspendedCount = 0;      // 已暂停
+                int pendingLearnCount = 0;   // 待学习（LEARNING且已到期）
+                int pendingReviewCount = 0;  // 待复习（REVIEW且已到期）
+                int pendingRelearnCount = 0; // 待重学（RELEARNING且已到期）
+                int scheduledCount = 0;      // 未到期（SCHEDULED）
+                int suspendedCount = 0;    // 已暂停
+                int newQuizCount = 0;        // 新测验（NEW）
                 int dueTodayCount = 0;       // 今日到期总数
                 
                 for (QuizReviewStatus status : allStatuses) {
@@ -111,7 +113,14 @@ public class ReviewController {
                             ReviewLabel label = status.getLabel(now);
                             switch (label) {
                                 case PENDING_LEARN:
-                                    pendingLearnCount++;
+                                    // 进一步细分：新测验 vs 待学习
+                                    if (status.getStatus() == ReviewStatus.NEW) {
+                                        newQuizCount++;
+                                    } else if (status.getStatus() == ReviewStatus.LEARNING) {
+                                        pendingLearnCount++;
+                                    } else if (status.getStatus() == ReviewStatus.RELEARNING) {
+                                        pendingRelearnCount++;
+                                    }
                                     dueTodayCount++;
                                     break;
                                 case PENDING_REVIEW:
@@ -129,13 +138,21 @@ public class ReviewController {
                     }
                 }
                 
+                // 设置细化统计字段（供前端新标签显示使用）
+                dto.setNewQuizCount(newQuizCount);
+                dto.setPendingLearnCount(pendingLearnCount);
+                dto.setPendingRelearnCount(pendingRelearnCount);
+                dto.setPendingReviewCount(pendingReviewCount);
+                dto.setScheduledCount(scheduledCount);
+                dto.setSuspendedCount(suspendedCount);
+                
                 // 为了保持向后兼容，将新字段映射到旧字段
-                dto.setNewCount(pendingLearnCount);        // 待学习
-                dto.setReviewCount(pendingReviewCount);    // 待复习
-                dto.setLearningCount(scheduledCount);      // 未到期/学习中
-                dto.setRelearningCount(0);                 // 重学已合并到待学习
+                dto.setNewCount(newQuizCount + pendingLearnCount);  // 新测验 + 待学习
+                dto.setReviewCount(pendingReviewCount);           // 待复习
+                dto.setLearningCount(scheduledCount);               // 未到期
+                dto.setRelearningCount(pendingRelearnCount);        // 待重学
                 dto.setDueTodayCount(dueTodayCount);
-                dto.setExpandable(pendingLearnCount + pendingReviewCount > 0);
+                dto.setExpandable(newQuizCount + pendingLearnCount + pendingReviewCount + pendingRelearnCount > 0);
                 
                 return dto;
             }).collect(Collectors.toList());

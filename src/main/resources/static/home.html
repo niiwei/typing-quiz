@@ -390,9 +390,10 @@
 
             container.innerHTML = filteredGroups.map(groupData => {
                 const stats = {
-                    newCount: groupData.newCount || 0,
-                    reviewCount: groupData.reviewCount || 0,
-                    relearningCount: groupData.relearningCount || 0
+                    newQuizCount: groupData.newQuizCount || 0,
+                    pendingLearnCount: groupData.pendingLearnCount || 0,
+                    pendingReviewCount: groupData.pendingReviewCount || 0,
+                    pendingRelearnCount: groupData.pendingRelearnCount || 0
                 };
                 return `
                     <div class="review-group-card" data-group-id="${groupData.groupId}">
@@ -400,9 +401,10 @@
                             <div class="group-title-section">
                                 <span class="group-name">${groupData.groupName}</span>
                                 <div class="group-stats">
-                                    ${stats.newCount > 0 ? `<span class="stat-tag new">学 ${stats.newCount}</span>` : ''}
-                                    ${stats.reviewCount > 0 ? `<span class="stat-tag review">复 ${stats.reviewCount}</span>` : ''}
-                                    ${stats.relearningCount > 0 ? `<span class="stat-tag relearning">重 ${stats.relearningCount}</span>` : ''}
+                                    ${stats.newQuizCount > 0 ? `<span class="stat-tag new">新 ${stats.newQuizCount}</span>` : ''}
+                                    ${stats.pendingLearnCount > 0 ? `<span class="stat-tag learning">学 ${stats.pendingLearnCount}</span>` : ''}
+                                    ${stats.pendingRelearnCount > 0 ? `<span class="stat-tag relearning">重 ${stats.pendingRelearnCount}</span>` : ''}
+                                    ${stats.pendingReviewCount > 0 ? `<span class="stat-tag review">复 ${stats.pendingReviewCount}</span>` : ''}
                                 </div>
                             </div>
                             <div class="group-actions">
