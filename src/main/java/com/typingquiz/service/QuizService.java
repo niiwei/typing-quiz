@@ -64,6 +64,7 @@ public class QuizService {
      * 创建测验并保存答案
      */
     public Quiz createQuiz(QuizDTO quizDTO, Long userId) {
+        logger.info("开始创建测验: title={}, userId={}", quizDTO.getTitle(), userId);
         // 验证输入
         if (quizDTO.getTitle() == null || quizDTO.getTitle().trim().isEmpty()) {
             throw new IllegalArgumentException("测验标题不能为空");
@@ -86,15 +87,18 @@ public class QuizService {
         // 设置测验类型
         QuizType quizType = quizDTO.getQuizType() != null ? quizDTO.getQuizType() : QuizType.TYPING;
         quiz.setQuizType(quizType);
+        logger.info("测验类型: {}", quizType);
 
         // 根据类型处理
         if (quizType == QuizType.FILL_BLANK) {
             // 填空题：不需要答案列表
             quiz = quizRepository.save(quiz);
+            logger.info("已保存填空题基础信息, ID={}", quiz.getId());
             
             // 创建填空题信息
             if (quizDTO.getFillBlankQuiz() != null) {
                 fillBlankQuizService.createFillBlankQuiz(quiz.getId(), quizDTO.getFillBlankQuiz());
+                logger.info("已创建填空题详细信息");
             }
         } else {
             // 打字题：添加答案
@@ -150,8 +154,10 @@ public class QuizService {
         }
 
         // 自动创建复习状态（确保每个测验都是未学习状态）
+        logger.info("正在为测验 {} 创建复习状态, userId={}", quiz.getId(), userId);
         createReviewStatusForQuiz(quiz.getId(), userId);
 
+        logger.info("测验创建流程完成: ID={}", quiz.getId());
         return quiz;
     }
 

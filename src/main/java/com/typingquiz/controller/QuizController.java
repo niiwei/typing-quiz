@@ -7,6 +7,8 @@ import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.service.QuizService;
 import com.typingquiz.util.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/quizzes")
 @CrossOrigin(origins = "*")
 public class QuizController {
+
+    private static final Logger logger = LoggerFactory.getLogger(QuizController.class);
 
     private final QuizService quizService;
 
@@ -49,12 +53,19 @@ public class QuizController {
     @PostMapping
     public ResponseEntity<QuizResponseDTO> createQuiz(@RequestBody QuizDTO quizDTO, HttpServletRequest request) {
         try {
+            logger.info("收到创建测验请求: title={}, quizType={}", quizDTO.getTitle(), quizDTO.getQuizType());
             Long userId = getUserIdFromRequest(request);
+            logger.info("用户ID: {}", userId);
             Quiz quiz = quizService.createQuiz(quizDTO, userId);
             QuizResponseDTO response = quizService.toResponseDTO(quiz);
+            logger.info("测验创建成功: ID={}", quiz.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
+            logger.warn("参数错误: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            logger.error("创建测验失败: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
