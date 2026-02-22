@@ -70,4 +70,11 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      */
     @Query("SELECT q.id, COUNT(a) FROM Quiz q LEFT JOIN q.answers a WHERE q.userId = :userId GROUP BY q.id")
     List<Object[]> findAnswerCountsByUserId(@Param("userId") Long userId);
+
+    /**
+     * 批量查询指定测验的答案数量（避免N+1）
+     * 返回 Object[]: [quizId, answerCount]
+     */
+    @Query("SELECT q.id, COUNT(a) FROM Quiz q LEFT JOIN q.answers a WHERE q.id IN :quizIds GROUP BY q.id")
+    List<Object[]> findAnswerCountsByQuizIds(@Param("quizIds") List<Long> quizIds);
 }

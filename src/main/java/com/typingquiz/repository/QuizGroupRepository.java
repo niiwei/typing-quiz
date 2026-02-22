@@ -49,4 +49,10 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
      */
     @Query("SELECT DISTINCT g FROM QuizGroup g LEFT JOIN FETCH g.quizzes WHERE g.userId = :userId ORDER BY g.displayOrder ASC")
     List<QuizGroup> findByUserIdWithQuizzes(@Param("userId") Long userId);
+
+    /**
+     * 根据分组ID查询分组（带测验关联，避免N+1）
+     */
+    @Query("SELECT DISTINCT g FROM QuizGroup g LEFT JOIN FETCH g.quizzes WHERE g.id = :groupId")
+    java.util.Optional<QuizGroup> findByIdWithQuizzes(@Param("groupId") Long groupId);
 }

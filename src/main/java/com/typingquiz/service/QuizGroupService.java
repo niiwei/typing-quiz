@@ -80,6 +80,14 @@ public class QuizGroupService {
     }
 
     /**
+     * 根据ID获取分组（带测验关联，避免N+1）
+     */
+    public QuizGroup getGroupByIdWithQuizzes(Long id) {
+        return groupRepository.findByIdWithQuizzes(id)
+                .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + id));
+    }
+
+    /**
      * 更新分组（带用户验证）
      */
     public QuizGroup updateGroup(Long id, QuizGroupDTO dto, Long userId) {
@@ -179,5 +187,15 @@ public class QuizGroupService {
         return groups.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量查询测验的答案数量
+     */
+    public List<Object[]> getAnswerCountsByQuizIds(List<Long> quizIds) {
+        if (quizIds == null || quizIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return quizRepository.findAnswerCountsByQuizIds(quizIds);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 测验分组控制器
@@ -112,11 +113,27 @@ public class QuizGroupController {
     public ResponseEntity<List<com.typingquiz.dto.QuizResponseDTO>> getGroupQuizzes(@PathVariable Long groupId, HttpServletRequest request) {
         try {
             Long userId = getUserIdFromRequest(request);
-            QuizGroup group = groupService.getGroupById(groupId);
+            // 使用 JOIN FETCH 一次性加载分组和测验，避免 N+1
+            QuizGroup group = groupService.getGroupByIdWithQuizzes(groupId);
             // 验证用户身份
             if (userId != null && !userId.equals(group.getUserId())) {
                 throw new RuntimeException("无权访问此分组");
             }
+            
+            // 批量查询答案数量，避免 N+1
+            List<Long> quizIds = group.getQuizzes().stream()
+                    .map(com.typingquiz.entity.Quiz::getId)
+                    .collect(java.util.stream.Collectors.toList());
+            
+            Map<Long, Integer> answerCountMap = new java.util.HashMap<>();
+            if (!quizIds.isEmpty()) {
+                List<Object[]> answerCounts = groupService.getAnswerCountsByQuizIds(quizIds);
+                for (Object[] row : answerCounts) {
+                    answerCountMap.put((Long) row[0], ((Long) row[1]).intValue());
+                }
+            }
+            
+            final Map<Long, Integer> finalCountMap = answerCountMap;
             List<com.typingquiz.dto.QuizResponseDTO> quizzes = group.getQuizzes().stream()
                     .map(quiz -> {
                         com.typingquiz.dto.QuizResponseDTO dto = new com.typingquiz.dto.QuizResponseDTO();
@@ -125,7 +142,7 @@ public class QuizGroupController {
                         dto.setDescription(quiz.getDescription());
                         dto.setTimeLimit(quiz.getTimeLimit());
                         dto.setQuizType(quiz.getQuizType());
-                        dto.setTotalAnswers(quiz.getAnswers().size());
+                        dto.setTotalAnswers(finalCountMap.getOrDefault(quiz.getId(), 0));
                         return dto;
                     })
                     .collect(java.util.stream.Collectors.toList());
