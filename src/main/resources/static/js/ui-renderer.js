@@ -89,51 +89,93 @@ class UIRenderer {
     }
 
     /**
-     * 显示最终结果
+     * 显示最终结果 - 内嵌式布局（保留题目区域）
      */
     static showResults(stats, missedAnswers) {
-        // 隐藏输入区域
-        document.getElementById('input-section').style.display = 'none';
+        // 1. 隐藏输入区域和进度条
+        const inputSection = document.getElementById('input-section');
+        if (inputSection) inputSection.style.display = 'none';
         
-        // 隐藏进度条
         const progressBar = document.querySelector('.progress-bar');
         if (progressBar) progressBar.style.display = 'none';
 
-        const answersGrid = document.getElementById('answers-grid');
-        if (answersGrid) {
-            if (stats && stats.quizType === 'FILL_BLANK') {
-                answersGrid.style.display = 'none';
-            } else {
+        // 2. 保持答案网格/填空题显示，标记最终状态
+        if (stats.quizType === 'FILL_BLANK') {
+            // 填空题：保持原文显示
+            const fillBlankSection = document.getElementById('fill-blank-section');
+            if (fillBlankSection) fillBlankSection.style.display = 'block';
+        } else {
+            // 打字题：保持答案网格，标记未答出项
+            const answersGrid = document.getElementById('answers-grid');
+            if (answersGrid) {
                 answersGrid.style.display = 'grid';
+                // 标记所有未答出的答案为红色
+                const allItems = answersGrid.querySelectorAll('.answer-item');
+                allItems.forEach(item => {
+                    if (!item.classList.contains('found')) {
+                        item.classList.add('missed');
+                        // 显示答案内容
+                        const content = item.dataset.content;
+                        const comment = item.dataset.comment;
+                        if (comment) {
+                            item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}</span>`;
+                        } else {
+                            item.textContent = content;
+                        }
+                    }
+                });
             }
         }
         
-        // 显示结果面板
+        // 3. 显示结算面板（内嵌在题目下方）
         const resultsPanel = document.getElementById('results-panel');
-        resultsPanel.style.display = 'block';
+        if (resultsPanel) {
+            resultsPanel.style.display = 'block';
+            // 滚动到结算区域
+            setTimeout(() => {
+                resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
 
-        // 更新结果统计
-        document.getElementById('final-accuracy').textContent = `${stats.accuracy}%`;
-        document.getElementById('final-score').textContent = stats.found;
-        document.getElementById('final-time').textContent = this.formatTime(stats.timeElapsed);
+        // 4. 更新统计卡片
+        const accuracyEl = document.getElementById('final-accuracy');
+        const scoreEl = document.getElementById('final-score');
+        const timeEl = document.getElementById('final-time');
+        
+        if (accuracyEl) accuracyEl.textContent = `${stats.accuracy}%`;
+        if (scoreEl) scoreEl.textContent = `${stats.found}/${stats.total}`;
+        if (timeEl) timeEl.textContent = this.formatTime(stats.timeElapsed);
 
-        // 显示未答出的答案
+        // 5. 显示未答出列表或全部答对提示
+        const missedSection = document.getElementById('missed-section');
+        const perfectSection = document.getElementById('perfect-section');
         const missedContainer = document.getElementById('missed-answers');
-        missedContainer.innerHTML = '';
+        
+        if (missedContainer) {
+            missedContainer.innerHTML = '';
+        }
         
         if (missedAnswers.length > 0) {
+            // 有未答出项：显示列表
+            if (missedSection) missedSection.style.display = 'block';
+            if (perfectSection) perfectSection.style.display = 'none';
+            
             missedAnswers.forEach(answer => {
                 const item = document.createElement('div');
-                item.className = 'answer-item missed';
+                item.className = 'missed-item';
+                
+                // 构建内容：答案 + 注释
+                let contentHtml = `<span class="missed-content">${answer.content}</span>`;
                 if (answer.comment) {
-                    item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
-                } else {
-                    item.textContent = answer.content;
+                    contentHtml += `<span class="missed-comment">${answer.comment}</span>`;
                 }
+                item.innerHTML = contentHtml;
                 missedContainer.appendChild(item);
             });
         } else {
-            missedContainer.innerHTML = '<p style="color: var(--success); font-weight: bold; width: 100%; text-align: center;">恭喜! 全部答对!</p>';
+            // 全部答对：显示提示
+            if (missedSection) missedSection.style.display = 'none';
+            if (perfectSection) perfectSection.style.display = 'flex';
         }
     }
 

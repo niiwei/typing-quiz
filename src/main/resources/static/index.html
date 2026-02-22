@@ -54,30 +54,49 @@
             <div id="fill-blank-text" class="fill-blank-text"></div>
         </div>
 
-        <!-- 结果面板 -->
+        <!-- 结果面板 - 内嵌式布局 -->
         <div id="results-panel" style="display: none;">
-            <h2 style="font-weight: 200; font-size: 3rem; margin-bottom: 1rem;">测验完成</h2>
-            <div class="home-stats">
-                <div class="stat-box">
-                    <span class="stat-num" id="final-accuracy">0%</span>
-                    <span class="stat-label">准确率</span>
+            <!-- 结算统计区域 -->
+            <div class="results-embedded">
+                <!-- 标题 -->
+                <h2 class="results-title">测验完成</h2>
+                
+                <!-- 统计卡片网格 -->
+                <div class="results-stats">
+                    <div class="stat-card">
+                        <span class="stat-value" id="final-accuracy">0%</span>
+                        <span class="stat-label">准确率</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="final-score">0/0</span>
+                        <span class="stat-label">答对数</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="final-time">00:00</span>
+                        <span class="stat-label">总用时</span>
+                    </div>
                 </div>
-                <div class="stat-box">
-                    <span class="stat-num" id="final-score">0</span>
-                    <span class="stat-label">得分</span>
+                
+                <!-- 分隔线 -->
+                <div class="results-divider"></div>
+                
+                <!-- 未答出区域 -->
+                <div id="missed-section" class="missed-section">
+                    <h3 class="missed-title">未答出项目</h3>
+                    <div id="missed-answers" class="missed-list"></div>
                 </div>
-                <div class="stat-box">
-                    <span class="stat-num" id="final-time">00:00</span>
-                    <span class="stat-label">总用时</span>
+                
+                <!-- 全部答对提示 -->
+                <div id="perfect-section" class="perfect-section" style="display: none;">
+                    <span class="perfect-icon">✓</span>
+                    <span class="perfect-text">全部答对</span>
                 </div>
-            </div>
-            <div id="missed-answers-section" style="text-align: left; margin: 3rem 0;">
-                <h3 style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--error); margin-bottom: 1rem; text-transform: uppercase;">未答出项</h3>
-                <div id="missed-answers" class="answers-grid"></div>
-            </div>
-            <div style="display: flex; gap: 1rem; justify-content: center;">
-                <button id="restart-btn" class="btn">重新开始</button>
-                <a href="quizzes.html" class="btn" style="border-color: var(--text-muted); color: var(--text-muted);">返回列表</a>
+                
+                <!-- 操作按钮 -->
+                <div class="results-actions">
+                    <button id="restart-btn" class="btn btn-primary">重新开始</button>
+                    <a href="quizzes.html" class="btn btn-secondary">返回列表</a>
+                </div>
             </div>
         </div>
     </div>
