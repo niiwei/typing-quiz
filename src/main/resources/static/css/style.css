@@ -219,6 +219,11 @@ input[type="submit"]:hover {
     color: var(--border);
     text-align: center;
     transition: color 0.2s;
+    border: 1px solid var(--border);
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .answer-item.found {
     color: var(--text-main);
@@ -391,13 +396,13 @@ input[type="submit"]:hover {
     border-radius: 4px;
 }
 
-.blank-input {
+.fill-blank-placeholder {
     display: inline-block;
-    border: none;
-    border-bottom: 2px solid var(--text-muted);
-    background: transparent;
-    padding: 0 5px;
-    margin: 0 5px;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 2px 8px;
+    margin: 0 2px;
     font-family: inherit;
     font-size: inherit;
     white-space: nowrap;
@@ -406,38 +411,45 @@ input[type="submit"]:hover {
     height: 2em;
     line-height: inherit;
     position: relative;
-    top: 8px;
     text-align: center;
     vertical-align: baseline;
+    color: var(--text-main);
+    transition: all 0.2s ease;
 }
 
-.fill-blank-comment {
-    font-size: inherit;
-    opacity: 0.6;
-    color: #e0e0e0;
-    margin-left: 4px;
+/* 未作答的占位样式 - 灰色矩形框 */
+.fill-blank-placeholder.empty {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: transparent;
 }
 
+/* 已作答样式 - 极简黑白 */
 .fill-blank-placeholder.filled {
-    background: #28a745;
-    color: white;
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
 }
 
+/* 未答出样式 - 红色 */
 .fill-blank-placeholder.missed {
-    background: #dc3545 !important;
-    color: white;
+    background: var(--error) !important;
+    color: var(--bg) !important;
+    border-color: var(--error);
 }
 
 .fill-blank-placeholder:hover {
-    background: #5a6268;
+    border-color: var(--text-muted);
 }
 
 .fill-blank-placeholder.filled:hover {
-    background: #28a745;
+    background: var(--accent);
+    border-color: var(--accent);
 }
 
 .fill-blank-placeholder.missed:hover {
-    background: #dc3545;
+    background: var(--error);
+    border-color: var(--error);
 }
 
 /* 分组答题模式样式 */

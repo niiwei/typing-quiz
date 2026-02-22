@@ -204,12 +204,15 @@ class QuizController {
                     commentIndex += bestC;
                 }
 
+                // 填充模式或作答后：显示实际文本
                 const span = document.createElement('span');
                 span.className = 'fill-blank-placeholder';
-                if (state) {
-                    span.classList.add(state);
-                } else if (mode === 'play' && isFilled) {
+                if (isFilled) {
                     span.classList.add('filled');
+                }
+                // 未作答时显示为灰色占位框
+                if (!isFilled && mode === 'play') {
+                    span.classList.add('empty');
                 }
 
                 span.setAttribute('data-blank-index', String(blankIndex));
@@ -217,6 +220,7 @@ class QuizController {
 
                 const widthPx = this.measureFillBlankBoxWidthPx(textEl, mainChunk, commentChunk, includeHash);
                 span.style.width = widthPx + 'px';
+                // 未作答时不显示文本内容，只显示占位样式
                 span.textContent = isEmptyPlay ? '' : mainChunk;
 
                 if (commentChunk) {
