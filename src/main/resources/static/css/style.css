@@ -430,18 +430,28 @@ input[type="submit"]:hover {
     vertical-align: baseline;
 }
 
-/* 已作答样式 - 极简黑白 */
+/* 已作答样式 - 文字加下划线，无框 */
 .fill-blank-placeholder.filled {
-    background: var(--accent);
-    color: var(--bg);
-    border-color: var(--accent);
+    background: transparent;
+    color: var(--text-main);
+    border: none;
+    border-bottom: 1px solid var(--accent);
+    border-radius: 0;
+    padding: 0 4px;
+    height: 1em;
+    vertical-align: baseline;
 }
 
-/* 未答出样式 - 红色 */
+/* 未答出样式 - 红色下划线 */
 .fill-blank-placeholder.missed {
-    background: var(--error) !important;
-    color: var(--bg) !important;
-    border-color: var(--error);
+    background: transparent;
+    color: var(--error);
+    border: none;
+    border-bottom: 1px solid var(--error);
+    border-radius: 0;
+    padding: 0 4px;
+    height: 1em;
+    vertical-align: baseline;
 }
 
 .fill-blank-placeholder:hover {
