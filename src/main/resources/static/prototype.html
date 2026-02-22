@@ -124,12 +124,11 @@
         .form-input { width: 100%; border: 1px solid var(--border); padding: 0.75rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
         .form-input:focus { border-color: var(--accent); }
 
-        /* 4. 结果页 (结算界面) */
-        .results-container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 2rem;
-            text-align: center;
+        /* 4. 结果页 (结算界面 - 内嵌式布局) */
+        .results-embedded {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
             animation: fadeIn 0.4s ease-out;
         }
         
@@ -138,19 +137,20 @@
             font-weight: 200;
             letter-spacing: 0.3em;
             color: var(--text-main);
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
         }
         
         .results-stats {
             display: flex;
             justify-content: center;
-            gap: 2rem;
-            margin-bottom: 3rem;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
         
         .stat-card {
-            min-width: 120px;
-            padding: 2rem 1.5rem;
+            min-width: 100px;
+            padding: 1.25rem 1rem;
             border: 1px solid var(--border);
             text-align: center;
             background: var(--bg);
@@ -158,15 +158,15 @@
         
         .stat-card .stat-value {
             display: block;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 200;
             color: var(--text-main);
             line-height: 1;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
         }
         
         .stat-card .stat-label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             letter-spacing: 0.1em;
             text-transform: uppercase;
@@ -176,13 +176,12 @@
             width: 100%;
             height: 1px;
             background: var(--border);
-            margin: 3rem 0;
+            margin: 2rem 0;
         }
         
         /* 未答出区域 */
         .missed-section {
-            text-align: left;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
         
         .missed-title {
@@ -190,7 +189,7 @@
             letter-spacing: 0.15em;
             color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             text-align: center;
         }
         
@@ -204,15 +203,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.25rem;
+            padding: 0.875rem 1rem;
             border: 1px solid var(--error);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: var(--error);
         }
         
         .missed-item .missed-comment {
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-style: italic;
         }
         
@@ -222,8 +221,8 @@
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
-            padding: 2rem;
-            margin-bottom: 3rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
             border: 1px solid var(--success);
             color: var(--success);
         }
@@ -234,7 +233,7 @@
         }
         
         .perfect-text {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             letter-spacing: 0.15em;
             text-transform: uppercase;
         }
@@ -244,10 +243,11 @@
             display: flex;
             justify-content: center;
             gap: 1rem;
+            margin-bottom: 2rem;
         }
         
         .results-actions .btn {
-            min-width: 130px;
+            min-width: 120px;
         }
         
         .btn-primary {
@@ -499,24 +499,54 @@
             </div>
         </section>
 
-        <!-- 4. 结果页 (结算界面) -->
+        <!-- 4. 结果页 (结算界面 - 内嵌式布局) -->
         <section id="results">
-            <div class="results-container">
+            <!-- 题目区域保留（模拟测验完成后的状态） -->
+            <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
+            
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="font-weight: 200; font-size: 2rem; color: var(--text-main); margin-bottom: 0.5rem; letter-spacing: 0.05em;">学校里没教的东西</h2>
+                <div style="font-size: 1rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    <span>时间: 02:17</span>
+                    <span style="margin-left: 2rem;">得分: 0/4</span>
+                </div>
+            </div>
+
+            <!-- 答案网格 - 保留显示，标记未答出 -->
+            <div id="answers-grid" style="margin-bottom: 3rem;">
+                <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
+                    <span class="answer-content">教知识不教思维</span>
+                    <span class="answer-comment">#如果一个人比喻成电脑...</span>
+                </div>
+                <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
+                    <span class="answer-content">教解题不教远观</span>
+                </div>
+                <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
+                    <span class="answer-content">教努力不教取巧</span>
+                </div>
+                <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
+                    <span class="answer-content">只教受教不教创造</span>
+                    <span class="answer-comment">#=我定义...</span>
+                </div>
+            </div>
+
+            <!-- 结算统计区域（题目下方内嵌） -->
+            <div class="results-embedded">
                 <!-- 标题 -->
                 <h1 class="results-title">测验完成</h1>
                 
                 <!-- 统计卡片网格 -->
                 <div class="results-stats">
                     <div class="stat-card">
-                        <span class="stat-value" id="result-accuracy">85%</span>
+                        <span class="stat-value">0%</span>
                         <span class="stat-label">准确率</span>
                     </div>
                     <div class="stat-card">
-                        <span class="stat-value" id="result-score">17/20</span>
+                        <span class="stat-value">0/4</span>
                         <span class="stat-label">答对数</span>
                     </div>
                     <div class="stat-card">
-                        <span class="stat-value" id="result-time">03:24</span>
+                        <span class="stat-value">02:17</span>
                         <span class="stat-label">总用时</span>
                     </div>
                 </div>
@@ -525,33 +555,61 @@
                 <div class="results-divider"></div>
                 
                 <!-- 未答出区域 -->
-                <div id="missed-section" class="missed-section">
-                    <h3 class="missed-title">未答出项</h3>
+                <div class="missed-section">
+                    <h3 class="missed-title">未答出项目</h3>
                     <div class="missed-list">
                         <div class="missed-item">
-                            <span class="missed-content">伦敦</span>
-                            <span class="missed-comment">英国首都</span>
+                            <span class="missed-content">教知识不教思维</span>
+                            <span class="missed-comment">如果一个人比喻成电脑...</span>
                         </div>
                         <div class="missed-item">
-                            <span class="missed-content">华盛顿</span>
-                            <span class="missed-comment">美国首都</span>
+                            <span class="missed-content">教解题不教远观</span>
                         </div>
                         <div class="missed-item">
-                            <span class="missed-content">莫斯科</span>
+                            <span class="missed-content">教努力不教取巧</span>
+                        </div>
+                        <div class="missed-item">
+                            <span class="missed-content">只教受教不教创造</span>
+                            <span class="missed-comment">=我定义...</span>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 全部答对提示 (默认隐藏) -->
-                <div id="perfect-section" class="perfect-section" style="display: none;">
+                <div class="perfect-section" style="display: none;">
                     <span class="perfect-icon">✓</span>
                     <span class="perfect-text">全部答对</span>
                 </div>
                 
                 <!-- 操作按钮 -->
                 <div class="results-actions">
-                    <button class="btn btn-primary" onclick="showSection('quiz-active')">重新开始</button>
-                    <button class="btn btn-secondary" onclick="showSection('quizzes')">返回列表</button>
+                    <button class="btn btn-primary">重新开始</button>
+                    <button class="btn btn-secondary">返回列表</button>
+                </div>
+            </div>
+
+            <!-- 复习评级面板（如为复习模式） -->
+            <div class="rating-panel" style="margin-top: 2rem;">
+                <div style="text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.1em;">
+                    根据记忆程度选择评级 (1-4)
+                </div>
+                <div style="display: flex; justify-content: center; gap: 1rem;">
+                    <div class="rating-btn rating-again">
+                        <span>重来</span>
+                        <span class="interval">&lt;10分钟</span>
+                    </div>
+                    <div class="rating-btn rating-hard">
+                        <span>困难</span>
+                        <span class="interval">10分钟</span>
+                    </div>
+                    <div class="rating-btn rating-good">
+                        <span>良好</span>
+                        <span class="interval">1天</span>
+                    </div>
+                    <div class="rating-btn rating-easy">
+                        <span>简单</span>
+                        <span class="interval">4天</span>
+                    </div>
                 </div>
             </div>
         </section>
