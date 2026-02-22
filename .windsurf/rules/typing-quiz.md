@@ -45,57 +45,64 @@ trigger: always_on
 - 所有回复使用中文
 - 术语保持一致（如"测验"而非"quiz"）
 
-## 7. 解答质量
+## 7. 操作说明规范
+**重要**: 执行多步骤任务时，每一步操作和执行都必须用中文说明当前在干什么
+- 执行命令前解释命令的用途
+- 代码修改前说明修改目的
+- 配置变更前解释变更原因
+- 让用户清楚了解每一步的操作意图
+
+## 8. 解答质量
 提供详细的逻辑解释：
 - 说明修改原因
 - 解释数据流向变化
 - 指出潜在风险
 
-## 8. 性能考虑
+## 9. 性能考虑
 关注代码性能影响：
 - 避免N+1查询问题
 - 合理使用JOIN查询
 - 减少不必要的数据库往返
 - 注意事务边界
 
-## 9. 最佳实践建议
+## 10. 最佳实践建议
 提供相关编程最佳实践：
 - 后端分层架构（Controller/Service/Repository）
 - DTO数据隔离，不直接暴露Entity
 - RESTful API设计规范
 - 统一返回格式
 
-## 10. 依赖关系
+## 11. 依赖关系
 说明模块间依赖关系：
 - Service层不直接暴露给前端
 - Repository只被Service调用
 - Controller负责参数校验和响应封装
 
-## 11. 测试建议
+## 12. 测试建议
 提供测试相关建议：
 - 修改后考虑边界情况
 - 关注并发场景（如多用户同时操作）
 - 验证数据隔离（userId过滤）
 
-## 12. 文档引用
+## 13. 文档引用
 适时引用官方文档：
 - Spring Boot官方文档
 - Spring Data JPA查询语法
 - Java 11特性
 
-## 13. 代码规范
+## 14. 代码规范
 遵循项目已有规范：
 - 静态资源放在resources/static/
 - 模板文件放在resources/templates/
 - 配置文件使用application.properties（非.yml）
 
-## 14. 向后兼容性
+## 15. 向后兼容性
 考虑代码兼容性：
 - API变更保持向后兼容
 - 数据库迁移脚本
 - 不破坏现有功能
 
-## 15. 安全与质量保证
+## 16. 安全与质量保证
 关注安全性和错误处理：
 - **重要**: 所有查询必须过滤userId，确保数据隔离
 - 验证用户权限（用户只能操作自己的数据）
@@ -103,32 +110,32 @@ trigger: always_on
 - 敏感操作添加事务
 - 统一异常处理
 
-## 16. 代码质量规范
+## 17. 代码质量规范
 注重代码注释和复用：
 - 复杂逻辑添加注释
 - 抽取公共方法避免重复
 - 使用有意义的变量名
 
-## 17. 工程化考虑
+## 18. 工程化考虑
 关注构建和部署策略：
 - Maven构建配置
 - 静态资源缓存策略
 - 日志配置
 
-## 18. 知识点讲解
+## 19. 知识点讲解
 对重要概念进行详细解释：
 - DTO/Entity/VO区别
 - 事务传播机制
 - JOIN查询优化
 - 缓存使用（如适用）
 
-## 19. 项目特殊规范
+## 20. 项目特殊规范
 - **数据隔离**: 所有涉及用户数据的查询必须包含userId过滤
 - **复习系统**: 理解QuizReviewStatus状态流转（NEW→LEARNING→REVIEW）
 - **时区处理**: 统一使用Asia/Shanghai时区
 - **Token验证**: 使用typingquiz_token作为localStorage key
 
-## 20. 项目参考文档
+## 21. 项目参考文档
 
 快速了解项目可查阅以下文档：
 
@@ -169,3 +176,70 @@ trigger: always_on
 在 **Run/Debug Configurations** -> **Environment variables** 中添加：
 `MYSQL_HOST=47.102.147.127`
 然后运行 `TypingQuizApplication.java`
+
+## 22. 云端部署方法
+
+项目使用 **SSH + Docker** 部署到云服务器 `47.102.147.127`。
+
+### 自动部署（推荐）
+
+**前置条件**：已配置 SSH 免密登录（密钥位置：`C:\Users\29982\.ssh\typing_quiz_deploy`）
+
+**执行步骤**：
+1. **提交代码到 Git**：先将本地修改提交并推送到 main 分支
+2. **执行自动部署命令**：在 PowerShell 中运行以下命令，通过 SSH 连接到服务器并执行部署脚本
+   ```powershell
+   ssh -i C:\Users\29982\.ssh\typing_quiz_deploy root@47.102.147.127 "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+   ```
+3. **等待部署完成**：命令会依次执行拉取代码、构建 Docker 镜像、删除旧容器、启动新容器
+4. **验证部署结果**：访问 http://47.102.147.127:8080 确认应用正常运行
+
+**说明**：
+- 仅修改前端文件（HTML/JS/CSS）时，无需执行 `docker build`，刷新浏览器即可生效
+- 修改后端 Java 代码时，必须执行完整部署流程重新打包
+
+### 手动部署
+
+**适用场景**：自动部署失败或需要精细控制部署过程时
+
+**执行步骤**：
+1. **SSH 登录服务器**：使用 SSH 连接到云服务器
+   ```bash
+   ssh root@47.102.147.127
+   ```
+2. **进入项目目录**：切换到应用部署目录
+   ```bash
+   cd /app/typing-quiz
+   ```
+3. **拉取最新代码**：从 Git 仓库获取最新代码
+   ```bash
+   git pull
+   ```
+4. **构建 Docker 镜像**：基于最新代码构建应用镜像（后端 Java 代码变更时必须执行）
+   ```bash
+   docker build -t typing-quiz-app .
+   ```
+5. **删除旧容器**：停止并删除正在运行的旧容器
+   ```bash
+   docker rm -f typing-quiz-app
+   ```
+6. **启动新容器**：使用新镜像启动应用容器
+   ```bash
+   docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app
+   ```
+7. **验证部署结果**：检查容器运行状态并访问应用
+   ```bash
+   docker ps
+   ```
+
+**部署配置说明**：
+- **服务器地址**：`47.102.147.127`
+- **SSH 端口**：默认 22
+- **应用端口**：8080
+- **部署目录**：`/app/typing-quiz`
+- **数据库**：MySQL 8.0（位于同一服务器）
+
+**注意事项**：
+- 部署前确保代码已在本地测试通过
+- 首次部署需在服务器上配置 SSH 公钥到 `~/.ssh/authorized_keys`
+- 部署过程中如遇端口冲突，先停止占用 8080 端口的进程

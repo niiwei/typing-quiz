@@ -278,6 +278,7 @@
                     <span class="filter-label">分组</span>
                     <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
                         <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
+                        <span class="filter-item" data-group="ungrouped" onclick="filterByGroup('ungrouped', this)">未分组</span>
                         <!-- 动态填充 -->
                     </div>
                 </div>
@@ -331,21 +332,31 @@
         // 分组复习数据
         let allGroupData = [];
         let allGroups = [];
+        let allQuizzes = [];
         let activeStatus = 'all';
         let activeGroup = 'all';
         let expandedGroups = new Map();
 
         async function loadGroupReviewData() {
             try {
-                const groupSummary = await ReviewAPI.getGroupSummary();
+                // 同时加载分组复习数据、分组信息和测验数据
+                const [groupSummary, groupsRes, quizzesRes] = await Promise.all([
+                    ReviewAPI.getGroupSummary(),
+                    fetch('/api/groups', { headers: Auth.getAuthHeaders() }),
+                    fetch('/api/quizzes', { headers: Auth.getAuthHeaders() })
+                ]);
+                
                 allGroupData = groupSummary || [];
-
-                const response = await fetch('/api/groups', { headers: Auth.getAuthHeaders() });
-                if (response.ok) {
-                    allGroups = await response.json();
-                    renderGroupFilters();
+                
+                if (groupsRes.ok) {
+                    allGroups = await groupsRes.json();
                 }
-
+                
+                if (quizzesRes.ok) {
+                    allQuizzes = await quizzesRes.json();
+                }
+                
+                renderGroupFilters();
                 renderGroupReviewList();
             } catch (error) {
                 console.error('加载分组复习数据失败:', error);
@@ -406,9 +417,50 @@
             const container = document.getElementById('review-groups-container');
             
             let filteredGroups = allGroupData;
+            
+            // 处理分组筛选
             if (activeGroup !== 'all') {
-                filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
+                if (activeGroup === 'ungrouped') {
+                    // 获取未分组的分组数据
+                    const groupedQuizIds = new Set();
+                    allGroups.forEach(group => {
+                        if (group.quizIds) {
+                            group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
+                        }
+                    });
+                    
+                    // 计算未分组的测验数量
+                    const ungroupedQuizzes = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
+                    
+                    if (ungroupedQuizzes.length > 0) {
+                        // 创建虚拟的未分组数据
+                        const ungroupedData = {
+                            groupId: 'ungrouped',
+                            groupName: '未分组',
+                            newQuizCount: 0,
+                            pendingLearnCount: 0,
+                            pendingReviewCount: 0,
+                            pendingRelearnCount: 0,
+                            scheduledCount: 0,
+                            suspendedCount: 0,
+                            isVirtual: true
+                        };
+                        
+                        // 统计未分组测验的复习状态（简化处理，实际应从后端获取）
+                        ungroupedQuizzes.forEach(quiz => {
+                            // 这里简化处理，假设所有未分组测验都是新测验
+                            ungroupedData.newQuizCount++;
+                        });
+                        
+                        filteredGroups = [ungroupedData];
+                    } else {
+                        filteredGroups = [];
+                    }
+                } else {
+                    filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
+                }
             }
+            
             if (activeStatus !== 'all') {
                 filteredGroups = filteredGroups.filter(g => {
                     if (activeStatus === 'NEW') return g.newQuizCount > 0;
