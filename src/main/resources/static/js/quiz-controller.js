@@ -210,9 +210,13 @@ class QuizController {
                 if (isFilled) {
                     span.classList.add('filled');
                 }
-                // 未作答时显示为灰色占位框
+                // 未作答时显示为灰色占位
                 if (!isFilled && mode === 'play') {
                     span.classList.add('empty');
+                }
+                // 结算模式下，原本未答出的显示为 missed
+                if (mode === 'giveup' && !isFilled) {
+                    span.classList.add('missed');
                 }
 
                 span.setAttribute('data-blank-index', String(blankIndex));
@@ -699,13 +703,5 @@ class QuizController {
         });
         textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
         this.replaceFillBlankWrappers(textEl);
-
-        document.querySelectorAll('.fill-blank-wrapper[data-mode="giveup"]').forEach(wrapper => {
-            const wasEmpty = wrapper.getAttribute('data-was-empty') === '1';
-            wrapper.style.border = wasEmpty ? '2px solid #ef4444' : '2px solid #22c55e';
-            wrapper.style.backgroundColor = wasEmpty ? '#fee2e2' : '#dcfce7';
-            wrapper.style.borderRadius = '4px';
-            wrapper.style.padding = '2px 6px';
-        });
     }
 }

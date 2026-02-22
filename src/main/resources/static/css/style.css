@@ -425,7 +425,6 @@ input[type="submit"]:hover {
     border-radius: 0;
     padding: 0 4px;
     color: transparent;
-    height: 1em;
     min-width: 2em;
     vertical-align: baseline;
 }
@@ -438,7 +437,6 @@ input[type="submit"]:hover {
     border-bottom: 1px solid var(--accent);
     border-radius: 0;
     padding: 0 4px;
-    height: 1em;
     vertical-align: baseline;
 }
 
@@ -450,7 +448,6 @@ input[type="submit"]:hover {
     border-bottom: 1px solid var(--error);
     border-radius: 0;
     padding: 0 4px;
-    height: 1em;
     vertical-align: baseline;
 }
 
