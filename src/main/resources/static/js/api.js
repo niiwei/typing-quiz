@@ -94,5 +94,16 @@ const Auth = {
     getUserId() {
         const user = this.getUser();
         return user ? user.id : null;
+    },
+
+    getAuthHeaders() {
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        const token = this.getToken();
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
     }
 };
