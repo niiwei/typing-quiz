@@ -397,24 +397,13 @@ input[type="submit"]:hover {
 }
 
 .fill-blank-placeholder {
-    display: inline-block;
-    background: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 2px 8px;
-    margin: 0 2px;
+    display: inline;
     font-family: inherit;
     font-size: inherit;
-    white-space: nowrap;
-    overflow: hidden;
-    min-width: 2em;
-    height: 2em;
     line-height: inherit;
-    position: relative;
-    text-align: center;
     vertical-align: baseline;
-    color: var(--text-main);
-    transition: all 0.2s ease;
+    position: relative;
+    white-space: nowrap;
 }
 
 /* 未作答的占位样式 - 灰色下划线 */
@@ -426,7 +415,7 @@ input[type="submit"]:hover {
     padding: 0 4px;
     color: transparent;
     min-width: 2em;
-    vertical-align: baseline;
+    display: inline-block;
 }
 
 /* 已作答样式 - 文字加下划线，无框 */
@@ -437,7 +426,7 @@ input[type="submit"]:hover {
     border-bottom: 1px solid var(--accent);
     border-radius: 0;
     padding: 0 4px;
-    vertical-align: baseline;
+    display: inline;
 }
 
 /* 未答出样式 - 红色下划线 */
@@ -448,7 +437,7 @@ input[type="submit"]:hover {
     border-bottom: 1px solid var(--error);
     border-radius: 0;
     padding: 0 4px;
-    vertical-align: baseline;
+    display: inline;
 }
 
 .fill-blank-placeholder:hover {
