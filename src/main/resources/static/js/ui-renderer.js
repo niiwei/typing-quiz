@@ -92,17 +92,20 @@ class UIRenderer {
      * 显示最终结果
      */
     static showResults(stats, missedAnswers) {
-        // 只隐藏输入区域和进度条
+        // 隐藏输入区域
         document.getElementById('input-section').style.display = 'none';
+        
+        // 隐藏进度条
         const progressBar = document.querySelector('.progress-bar');
         if (progressBar) progressBar.style.display = 'none';
-        
-        // 显示放弃按钮的替代：显示"已放弃"标记
-        const giveUpBtn = document.getElementById('give-up-btn');
-        if (giveUpBtn && stats.isGiveUp) {
-            giveUpBtn.textContent = '已放弃';
-            giveUpBtn.disabled = true;
-            giveUpBtn.style.opacity = '0.5';
+
+        const answersGrid = document.getElementById('answers-grid');
+        if (answersGrid) {
+            if (stats && stats.quizType === 'FILL_BLANK') {
+                answersGrid.style.display = 'none';
+            } else {
+                answersGrid.style.display = 'grid';
+            }
         }
         
         // 显示结果面板
@@ -111,41 +114,26 @@ class UIRenderer {
 
         // 更新结果统计
         document.getElementById('final-accuracy').textContent = `${stats.accuracy}%`;
-        document.getElementById('final-score').textContent = `${stats.found}/${stats.total}`;
+        document.getElementById('final-score').textContent = stats.found;
         document.getElementById('final-time').textContent = this.formatTime(stats.timeElapsed);
 
-        // 显示未答出的答案或全部答对
-        const missedSection = document.getElementById('missed-answers-section');
-        const perfectSection = document.getElementById('perfect-section');
+        // 显示未答出的答案
         const missedContainer = document.getElementById('missed-answers');
         missedContainer.innerHTML = '';
         
         if (missedAnswers.length > 0) {
-            // 有未答出的，显示未答出区域
-            missedSection.style.display = 'block';
-            perfectSection.style.display = 'none';
-            
             missedAnswers.forEach(answer => {
                 const item = document.createElement('div');
-                item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border: 1px solid var(--error); font-size: 0.9rem; color: var(--error);';
-                
-                const contentSpan = document.createElement('span');
-                contentSpan.textContent = answer.content;
-                item.appendChild(contentSpan);
-                
+                item.className = 'answer-item missed';
                 if (answer.comment) {
-                    const commentSpan = document.createElement('span');
-                    commentSpan.style.cssText = 'color: var(--text-muted); font-size: 0.8rem; font-style: italic;';
-                    commentSpan.textContent = `#${answer.comment}`;
-                    item.appendChild(commentSpan);
+                    item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
+                } else {
+                    item.textContent = answer.content;
                 }
-                
                 missedContainer.appendChild(item);
             });
         } else {
-            // 全部答对，显示全部答对提示
-            missedSection.style.display = 'none';
-            perfectSection.style.display = 'block';
+            missedContainer.innerHTML = '<p style="color: var(--success); font-weight: bold; width: 100%; text-align: center;">恭喜! 全部答对!</p>';
         }
     }
 

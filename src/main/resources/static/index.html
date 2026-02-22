@@ -54,41 +54,29 @@
             <div id="fill-blank-text" class="fill-blank-text"></div>
         </div>
 
-        <!-- 结果面板 - 结算时在题目下方显示 -->
-        <div id="results-panel" style="display: none; margin-top: 3rem; padding-top: 3rem; border-top: 1px solid var(--border);">
-            <h2 style="font-weight: 200; font-size: 1.5rem; letter-spacing: 0.3em; text-align: center; margin-bottom: 2rem;">测验完成</h2>
-            
-            <!-- 统计卡片 -->
-            <div class="results-stats" style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
-                <div class="stat-card" style="min-width: 100px; padding: 1.5rem; border: 1px solid var(--border); text-align: center;">
-                    <span style="display: block; font-size: 2rem; font-weight: 200; margin-bottom: 0.5rem;" id="final-accuracy">0%</span>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em;">准确率</span>
+        <!-- 结果面板 -->
+        <div id="results-panel" style="display: none;">
+            <h2 style="font-weight: 200; font-size: 3rem; margin-bottom: 1rem;">测验完成</h2>
+            <div class="home-stats">
+                <div class="stat-box">
+                    <span class="stat-num" id="final-accuracy">0%</span>
+                    <span class="stat-label">准确率</span>
                 </div>
-                <div class="stat-card" style="min-width: 100px; padding: 1.5rem; border: 1px solid var(--border); text-align: center;">
-                    <span style="display: block; font-size: 2rem; font-weight: 200; margin-bottom: 0.5rem;" id="final-score">0/0</span>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em;">答对数</span>
+                <div class="stat-box">
+                    <span class="stat-num" id="final-score">0</span>
+                    <span class="stat-label">得分</span>
                 </div>
-                <div class="stat-card" style="min-width: 100px; padding: 1.5rem; border: 1px solid var(--border); text-align: center;">
-                    <span style="display: block; font-size: 2rem; font-weight: 200; margin-bottom: 0.5rem;" id="final-time">00:00</span>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em;">总用时</span>
+                <div class="stat-box">
+                    <span class="stat-num" id="final-time">00:00</span>
+                    <span class="stat-label">总用时</span>
                 </div>
             </div>
-            
-            <!-- 未答出项 -->
-            <div id="missed-answers-section" style="display: none; margin: 2rem 0;">
-                <h3 style="font-size: 0.7rem; letter-spacing: 0.15em; color: var(--text-muted); text-transform: uppercase; text-align: center; margin-bottom: 1rem;">未答出项</h3>
-                <div id="missed-answers" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            <div id="missed-answers-section" style="text-align: left; margin: 3rem 0;">
+                <h3 style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--error); margin-bottom: 1rem; text-transform: uppercase;">未答出项</h3>
+                <div id="missed-answers" class="answers-grid"></div>
             </div>
-            
-            <!-- 全部答对提示 -->
-            <div id="perfect-section" style="display: none; margin: 2rem 0; padding: 1.5rem; border: 1px solid var(--success); color: var(--success); text-align: center;">
-                <span style="font-size: 1.2rem; margin-right: 0.5rem;">✓</span>
-                <span style="font-size: 0.9rem; letter-spacing: 0.15em; text-transform: uppercase;">全部答对</span>
-            </div>
-            
-            <!-- 操作按钮 -->
-            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem;">
-                <button id="restart-btn" class="btn" style="background: var(--accent); color: var(--bg);">重新开始</button>
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                <button id="restart-btn" class="btn">重新开始</button>
                 <a href="quizzes.html" class="btn" style="border-color: var(--text-muted); color: var(--text-muted);">返回列表</a>
             </div>
         </div>
