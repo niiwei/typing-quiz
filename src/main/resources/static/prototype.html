@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimalist Zen - Typing Quiz Full Prototype</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text-main: #171717;
+            --text-muted: #737373;
+            --border: #e5e5e5;
+            --accent: #000000;
+            --success: #16a34a;
+            --error: #dc2626;
+            --warning: #d97706;
+            --hover: #f5f5f5;
+            --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 统一导航 */
+        nav {
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 100;
+        }
+        .logo { font-weight: 800; letter-spacing: -0.02em; font-size: 1.1rem; text-transform: uppercase; cursor: pointer; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; margin-left: 2rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+
+        main { max-width: 720px; width: 100%; margin: 2rem auto; padding: 2rem; }
+        section { display: none; }
+        section.active { display: block; animation: fadeIn 0.4s ease-out; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 基础组件 */
+        .btn { display: inline-block; padding: 0.75rem 2.5rem; border: 1px solid var(--accent); background: transparent; color: var(--accent); text-transform: uppercase; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn:hover { background: var(--accent); color: var(--bg); }
+        .btn-small { padding: 0.5rem 1rem; font-size: 0.65rem; }
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background 0.2s; }
+        .list-item:hover { background: var(--hover); padding-left: 0.5rem; }
+        .list-info .title { font-weight: 600; font-size: 1rem; display: block; }
+        .list-info .sub { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* 首页统计 */
+        .home-hero { text-align: center; margin-bottom: 4rem; }
+        .home-stats { display: flex; justify-content: center; gap: 2rem; margin: 3rem 0; flex-wrap: wrap; }
+        .stat-box { text-align: center; min-width: 100px; padding: 1rem; border: 1px solid var(--border); }
+        .stat-num { font-size: 2.5rem; font-weight: 200; display: block; line-height: 1; }
+        .stat-label { font-size: 0.6rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.1em; margin-top: 0.5rem; }
+
+        /* 批量操作工具栏 */
+        .bulk-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--hover);
+            margin-bottom: 1rem;
+            font-size: 0.75rem;
+        }
+
+        /* 复习模式评级面板 */
+        .rating-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            z-index: 100;
+        }
+        .rating-btn {
+            flex: 1;
+            max-width: 120px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .rating-btn:hover { background: var(--hover); border-color: var(--accent); }
+        .rating-btn .interval { display: block; font-size: 0.6rem; color: var(--text-muted); margin-top: 0.4rem; }
+
+        /* 2. 答题页 (测验中) */
+        .quiz-view { text-align: center; }
+        .timer-display { font-size: 5rem; font-weight: 200; color: var(--text-muted); margin-bottom: 1rem; font-variant-numeric: tabular-nums; }
+        .input-line { border: none; border-bottom: 1px solid var(--text-main); width: 100%; padding: 1rem 0; font-size: 2.5rem; text-align: center; outline: none; margin: 3rem 0; font-family: inherit; }
+        .answers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 2rem; }
+        .slot { font-size: 0.85rem; padding: 0.5rem; color: var(--border); transition: color 0.2s; }
+        .slot.filled { color: var(--text-main); font-weight: 600; }
+        .slot.missed { color: var(--error); border-bottom: 1px dotted var(--error); }
+
+        /* 3. 管理页 */
+        .manage-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .form-input { width: 100%; border: 1px solid var(--border); padding: 0.75rem; font-family: inherit; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent); }
+
+        /* 4. 数据库页 */
+        .search-box { margin-bottom: 2rem; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th { text-align: left; padding: 1rem 0.5rem; border-bottom: 2px solid var(--accent); text-transform: uppercase; font-size: 0.7rem; }
+        .data-table td { padding: 1rem 0.5rem; border-bottom: 1px solid var(--border); }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo" onclick="showSection('home')">打字测验</div>
+        <div class="nav-links">
+            <a href="#" onclick="showSection('home')" id="nav-home">首页</a>
+            <a href="#" onclick="showSection('quizzes')" id="nav-quizzes">测验</a>
+            <a href="#" onclick="showSection('create')" id="nav-create">创建</a>
+            <a href="#" onclick="showSection('manage')" id="nav-manage">管理</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- 1. 首页 (整合复习) -->
+        <section id="home" class="active">
+            <div class="home-hero">
+                <h1 style="font-weight: 300; letter-spacing: 0.2em; font-size: 1.5rem; margin-bottom: 1rem;">每日目标</h1>
+                <div class="home-stats">
+                    <div class="stat-box">
+                        <span class="stat-num">08</span>
+                        <span class="stat-label">新测验</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num" style="color: var(--warning);">14</span>
+                        <span class="stat-label">待复习</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">05</span>
+                        <span class="stat-label">学习中</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">02</span>
+                        <span class="stat-label">已暂停</span>
+                    </div>
+                </div>
+                <button class="btn" onclick="showSection('quiz-active-review')">开始复习流</button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em;">最近活动</h2>
+                <a href="#" style="font-size: 0.6rem; color: var(--text-muted); text-decoration: none;">查看全部统计</a>
+            </div>
+            <div class="list-item">
+                <div class="list-info">
+                    <span class="title">JavaScript 语法</span>
+                    <span class="sub">以 92% 的准确率完成 • 用时 04:12</span>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-muted);">2小时前</span>
+            </div>
+        </section>
+
+        <!-- 2. 测验列表页 -->
+        <section id="quizzes">
+            <h1 style="font-weight: 300; letter-spacing: 0.2em; font-size: 1.2rem; margin-bottom: 2rem;">所有测验</h1>
+            
+            <!-- 模式切换: 单个 vs 分组 -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                <button class="btn btn-small" style="background: var(--accent); color: var(--bg);">单个测验</button>
+                <button class="btn btn-small">分组测验</button>
+            </div>
+
+            <!-- 增加测验分组选择 -->
+            <div style="margin-bottom: 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div class="filter-row">
+                    <span class="filter-label">类型</span>
+                    <span class="filter-item active">全部</span>
+                    <span class="filter-item">打字</span>
+                    <span class="filter-item">填空</span>
+                </div>
+                <div class="filter-row">
+                    <span class="filter-label">分组</span>
+                    <span class="filter-item active">全部</span>
+                    <span class="filter-item">编程基础</span>
+                    <span class="filter-item">地理常识</span>
+                </div>
+            </div>
+
+            <div class="list-item" onclick="showSection('quiz-active')">
+                <div class="list-info">
+                    <span class="title">世界各国首都</span>
+                    <span class="sub">195 项 • 时间限制: 05:00 • 最佳: 100%</span>
+                </div>
+                <span style="font-size: 0.7rem; color: var(--text-muted);">&#8594;</span>
+            </div>
+        </section>
+
+        <!-- 3. 答题页 (普通模式 - 打字题) -->
+        <section id="quiz-active">
+            <div class="progress-bar"><div class="progress-fill" style="width: 30%;"></div></div>
+            <div class="quiz-view">
+                <h2 style="font-weight: 200; font-size: 3rem; color: var(--text-main); margin-bottom: 0.5rem; letter-spacing: 0.05em;">世界各国首都</h2>
+                <div class="timer-display" style="font-size: 1.5rem; font-weight: 600; color: var(--text-muted); margin-bottom: 2rem;">04:59</div>
+                
+                <input type="text" class="input-line" placeholder="在此输入..." autofocus>
+                <div id="answers-grid">
+                    <div class="answer-item found">北京</div>
+                    <div class="answer-item found">东京</div>
+                    <div class="answer-item">•</div><div class="answer-item">•</div><div class="answer-item">•</div>
+                </div>
+                <div style="margin-top: 4rem;">
+                    <button class="btn" style="border-color: var(--error); color: var(--error);" onclick="showSection('results')">放弃并结算</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3b. 答题页 (复习模式 - 评级功能) -->
+        <section id="quiz-active-review">
+            <div class="quiz-view">
+                <h2 style="font-weight: 200; font-size: 3rem; color: var(--text-main); margin-bottom: 0.5rem;">填空题复习示例</h2>
+                <div style="text-align: left; padding: 2rem; border: 1px solid var(--border); margin: 2rem 0; line-height: 2;">
+                    JavaScript 是一种 <span style="border-bottom: 1px solid var(--accent); padding: 0 1rem; color: var(--success); font-weight: 600;">脚本</span> 语言，常用于网页开发。
+                </div>
+                
+                <div class="rating-panel">
+                    <div class="rating-btn" onclick="showSection('results')">
+                        <span>重来</span>
+                        <span class="interval">&lt;10分钟</span>
+                    </div>
+                    <div class="rating-btn" onclick="showSection('results')">
+                        <span>困难</span>
+                        <span class="interval">2天</span>
+                    </div>
+                    <div class="rating-btn" onclick="showSection('results')">
+                        <span>良好</span>
+                        <span class="interval">4天</span>
+                    </div>
+                    <div class="rating-btn" onclick="showSection('results')">
+                        <span>简单</span>
+                        <span class="interval">7天</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. 结果页 -->
+        <section id="results">
+            <div style="text-align: center;">
+                <h1 style="font-weight: 200; font-size: 3rem; margin-bottom: 1rem;">测验完成</h1>
+                <div class="home-stats" style="margin: 2rem 0;">
+                    <div class="stat-box">
+                        <span class="stat-num">85%</span>
+                        <span class="stat-label">准确率</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">120</span>
+                        <span class="stat-label">得分</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-num">04:12</span>
+                        <span class="stat-label">总用时</span>
+                    </div>
+                </div>
+                <div style="text-align: left; margin: 3rem 0;">
+                    <h3 style="font-size: 0.7rem; letter-spacing: 0.1em; color: var(--error); margin-bottom: 1rem;">未答出项 (点击可加入针对性训练)</h3>
+                    <div id="answers-grid">
+                        <div class="answer-item missed">伦敦</div>
+                        <div class="answer-item missed">华盛顿</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="showSection('quizzes')">完成并退出</button>
+            </div>
+        </section>
+
+        <!-- 5. 创建页 (独立入口) -->
+        <section id="create">
+            <div class="manage-header">
+                <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">创建新测验</h1>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn btn-small" style="border-color: var(--border);">导入 JSON</button>
+                    <button class="btn btn-small">保存</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">标题 *</label>
+                <input type="text" class="form-input" placeholder="例如：世界各国首都">
+            </div>
+            <div class="form-group">
+                <label class="form-label">描述</label>
+                <textarea class="form-input" style="height: 60px;" placeholder="简要描述测验内容..."></textarea>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div class="form-group">
+                    <label class="form-label">时间限制 (秒)</label>
+                    <input type="number" class="form-input" placeholder="留空为无限制">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属分组</label>
+                    <select class="form-input" style="background: transparent;">
+                        <option>默认分组</option>
+                        <option>编程基础</option>
+                        <option>地理常识</option>
+                        <option>+ 新建分组</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">测验类型</label>
+                <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                    <label style="font-size: 0.8rem; cursor: pointer;"><input type="radio" name="type_v2" checked> 打字题</label>
+                    <label style="font-size: 0.8rem; cursor: pointer;"><input type="radio" name="type_v2"> 填空题</label>
+                </div>
+            </div>
+
+            <!-- 打字题特定字段 -->
+            <div id="create-typing-fields">
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label class="form-label" style="margin-bottom: 0;">答案列表 (每行一个)</label>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                    </div>
+                    <textarea class="form-input" style="height: 150px;" placeholder="答案1##注释&#10;答案2"></textarea>
+                </div>
+            </div>
+
+            <!-- 填空题特定字段 (原型中通过 JS 切换显示) -->
+            <div id="create-fill-fields" style="border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 1.5rem;">
+                <div class="form-group">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">🔍 挖空选中文字 ([])</button>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                    </div>
+                    <textarea class="form-input" style="height: 100px;" placeholder="请输入完整文本，例如：中国的首都是[北京##首都]"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">填空预览</label>
+                    <div style="padding: 1rem; background: var(--hover); font-size: 0.8rem; min-height: 3rem; color: var(--text-muted);">
+                        中国的首都是 ______
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. 管理页 -->
+        <section id="manage">
+            <div class="manage-header">
+                <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">管理</h1>
+                <button class="btn btn-small" style="border-color: var(--border);">导出全部备份</button>
+            </div>
+            
+            <div class="bulk-actions">
+                <input type="checkbox"> <span>全选</span>
+                <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--error); color: var(--error);">批量删除</button>
+                <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem;">批量移动分组</button>
+            </div>
+
+            <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">分组列表</h2>
+            <div class="list-item">
+                <div class="list-info">
+                    <span class="title">编程基础</span>
+                    <span class="sub">12 个测验</span>
+                </div>
+                <button class="btn btn-small" style="border-color: var(--border); color: var(--text-muted);">管理组内测验</button>
+            </div>
+
+            <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; margin-top: 3rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">单体测验</h2>
+            <div class="list-item">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <input type="checkbox" checked>
+                    <div class="list-info">
+                        <span class="title">世界各国首都</span>
+                        <span class="sub">创建于 2026.02.15</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-small" style="border-color: var(--border); color: var(--text-muted);">编辑</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    </main>
+
+    <script>
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+            const navId = 'nav-' + (id.includes('quiz') ? 'quizzes' : id === 'results' ? 'quizzes' : id);
+            if (document.getElementById(navId)) {
+                document.getElementById(navId).classList.add('active');
+            }
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
+
