@@ -12,6 +12,13 @@ const ReviewAPI = {
     },
 
     /**
+     * 获取所有待复习的项目列表
+     */
+    async getDueItems() {
+        return api.get('/review/due');
+    },
+
+    /**
      * 获取分组复习摘要列表
      */
     async getGroupSummary() {
