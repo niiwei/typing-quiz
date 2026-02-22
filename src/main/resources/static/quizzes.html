@@ -96,7 +96,14 @@
 
         function renderGroupFilters() {
             const container = document.getElementById('group-filters');
-            allGroups.forEach(group => {
+            // 将"默认分组"排在最前
+            const sortedGroups = [...allGroups].sort((a, b) => {
+                if (a.name === '默认分组') return -1;
+                if (b.name === '默认分组') return 1;
+                return 0;
+            });
+            
+            sortedGroups.forEach(group => {
                 const span = document.createElement('span');
                 span.className = 'filter-item';
                 span.textContent = group.name;
