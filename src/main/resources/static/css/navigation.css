@@ -1,13 +1,13 @@
 /* 统一导航样式 - Minimalist Zen */
 .navbar {
-    padding: 1rem 2rem;
+    padding: 1.5rem 4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    background: var(--bg);
+    background: #ffffff;
     z-index: 1000;
     width: 100%;
     box-sizing: border-box;
@@ -16,38 +16,37 @@
 .logo {
     font-weight: 800;
     letter-spacing: -0.02em;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     text-transform: uppercase;
     cursor: pointer;
     text-decoration: none;
-    color: var(--text-main);
+    color: #000000;
     flex: 0 0 auto;
 }
 
 .nav-links {
     display: flex;
-    gap: 1.5rem;
+    gap: 2.5rem;
     align-items: center;
     flex: 0 0 auto;
 }
 
 .nav-links a {
-    color: var(--text-muted);
+    color: #737373;
     text-decoration: none;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    transition: color 0.2s;
-    text-transform: uppercase;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
 }
 
 .nav-links a:hover, .nav-links a.active {
-    color: var(--text-main);
+    color: #000000;
 }
 
 .nav-links a.active {
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 2px;
+    border-bottom: 2px solid #000000;
+    padding-bottom: 4px;
 }
 
 /* 移除旧的渐变和复杂样式 */
