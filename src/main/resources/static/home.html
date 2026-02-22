@@ -55,41 +55,46 @@
             <a href="quizzes.html">测验</a>
             <a href="create.html">创建</a>
             <a href="manage.html">管理</a>
-            <a href="#" onclick="Auth.logout()" style="color: var(--error);">退出</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
         </div>
     </nav>
 
-    <div id="home-container">
+    <div id="home-container" class="fade-in">
         <section class="home-hero">
-            <h1 style="font-weight: 300; letter-spacing: 0.2em; font-size: 1.5rem; margin-bottom: 1rem;">每日目标</h1>
+            <h1 style="font-weight: 200; letter-spacing: 0.2em; font-size: 2.5rem; margin-bottom: 1rem; text-transform: uppercase;">Typing Quiz</h1>
+            <p style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 3rem;">Focused Learning Experience</p>
+            
             <div class="home-stats">
                 <div class="stat-box">
                     <span class="stat-num" id="new-count">0</span>
-                    <span class="stat-label">新测验</span>
+                    <span class="stat-label">New</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-num" id="review-count" style="color: var(--warning);">0</span>
-                    <span class="stat-label">待复习</span>
+                    <span class="stat-label">Review</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-num" id="learning-count">0</span>
-                    <span class="stat-label">学习中</span>
+                    <span class="stat-label">Learning</span>
                 </div>
                 <div class="stat-box">
                     <span class="stat-num" id="suspended-count">0</span>
-                    <span class="stat-label">已暂停</span>
+                    <span class="stat-label">Paused</span>
                 </div>
             </div>
-            <button class="btn" id="start-review-btn" onclick="startDailyReview()">开始复习流</button>
+            
+            <div style="margin-top: 4rem;">
+                <button class="btn" id="start-review-btn" onclick="startDailyReview()">Start Session</button>
+            </div>
         </section>
 
         <section class="home-section">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
-                <h2 style="font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase;">最近活动</h2>
-                <a href="quizzes.html" style="font-size: 0.6rem; color: var(--text-muted); text-decoration: none;">查看全部</a>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                <h2 style="font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.2em; text-transform: uppercase; font-weight: 700;">Recent Activity</h2>
+                <a href="quizzes.html" style="font-size: 0.6rem; color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.2s;" onmouseover="this.style.borderBottomColor='var(--text-muted)'" onmouseout="this.style.borderBottomColor='transparent'">View All</a>
             </div>
             <div id="recent-activity-list">
-                <div class="loading" style="text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-muted);">数据加载中...</div>
+                <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase;">Loading...</div>
             </div>
         </section>
     </div>
