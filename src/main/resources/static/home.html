@@ -372,6 +372,19 @@
             el.classList.add('active');
             expandedGroups.clear();
             renderGroupReviewList();
+            
+            // 如果不是"全部"，自动展开所有符合条件的分组
+            if (status !== 'all') {
+                setTimeout(() => {
+                    const visibleGroups = document.querySelectorAll('.review-group-card');
+                    visibleGroups.forEach(group => {
+                        const groupId = group.dataset.groupId;
+                        if (groupId) {
+                            toggleGroup(groupId);
+                        }
+                    });
+                }, 100);
+            }
         }
 
         function filterByGroup(groupId, el) {
