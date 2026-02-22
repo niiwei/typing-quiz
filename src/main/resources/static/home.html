@@ -377,6 +377,13 @@
             el.classList.add('active');
             expandedGroups.clear();
             renderGroupReviewList();
+            
+            // 如果不是"全部"，自动展开选中的分组
+            if (groupId !== 'all') {
+                setTimeout(() => {
+                    toggleGroup(groupId);
+                }, 100);
+            }
         }
 
         function renderGroupReviewList() {
