@@ -448,7 +448,35 @@ public class ReviewController {
         dto.setDue(label.isDueToday());
         dto.setUserId(status.getUserId());  // 设置userId用于诊断
         
+        // 增加细化标签：区分新测验和待学习
+        String detailedLabel = calculateDetailedLabel(status, label, now);
+        dto.setDetailedLabel(detailedLabel);
+        
         return dto;
+    }
+    
+    /**
+     * 计算细化标签，区分新测验和待学习
+     */
+    private String calculateDetailedLabel(QuizReviewStatus status, ReviewLabel label, LocalDateTime now) {
+        if (label == ReviewLabel.SUSPENDED) {
+            return "SUSPENDED";
+        }
+        if (label == ReviewLabel.SCHEDULED) {
+            return "SCHEDULED";
+        }
+        if (label == ReviewLabel.PENDING_REVIEW) {
+            return "PENDING_REVIEW";
+        }
+        // PENDING_LEARN 需要进一步区分
+        if (status.getStatus() == ReviewStatus.NEW) {
+            return "NEW";  // 新测验
+        } else if (status.getStatus() == ReviewStatus.LEARNING) {
+            return "PENDING_LEARN";  // 学习中且已到期
+        } else if (status.getStatus() == ReviewStatus.RELEARNING) {
+            return "PENDING_RELEARN";  // 重学中且已到期
+        }
+        return "PENDING_LEARN";
     }
 
     /**

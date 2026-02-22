@@ -467,7 +467,7 @@
                     <div class="quiz-info">
                         <div class="quiz-title-section">
                             <span class="quiz-title">${item.quizTitle}</span>
-                            <span class="quiz-status ${getStatusClass(item.label)}">${getStatusText(item.label)}</span>
+                            <span class="quiz-status ${getStatusClass(item.detailedLabel || item.label)}">${getStatusText(item.detailedLabel || item.label)}</span>
                         </div>
                         <span class="quiz-meta">间隔: ${item.intervalText || '即将到期'} • 已复习 ${item.reviewCount || 0} 次 • 简易度: ${(item.easeFactor / 1000).toFixed(1)}</span>
                     </div>
@@ -480,24 +480,28 @@
             `).join('');
         }
 
-        function getStatusClass(label) {
+        function getStatusClass(detailedLabel) {
             const map = {
-                'PENDING_LEARN': 'status-new',
-                'PENDING_REVIEW': 'status-review',
+                'NEW': 'status-new',
+                'PENDING_LEARN': 'status-learning',
                 'PENDING_RELEARN': 'status-relearning',
+                'PENDING_REVIEW': 'status-review',
+                'SCHEDULED': 'status-scheduled',
                 'SUSPENDED': 'status-suspended'
             };
-            return map[label] || 'status-default';
+            return map[detailedLabel] || 'status-default';
         }
 
-        function getStatusText(label) {
+        function getStatusText(detailedLabel) {
             const map = {
+                'NEW': '新测验',
                 'PENDING_LEARN': '待学习',
-                'PENDING_REVIEW': '待复习',
                 'PENDING_RELEARN': '待重学',
+                'PENDING_REVIEW': '待复习',
+                'SCHEDULED': '未到期',
                 'SUSPENDED': '已暂停'
             };
-            return map[label] || label;
+            return map[detailedLabel] || detailedLabel;
         }
 
         function startQuiz(quizId, groupId) {

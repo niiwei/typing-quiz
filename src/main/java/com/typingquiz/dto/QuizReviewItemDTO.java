@@ -42,6 +42,9 @@ public class QuizReviewItemDTO {
     private String label;
     private String labelDisplay;
     
+    // 细化标签（新测验/待学习/待复习/待重学/未到期/已暂停）
+    private String detailedLabel;
+    
     // 用户ID（用于诊断）
     private Long userId;
 
@@ -191,6 +194,14 @@ public class QuizReviewItemDTO {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getDetailedLabel() {
+        return detailedLabel;
+    }
+
+    public void setDetailedLabel(String detailedLabel) {
+        this.detailedLabel = detailedLabel;
     }
 
     @Override
