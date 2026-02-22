@@ -198,4 +198,12 @@ public class QuizGroupService {
         }
         return quizRepository.findAnswerCountsByQuizIds(quizIds);
     }
+
+    /**
+     * 获取用户的所有测验（不分组）
+     */
+    public List<Quiz> getAllQuizzesByUserId(Long userId) {
+        Long effectiveUserId = userId != null ? userId : 0L;
+        return quizRepository.findByUserId(effectiveUserId);
+    }
 }

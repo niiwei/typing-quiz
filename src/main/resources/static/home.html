@@ -416,48 +416,47 @@
         function renderGroupReviewList() {
             const container = document.getElementById('review-groups-container');
             
-            let filteredGroups = allGroupData;
+            let filteredGroups = [...allGroupData];
             
             // 处理分组筛选
             if (activeGroup !== 'all') {
                 if (activeGroup === 'ungrouped') {
-                    // 获取未分组的分组数据
-                    const groupedQuizIds = new Set();
-                    allGroups.forEach(group => {
-                        if (group.quizIds) {
-                            group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
-                        }
-                    });
-                    
-                    // 计算未分组的测验数量
-                    const ungroupedQuizzes = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
-                    
-                    if (ungroupedQuizzes.length > 0) {
-                        // 创建虚拟的未分组数据
-                        const ungroupedData = {
-                            groupId: 'ungrouped',
-                            groupName: '未分组',
-                            newQuizCount: 0,
-                            pendingLearnCount: 0,
-                            pendingReviewCount: 0,
-                            pendingRelearnCount: 0,
-                            scheduledCount: 0,
-                            suspendedCount: 0,
-                            isVirtual: true
-                        };
-                        
-                        // 统计未分组测验的复习状态（简化处理，实际应从后端获取）
-                        ungroupedQuizzes.forEach(quiz => {
-                            // 这里简化处理，假设所有未分组测验都是新测验
-                            ungroupedData.newQuizCount++;
-                        });
-                        
-                        filteredGroups = [ungroupedData];
-                    } else {
-                        filteredGroups = [];
-                    }
+                    // 只显示未分组
+                    filteredGroups = filteredGroups.filter(g => g.groupId === 'ungrouped');
                 } else {
                     filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
+                }
+            } else {
+                // 默认显示全部时，添加未分组虚拟分组（如果有未分组测验）
+                const groupedQuizIds = new Set();
+                allGroups.forEach(group => {
+                    if (group.quizIds) {
+                        group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
+                    }
+                });
+                
+                const ungroupedQuizzes = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
+                
+                if (ungroupedQuizzes.length > 0) {
+                    // 计算未分组测验的统计
+                    let ungroupedNewCount = 0;
+                    ungroupedQuizzes.forEach(() => {
+                        ungroupedNewCount++;
+                    });
+                    
+                    const ungroupedData = {
+                        groupId: 'ungrouped',
+                        groupName: '未分组',
+                        newQuizCount: ungroupedNewCount,
+                        pendingLearnCount: 0,
+                        pendingReviewCount: 0,
+                        pendingRelearnCount: 0,
+                        scheduledCount: 0,
+                        suspendedCount: 0,
+                        isVirtual: true
+                    };
+                    
+                    filteredGroups.push(ungroupedData);
                 }
             }
             

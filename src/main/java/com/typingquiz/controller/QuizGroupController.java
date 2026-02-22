@@ -108,13 +108,21 @@ public class QuizGroupController {
     /**
      * 获取分组内的所有测验（用于分组答题）
      * GET /api/groups/{groupId}/quizzes
+     * 支持特殊值 "ungrouped" 获取未分组的测验
      */
     @GetMapping("/{groupId}/quizzes")
-    public ResponseEntity<List<com.typingquiz.dto.QuizResponseDTO>> getGroupQuizzes(@PathVariable Long groupId, HttpServletRequest request) {
+    public ResponseEntity<List<com.typingquiz.dto.QuizResponseDTO>> getGroupQuizzes(@PathVariable String groupId, HttpServletRequest request) {
         try {
             Long userId = getUserIdFromRequest(request);
-            // 使用 JOIN FETCH 一次性加载分组和测验，避免 N+1
-            QuizGroup group = groupService.getGroupByIdWithQuizzes(groupId);
+            
+            // 处理未分组虚拟分组
+            if ("ungrouped".equals(groupId)) {
+                return getUngroupedQuizzes(userId);
+            }
+            
+            // 普通分组处理
+            Long id = Long.parseLong(groupId);
+            QuizGroup group = groupService.getGroupByIdWithQuizzes(id);
             // 验证用户身份
             if (userId != null && !userId.equals(group.getUserId())) {
                 throw new RuntimeException("无权访问此分组");
@@ -147,8 +155,65 @@ public class QuizGroupController {
                     })
                     .collect(java.util.stream.Collectors.toList());
             return ResponseEntity.ok(quizzes);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+    
+    /**
+     * 获取未分组的测验列表
+     */
+    private ResponseEntity<List<com.typingquiz.dto.QuizResponseDTO>> getUngroupedQuizzes(Long userId) {
+        // 获取用户的所有测验
+        List<com.typingquiz.entity.Quiz> allQuizzes = groupService.getAllQuizzesByUserId(userId);
+        
+        // 获取用户的所有分组
+        List<QuizGroup> groups = groupService.getAllGroups(userId);
+        
+        // 找出已分组的测验ID
+        java.util.Set<Long> groupedQuizIds = new java.util.HashSet<>();
+        for (QuizGroup group : groups) {
+            if (group.getQuizzes() != null) {
+                for (com.typingquiz.entity.Quiz quiz : group.getQuizzes()) {
+                    groupedQuizIds.add(quiz.getId());
+                }
+            }
+        }
+        
+        // 过滤出未分组的测验
+        List<com.typingquiz.entity.Quiz> ungroupedQuizzes = allQuizzes.stream()
+                .filter(quiz -> !groupedQuizIds.contains(quiz.getId()))
+                .collect(java.util.stream.Collectors.toList());
+        
+        // 查询答案数量
+        List<Long> quizIds = ungroupedQuizzes.stream()
+                .map(com.typingquiz.entity.Quiz::getId)
+                .collect(java.util.stream.Collectors.toList());
+        
+        Map<Long, Integer> answerCountMap = new java.util.HashMap<>();
+        if (!quizIds.isEmpty()) {
+            List<Object[]> answerCounts = groupService.getAnswerCountsByQuizIds(quizIds);
+            for (Object[] row : answerCounts) {
+                answerCountMap.put((Long) row[0], ((Long) row[1]).intValue());
+            }
+        }
+        
+        // 转换为DTO
+        List<com.typingquiz.dto.QuizResponseDTO> result = ungroupedQuizzes.stream()
+                .map(quiz -> {
+                    com.typingquiz.dto.QuizResponseDTO dto = new com.typingquiz.dto.QuizResponseDTO();
+                    dto.setId(quiz.getId());
+                    dto.setTitle(quiz.getTitle());
+                    dto.setDescription(quiz.getDescription());
+                    dto.setTimeLimit(quiz.getTimeLimit());
+                    dto.setQuizType(quiz.getQuizType());
+                    dto.setTotalAnswers(answerCountMap.getOrDefault(quiz.getId(), 0));
+                    return dto;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(result);
     }
 }

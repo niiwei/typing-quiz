@@ -167,10 +167,11 @@ public class ReviewController {
     /**
      * 获取指定分组下的测验复习列表
      * 用于展开分组后显示测验详情
+     * 支持特殊值 "ungrouped" 获取未分组的测验
      */
     @GetMapping("/groups/{groupId}/quizzes")
     public ResponseEntity<?> getGroupQuizzes(
-            @PathVariable Long groupId,
+            @PathVariable String groupId,
             @RequestParam(required = false) ReviewStatus status,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
         
@@ -180,8 +181,16 @@ public class ReviewController {
         }
 
         try {
+            // 处理未分组虚拟分组
+            if ("ungrouped".equals(groupId)) {
+                return getUngroupedReviewQuizzes(userId, status);
+            }
+            
+            // 普通分组处理
+            Long id = Long.parseLong(groupId);
+            
             // 验证分组归属
-            QuizGroup group = quizGroupRepository.findById(groupId)
+            QuizGroup group = quizGroupRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("分组不存在"));
             if (!userId.equals(group.getUserId())) {
                 return ResponseEntity.status(403).build();
@@ -247,10 +256,95 @@ public class ReviewController {
             });
             
             return ResponseEntity.ok(result);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "无效的分组ID"));
         } catch (Exception e) {
             logger.error("获取分组测验列表失败: groupId={}, userId={}", groupId, userId, e);
             return ResponseEntity.badRequest().build();
         }
+    }
+    
+    /**
+     * 获取未分组的测验复习列表
+     */
+    private ResponseEntity<?> getUngroupedReviewQuizzes(Long userId, ReviewStatus statusFilter) {
+        // 获取用户的所有测验
+        List<Quiz> allQuizzes = quizRepository.findByUserId(userId);
+        
+        // 获取用户的所有分组
+        List<QuizGroup> groups = quizGroupRepository.findByUserIdOrderByDisplayOrderAsc(userId);
+        
+        // 找出已分组的测验ID
+        java.util.Set<Long> groupedQuizIds = new java.util.HashSet<>();
+        for (QuizGroup group : groups) {
+            if (group.getQuizzes() != null) {
+                for (Quiz quiz : group.getQuizzes()) {
+                    groupedQuizIds.add(quiz.getId());
+                }
+            }
+        }
+        
+        // 过滤出未分组的测验
+        List<Quiz> ungroupedQuizzes = allQuizzes.stream()
+                .filter(quiz -> !groupedQuizIds.contains(quiz.getId()))
+                .collect(Collectors.toList());
+        
+        if (ungroupedQuizzes.isEmpty()) {
+            return ResponseEntity.ok(new ArrayList<>());
+        }
+        
+        // 获取未分组测验的ID列表
+        List<Long> ungroupedQuizIds = ungroupedQuizzes.stream()
+                .map(Quiz::getId)
+                .collect(Collectors.toList());
+        
+        // 使用 JOIN 查询一次性获取用户可访问的复习状态
+        List<QuizReviewStatus> allStatuses = reviewStatusRepository.findUserAccessibleStatuses(userId);
+        
+        // 过滤出未分组测验的复习状态
+        Map<Long, QuizReviewStatus> statusMap = new HashMap<>();
+        for (QuizReviewStatus rs : allStatuses) {
+            if (ungroupedQuizIds.contains(rs.getQuizId())) {
+                statusMap.put(rs.getQuizId(), rs);
+            }
+        }
+        
+        // 构建结果
+        List<QuizReviewItemDTO> result = new ArrayList<>();
+        LocalDateTime today = LocalDateTime.now();
+        
+        for (Quiz quiz : ungroupedQuizzes) {
+            QuizReviewStatus reviewStatus = statusMap.get(quiz.getId());
+            
+            // 如果没有复习状态，自动创建 NEW 状态
+            if (reviewStatus == null) {
+                reviewStatus = quizReviewService.initializeQuizStatus(quiz.getId(), userId);
+            }
+            
+            // 如果指定了状态过滤
+            if (statusFilter != null && reviewStatus.getStatus() != statusFilter) {
+                continue;
+            }
+            
+            QuizReviewItemDTO dto = convertToItemDTO(quiz, reviewStatus, today);
+            result.add(dto);
+        }
+        
+        // 排序
+        result.sort((a, b) -> {
+            int pA = getStatusPriority(a.getStatus());
+            int pB = getStatusPriority(b.getStatus());
+            if (pA != pB) return Integer.compare(pA, pB);
+            
+            if (a.getNextReviewDate() != null && b.getNextReviewDate() != null) {
+                return a.getNextReviewDate().compareTo(b.getNextReviewDate());
+            }
+            if (a.getNextReviewDate() == null && b.getNextReviewDate() != null) return -1;
+            if (a.getNextReviewDate() != null && b.getNextReviewDate() == null) return 1;
+            return 0;
+        });
+        
+        return ResponseEntity.ok(result);
     }
 
     /**
