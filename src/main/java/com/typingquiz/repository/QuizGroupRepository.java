@@ -40,6 +40,11 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
     List<QuizGroup> findByUserIdOrderByDisplayOrderAsc(Long userId);
 
     /**
+     * 根据用户ID和名称查询分组
+     */
+    java.util.Optional<QuizGroup> findByUserIdAndName(Long userId, String name);
+
+    /**
      * 根据测验ID查询包含该测验的所有分组
      */
     List<QuizGroup> findByQuizzesId(Long quizId);

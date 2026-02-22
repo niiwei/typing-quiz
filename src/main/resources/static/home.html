@@ -298,6 +298,13 @@
     <script src="js/review-api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // 清除旧的复习列表，确保重新进入时使用新列表
+            Object.keys(sessionStorage).forEach(key => {
+                if (key === 'reviewQuizList' || key.startsWith('groupQuizList_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+
             if (!Auth.isLoggedIn()) {
                 window.location.href = 'login.html';
                 return;
@@ -313,16 +320,25 @@
         async function loadHomeSummary() {
             try {
                 const summary = await ReviewAPI.getTodaySummary();
-                document.getElementById('new-count').textContent = summary.pendingLearnCount || 0;
-                document.getElementById('review-count').textContent = summary.pendingReviewCount || 0;
+                // 待学习 = 新测验(NEW) + 学习中已到期(PENDING_LEARN)
+                document.getElementById('new-count').textContent = (summary.newCards || 0) + (summary.pendingLearnCount || 0);
+                // 待复习 = 复习中已到期(PENDING_REVIEW) + 重学中已到期(PENDING_RELEARN)
+                document.getElementById('review-count').textContent = (summary.pendingReviewCount || 0) + (summary.pendingRelearnCount || 0);
                 document.getElementById('learning-count').textContent = summary.scheduledCount || 0;
                 document.getElementById('suspended-count').textContent = summary.suspendedCount || 0;
 
                 const startBtn = document.getElementById('start-review-btn');
-                if ((summary.pendingLearnCount + summary.pendingReviewCount) === 0) {
+                const totalDue = (summary.newCards || 0) + (summary.pendingLearnCount || 0) + 
+                                 (summary.pendingReviewCount || 0) + (summary.pendingRelearnCount || 0);
+                
+                if (totalDue === 0) {
                     startBtn.disabled = true;
                     startBtn.textContent = '今日已完成';
                     startBtn.style.opacity = '0.5';
+                } else {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '开始复习流';
+                    startBtn.style.opacity = '1';
                 }
             } catch (error) {
                 console.error('加载统计失败:', error);
@@ -420,44 +436,7 @@
             
             // 处理分组筛选
             if (activeGroup !== 'all') {
-                if (activeGroup === 'ungrouped') {
-                    // 只显示未分组
-                    filteredGroups = filteredGroups.filter(g => g.groupId === 'ungrouped');
-                } else {
-                    filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
-                }
-            } else {
-                // 默认显示全部时，添加未分组虚拟分组（如果有未分组测验）
-                const groupedQuizIds = new Set();
-                allGroups.forEach(group => {
-                    if (group.quizIds) {
-                        group.quizIds.forEach(id => groupedQuizIds.add(parseInt(id)));
-                    }
-                });
-                
-                const ungroupedQuizzes = allQuizzes.filter(quiz => !groupedQuizIds.has(quiz.id));
-                
-                if (ungroupedQuizzes.length > 0) {
-                    // 计算未分组测验的统计
-                    let ungroupedNewCount = 0;
-                    ungroupedQuizzes.forEach(() => {
-                        ungroupedNewCount++;
-                    });
-                    
-                    const ungroupedData = {
-                        groupId: 'ungrouped',
-                        groupName: '未分组',
-                        newQuizCount: ungroupedNewCount,
-                        pendingLearnCount: 0,
-                        pendingReviewCount: 0,
-                        pendingRelearnCount: 0,
-                        scheduledCount: 0,
-                        suspendedCount: 0,
-                        isVirtual: true
-                    };
-                    
-                    filteredGroups.push(ungroupedData);
-                }
+                filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
             }
             
             if (activeStatus !== 'all') {
@@ -599,20 +578,55 @@
             return map[detailedLabel] || detailedLabel;
         }
 
-        function startQuiz(quizId, groupId) {
-            window.location.href = `index.html?id=${quizId}&groupId=${groupId}`;
+        async function startQuiz(quizId, groupId) {
+            try {
+                const groupParam = groupId ? `&groupId=${groupId}` : '';
+                
+                // 根据模式获取完整列表并存入 sessionStorage
+                let items = [];
+                if (groupId) {
+                    items = await ReviewAPI.getGroupReviewItems(groupId);
+                } else {
+                    items = await ReviewAPI.getDueItems();
+                }
+
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+                
+                const quizIds = dueItems.map(i => i.quizId);
+                const storageKey = groupId ? `groupQuizList_${groupId}` : 'reviewQuizList';
+                sessionStorage.setItem(storageKey, JSON.stringify(quizIds));
+                
+                window.location.href = `index.html?id=${quizId}${groupParam}&mode=review`;
+            } catch (error) {
+                console.error('保存复习列表失败:', error);
+                const groupParam = groupId ? `&groupId=${groupId}` : '';
+                window.location.href = `index.html?id=${quizId}${groupParam}&mode=review`;
+            }
         }
 
         async function startGroupReview(groupId) {
             try {
                 const items = await ReviewAPI.getGroupReviewItems(groupId);
-                if (items.length === 0) {
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+
+                if (dueItems.length === 0) {
                     alert('该分组暂无待复习测验');
                     return;
                 }
-                const quizIds = items.map(i => i.quizId);
+                const quizIds = dueItems.map(i => i.quizId);
                 sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
-                window.location.href = `index.html?id=${quizIds[0]}&groupId=${groupId}`;
+                const groupParam = `&groupId=${groupId}`;
+                window.location.href = `index.html?id=${quizIds[0]}&mode=review${groupParam}`;
             } catch (error) {
                 alert('获取分组测验列表失败');
             }
@@ -655,11 +669,18 @@
         async function startDailyReview() {
             try {
                 const items = await ReviewAPI.getDueItems();
-                if (items.length === 0) {
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+
+                if (dueItems.length === 0) {
                     alert('今日无待复习测验');
                     return;
                 }
-                const quizIds = items.map(item => item.quizId);
+                const quizIds = dueItems.map(item => item.quizId);
                 sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
                 window.location.href = `index.html?id=${quizIds[0]}&mode=review`;
             } catch (error) {

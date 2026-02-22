@@ -77,11 +77,16 @@ public class QuizController {
     public ResponseEntity<QuizResponseDTO> getQuiz(@PathVariable Long id, HttpServletRequest request) {
         try {
             Long userId = getUserIdFromRequest(request);
-            Quiz quiz = quizService.getQuizById(id, userId);
-            QuizResponseDTO response = quizService.toResponseDTO(quiz);
+            logger.info("[QuizController.getQuiz] 请求详情: id={}, userId={}", id, userId);
+            
+            // 直接获取DTO，在Service层内完成所有操作（保持事务）
+            QuizResponseDTO response = quizService.getQuizDTOById(id, userId);
+            
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("[QuizController.getQuiz] 异常详情: id={}, type={}, message={}", 
+                id, e.getClass().getSimpleName(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 

@@ -752,13 +752,15 @@
             console.log('[评级] 开始提交评级 - quizId:', currentQuizId, 'rating:', rating);
 
             try {
+                const params = new URLSearchParams(window.location.search);
+                const groupId = params.get('groupId');
                 const status = currentQuizStatus?.status;
                 let result;
 
                 if (status === 'NEW' || status === 'LEARNING' || status === 'RELEARNING') {
-                    result = await ReviewAPI.submitLearnRating(currentQuizId, rating);
+                    result = await ReviewAPI.submitLearnRating(currentQuizId, rating, groupId);
                 } else {
-                    result = await ReviewAPI.submitReviewRating(currentQuizId, rating);
+                    result = await ReviewAPI.submitReviewRating(currentQuizId, rating, groupId);
                 }
 
                 console.log('[评级] 收到响应:', result);

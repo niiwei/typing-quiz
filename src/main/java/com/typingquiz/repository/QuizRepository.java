@@ -38,8 +38,9 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     /**
      * 根据ID获取测验及其答案（解决懒加载问题）
+     * 即使没有答案也能查出来（填空题或导入中的测验）
      */
-    @Query("SELECT q FROM Quiz q LEFT JOIN FETCH q.answers WHERE q.id = :id")
+    @Query("SELECT q FROM Quiz q LEFT JOIN q.answers WHERE q.id = :id")
     Optional<Quiz> findByIdWithAnswers(@Param("id") Long id);
 
     /**

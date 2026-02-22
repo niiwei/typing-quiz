@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -133,6 +134,7 @@ public class QuizService {
 
         // 处理分组信息
         if (quizDTO.getGroups() != null && !quizDTO.getGroups().isEmpty()) {
+            // 用户指定了分组，使用用户指定的分组
             for (String groupName : quizDTO.getGroups()) {
                 if (groupName == null || groupName.trim().isEmpty()) continue;
 
@@ -144,13 +146,25 @@ public class QuizService {
                     group.setUserId(userId);
                     group = quizGroupRepository.save(group);
                 } else {
-                    // 使用第一个匹配的分组（处理可能的重复数据）
+                    // 使用第一个匹配的分组
                     group = existingGroups.get(0);
                 }
                 
                 group.addQuiz(quiz);
                 quizGroupRepository.save(group);
             }
+        } else {
+            // 未指定分组，自动关联到默认分组
+            QuizGroup defaultGroup = quizGroupRepository.findByUserIdAndName(userId, "默认分组")
+                    .orElseGet(() -> {
+                        // 如果默认分组不存在，创建它
+                        QuizGroup group = new QuizGroup("默认分组", "系统自动创建的默认分组");
+                        group.setUserId(userId);
+                        return quizGroupRepository.save(group);
+                    });
+            defaultGroup.addQuiz(quiz);
+            quizGroupRepository.save(defaultGroup);
+            logger.info("测验 {} 已自动关联到默认分组", quiz.getId());
         }
 
         // 自动创建复习状态（确保每个测验都是未学习状态）
@@ -182,14 +196,112 @@ public class QuizService {
     /**
      * 根据ID获取测验详情（带用户验证）
      */
+    @Transactional(readOnly = true)
     public Quiz getQuizById(Long id, Long userId) {
-        Quiz quiz = quizRepository.findByIdWithAnswers(id)
-                .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
+        logger.info("[QuizService.getQuizById] 查找测验 ID={}, userId={}", id, userId);
+        
+        // 使用基础的 findById
+        Optional<Quiz> quizOpt = quizRepository.findById(id);
+        
+        if (!quizOpt.isPresent()) {
+            logger.warn("[QuizService.getQuizById] 数据库基础查询找不到测验 ID={}", id);
+            throw new RuntimeException("测验不存在: ID=" + id);
+        }
+        
+        Quiz quiz = quizOpt.get();
+        logger.info("[QuizService.getQuizById] 找到测验: title={}, quizUserId={}", quiz.getTitle(), quiz.getUserId());
+        
         // 验证用户身份
-        if (userId != null && !userId.equals(quiz.getUserId())) {
+        if (userId != null && quiz.getUserId() != null && !userId.equals(quiz.getUserId())) {
+            logger.error("[QuizService.getQuizById] 用户越权访问: userId={}, quizUserId={}, quizId={}", 
+                userId, quiz.getUserId(), id);
             throw new RuntimeException("无权访问此测验");
         }
+        
         return quiz;
+    }
+
+    /**
+     * 根据ID获取测验详情DTO（带用户验证，在事务内完成所有操作）
+     * 避免跨事务边界访问懒加载集合导致的事务回滚问题
+     */
+    @Transactional(readOnly = true)
+    public QuizResponseDTO getQuizDTOById(Long id, Long userId) {
+        logger.info("[QuizService.getQuizDTOById] 查找测验 ID={}, userId={}", id, userId);
+        
+        // 使用 findByIdWithAnswers 预加载答案
+        Optional<Quiz> quizOpt = quizRepository.findByIdWithAnswers(id);
+        
+        if (!quizOpt.isPresent()) {
+            logger.warn("[QuizService.getQuizDTOById] 数据库中找不到测验 ID={}", id);
+            throw new RuntimeException("测验不存在: ID=" + id);
+        }
+        
+        Quiz quiz = quizOpt.get();
+        logger.info("[QuizService.getQuizDTOById] 找到测验: title={}, quizUserId={}", quiz.getTitle(), quiz.getUserId());
+        
+        // 验证用户身份
+        if (userId != null && quiz.getUserId() != null && !userId.equals(quiz.getUserId())) {
+            logger.error("[QuizService.getQuizDTOById] 用户越权访问: userId={}, quizUserId={}, quizId={}", 
+                userId, quiz.getUserId(), id);
+            throw new RuntimeException("无权访问此测验");
+        }
+        
+        // 在事务内手动构建DTO，避免调用可能触发事务回滚的其他服务方法
+        QuizResponseDTO dto = new QuizResponseDTO();
+        dto.setId(quiz.getId());
+        dto.setTitle(quiz.getTitle());
+        dto.setDescription(quiz.getDescription());
+        dto.setTimeLimit(quiz.getTimeLimit());
+        dto.setTotalAnswers(quiz.getAnswers() != null ? quiz.getAnswers().size() : 0);
+        dto.setCreatedAt(quiz.getCreatedAt());
+        dto.setQuizType(quiz.getQuizType());
+        
+        // 填充答案数据
+        if (quiz.getAnswers() != null && !quiz.getAnswers().isEmpty()) {
+            List<String> answers = quiz.getAnswers().stream()
+                    .map(answer -> answer.getContent())
+                    .collect(Collectors.toList());
+            dto.setAnswers(answers);
+            
+            List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
+                    .map(answer -> new AnswerCreateDTO(answer.getContent(), answer.getComment()))
+                    .collect(Collectors.toList());
+            dto.setAnswerList(answerList);
+        }
+        
+        // 如果是填空题，直接使用仓库查询（避免服务层事务问题）
+        if (quiz.getQuizType() == QuizType.FILL_BLANK) {
+            try {
+                fillBlankQuizRepository.findByQuizId(quiz.getId()).ifPresent(fillBlankQuiz -> {
+                    FillBlankQuizDTO fillBlankDTO = new FillBlankQuizDTO();
+                    fillBlankDTO.setId(fillBlankQuiz.getId());
+                    fillBlankDTO.setQuizId(fillBlankQuiz.getQuizId());
+                    fillBlankDTO.setFullText(fillBlankQuiz.getFullText());
+                    fillBlankDTO.setDisplayText(fillBlankQuiz.getDisplayText());
+                    fillBlankDTO.setBlanksCount(fillBlankQuiz.getBlanksCount());
+                    
+                    try {
+                        List<FillBlankQuizDTO.BlankInfo> blanks = objectMapper.readValue(
+                                fillBlankQuiz.getBlanksInfo(),
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, FillBlankQuizDTO.BlankInfo.class)
+                        );
+                        fillBlankDTO.setBlanks(blanks);
+                    } catch (Exception e) {
+                        fillBlankDTO.setBlanks(new ArrayList<>());
+                    }
+                    
+                    dto.setFillBlankQuiz(fillBlankDTO);
+                    dto.setTotalAnswers(fillBlankQuiz.getBlanksCount());
+                });
+            } catch (Exception e) {
+                logger.warn("[QuizService.getQuizDTOById] 填空题信息加载失败: id={}, error={}", id, e.getMessage());
+                // 填空题信息不存在，忽略错误
+            }
+        }
+        
+        logger.info("[QuizService.getQuizDTOById] DTO构建成功: id={}, title={}", dto.getId(), dto.getTitle());
+        return dto;
     }
 
     /**

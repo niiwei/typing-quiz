@@ -271,37 +271,54 @@ class QuizController {
 
             if (this.groupMode) {
                 // 分组模式
-                await this.loadGroupQuizzes();
-                const storedList = sessionStorage.getItem(`groupQuizList_${this.groupId}`);
-                let quizList = storedList ? JSON.parse(storedList) : this.groupQuizzes.map(q => q.id);
-                this.groupQuizTotal = quizList.length;
-                const currentIndex = quizList.indexOf(Number(this.quizId));
+                const storageKey = `groupQuizList_${this.groupId}`;
+                const storedList = sessionStorage.getItem(storageKey);
                 
-                if (currentIndex >= 0) {
-                    this.currentQuizIndex = currentIndex;
+                if (storedList) {
+                    const quizIds = JSON.parse(storedList);
+                    this.groupQuizTotal = quizIds.length;
+                    // 确保使用数字进行比较，避免类型不匹配
+                    this.currentQuizIndex = quizIds.findIndex(id => Number(id) === Number(this.quizId));
+                    this.groupQuizzes = quizIds.map(id => ({ id: Number(id), title: '' }));
+                    this.loadQuizTitles(quizIds);
+                } else {
+                    await this.loadGroupQuizzes();
+                    this.groupQuizTotal = this.groupQuizzes.length;
+                    this.currentQuizIndex = this.groupQuizzes.findIndex(q => Number(q.id) === Number(this.quizId));
+                }
+
+                if (this.currentQuizIndex >= 0) {
                     await this.loadQuizById(this.quizId);
                 } else if (this.groupQuizzes.length > 0) {
-                    this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
+                    this.currentQuizIndex = 0;
                     await this.loadQuizById(this.groupQuizzes[0].id);
                 } else {
-                    sessionStorage.removeItem(`groupQuizList_${this.groupId}`);
+                    sessionStorage.removeItem(storageKey);
                     alert('该分组复习任务已全部完成！');
                     window.location.href = 'home.html';
                     return;
                 }
             } else if (this.isReviewMode) {
                 // 全局复习模式
-                await this.loadGlobalReviewQuizzes();
                 const storedList = sessionStorage.getItem('reviewQuizList');
-                let quizList = storedList ? JSON.parse(storedList) : this.groupQuizzes.map(q => q.id);
-                this.reviewQuizTotal = quizList.length;
-                const currentIndex = quizList.indexOf(Number(this.quizId));
+                
+                if (storedList) {
+                    const quizIds = JSON.parse(storedList);
+                    this.reviewQuizTotal = quizIds.length;
+                    // 确保使用数字进行比较，避免类型不匹配
+                    this.currentQuizIndex = quizIds.findIndex(id => Number(id) === Number(this.quizId));
+                    this.groupQuizzes = quizIds.map(id => ({ id: Number(id), title: '' }));
+                    this.loadQuizTitles(quizIds);
+                } else {
+                    await this.loadGlobalReviewQuizzes();
+                    this.reviewQuizTotal = this.groupQuizzes.length;
+                    this.currentQuizIndex = this.groupQuizzes.findIndex(q => Number(q.id) === Number(this.quizId));
+                }
 
-                if (currentIndex >= 0) {
-                    this.currentQuizIndex = currentIndex;
+                if (this.currentQuizIndex >= 0) {
                     await this.loadQuizById(this.quizId);
                 } else if (this.groupQuizzes.length > 0) {
-                    this.currentQuizIndex = quizList.length - this.groupQuizzes.length;
+                    this.currentQuizIndex = 0;
                     await this.loadQuizById(this.groupQuizzes[0].id);
                 } else {
                     sessionStorage.removeItem('reviewQuizList');
@@ -354,7 +371,8 @@ class QuizController {
             this.loadQuizTitles(quizIds);
         } else {
             // 没有存储的列表，从 API 获取
-            if (this.isReviewMode) {
+            if (this.isReviewMode || this.groupId === 'ungrouped') {
+                // 复习模式或未分组，使用 review API
                 const response = await fetch(`${this.apiBase}/review/groups/${this.groupId}/quizzes`, {
                     headers: this.getAuthHeaders()
                 });
@@ -382,18 +400,37 @@ class QuizController {
      * 异步加载测验标题
      */
     async loadQuizTitles(quizIds) {
+        // 如果有正在进行的请求，中止它们
+        if (this.titleAbortController) {
+            this.titleAbortController.abort();
+        }
+        this.titleAbortController = new AbortController();
+        
         try {
             for (let i = 0; i < quizIds.length; i++) {
-                const response = await fetch(`${this.apiBase}/quizzes/${quizIds[i]}`, {
-                    headers: this.getAuthHeaders()
-                });
-                if (response.ok) {
-                    const quiz = await response.json();
-                    this.groupQuizzes[i].title = quiz.title;
+                // 检查是否已中止
+                if (this.titleAbortController.signal.aborted) break;
+                
+                try {
+                    const response = await fetch(`${this.apiBase}/quizzes/${quizIds[i]}`, {
+                        headers: this.getAuthHeaders(),
+                        signal: this.titleAbortController.signal
+                    });
+                    if (response.ok) {
+                        const quiz = await response.json();
+                        if (this.groupQuizzes[i]) {
+                            this.groupQuizzes[i].title = quiz.title;
+                        }
+                    }
+                } catch (e) {
+                    // 静默忽略中止错误和404错误
+                    if (e.name !== 'AbortError') {
+                        console.debug(`加载测验 ${quizIds[i]} 标题失败:`, e.message);
+                    }
                 }
             }
-        } catch (e) {
-            console.error('加载测验标题失败:', e);
+        } finally {
+            this.titleAbortController = null;
         }
     }
 
@@ -486,11 +523,36 @@ class QuizController {
      * 加载填空题数据
      */
     async loadFillBlankQuiz() {
-        const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`, {
-            headers: this.getAuthHeaders()
-        });
-        if (!response.ok) throw new Error('加载填空题数据失败');
-        this.fillBlankQuiz = await response.json();
+        try {
+            const response = await fetch(`${this.apiBase}/fill-blank/quiz/${this.quizId}`, {
+                headers: this.getAuthHeaders()
+            });
+            if (response.ok) {
+                this.fillBlankQuiz = await response.json();
+                return;
+            }
+            // API 返回 404，尝试使用测验数据中的填空题信息
+            console.warn('填空题详情 API 返回 404，尝试使用测验数据中的信息:', this.quizId);
+        } catch (error) {
+            console.error('填空题 API 请求失败:', error);
+        }
+        
+        // 尝试使用测验数据中的填空题信息
+        if (this.quiz && this.quiz.fillBlankQuiz) {
+            this.fillBlankQuiz = this.quiz.fillBlankQuiz;
+            console.log('使用测验数据中的填空题信息:', this.fillBlankQuiz);
+            return;
+        }
+        
+        // 如果都没有，创建一个基本的填空题数据结构避免崩溃
+        console.error('无法加载填空题数据，创建空数据结构');
+        this.fillBlankQuiz = {
+            quizId: this.quizId,
+            fullText: this.quiz?.description || '暂无内容',
+            displayText: '___',
+            blanksCount: 0,
+            blanks: []
+        };
     }
 
     /**
@@ -694,7 +756,6 @@ class QuizController {
             showRatingPanel();
         }
         this.saveToLocalHistory(stats);
-        this.saveRecordToServer(stats);
     }
 
     async saveRecordToServer(stats) {

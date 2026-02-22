@@ -251,7 +251,8 @@
                 console.log('提交评级 - 当前状态:', status, '分组:', groupId);
                 let result;
 
-                if (status === 'NEW' || status === 'LEARNING' || status === 'RELEARNING') {
+                // NEW 和 LEARNING 状态使用学习评级 API，其他状态（RELEARNING/REVIEW）使用复习评级 API
+                if (status === 'NEW' || status === 'LEARNING') {
                     result = await ReviewAPI.submitLearnRating(quizId, rating, groupId);
                 } else {
                     result = await ReviewAPI.submitReviewRating(quizId, rating, groupId);
@@ -266,8 +267,19 @@
                     console.log('显示完成弹窗');
                     showReviewCompletionModal();
                 } else {
-                    console.log('没有下一个测验，返回复习页');
-                    returnToReviewPage();
+                    console.log('后端未返回 nextQuizId，尝试从 sessionStorage 获取');
+                    // 尝试从 sessionStorage 获取下一个测验
+                    const reviewList = JSON.parse(sessionStorage.getItem('reviewQuizList') || '[]');
+                    const currentIndex = reviewList.indexOf(parseInt(quizId));
+                    if (currentIndex >= 0 && currentIndex < reviewList.length - 1) {
+                        const nextQuizId = reviewList[currentIndex + 1];
+                        console.log('从 sessionStorage 获取下一个测验:', nextQuizId);
+                        const groupParam = groupId ? `&groupId=${groupId}` : '';
+                        window.location.href = `index.html?id=${nextQuizId}&mode=review${groupParam}`;
+                    } else {
+                        console.log('没有下一个测验，返回复习页');
+                        returnToReviewPage();
+                    }
                 }
             } catch (error) {
                 console.error('提交评级失败:', error);
@@ -291,16 +303,28 @@
             const groupId = params.get('groupId');
             const currentQuizId = params.get('id');
             
-            try {
-                const next = await ReviewAPI.getNextQuiz(groupId, currentQuizId);
-                if (next && next.quizId) {
-                    const groupParam = groupId ? `&groupId=${groupId}` : '';
-                    window.location.href = `index.html?id=${next.quizId}&mode=review${groupParam}`;
+            // 如果有 groupId，从后端获取下一个；如果没有 groupId（全局复习），从 sessionStorage 获取
+            if (groupId) {
+                try {
+                    const next = await ReviewAPI.getNextQuiz(groupId, currentQuizId);
+                    if (next && next.quizId) {
+                        window.location.href = `index.html?id=${next.quizId}&mode=review&groupId=${groupId}`;
+                    } else {
+                        showReviewCompletionModal();
+                    }
+                } catch (error) {
+                    console.error('获取下一个测验失败:', error);
+                }
+            } else {
+                // 从 sessionStorage 获取下一个（全局复习）
+                const reviewList = JSON.parse(sessionStorage.getItem('reviewQuizList') || '[]');
+                const currentIndex = reviewList.indexOf(parseInt(currentQuizId));
+                if (currentIndex >= 0 && currentIndex < reviewList.length - 1) {
+                    const nextQuizId = reviewList[currentIndex + 1];
+                    window.location.href = `index.html?id=${nextQuizId}&mode=review`;
                 } else {
                     showReviewCompletionModal();
                 }
-            } catch (error) {
-                console.error('获取下一个测验失败:', error);
             }
         }
 

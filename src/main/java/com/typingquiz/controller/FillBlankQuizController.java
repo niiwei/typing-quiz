@@ -25,8 +25,14 @@ public class FillBlankQuizController {
      * 获取测验的填空题详情
      */
     @GetMapping("/quiz/{quizId}")
-    public FillBlankQuizDTO getByQuizId(@PathVariable Long quizId) {
-        return fillBlankQuizService.getDTOByQuizId(quizId);
+    public ResponseEntity<FillBlankQuizDTO> getByQuizId(@PathVariable Long quizId) {
+        try {
+            FillBlankQuizDTO dto = fillBlankQuizService.getDTOByQuizId(quizId);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
+            // 填空题不存在，返回404
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**
