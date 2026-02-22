@@ -690,9 +690,8 @@ class QuizController {
         }
 
         UIRenderer.showResults(stats, missedAnswers);
-        if (this.isReviewMode) {
-            const panel = document.getElementById('rating-panel');
-            if (panel) { panel.style.display = 'block'; await this.loadQuizStatus(); }
+        if (this.isReviewMode && typeof showRatingPanel === 'function') {
+            showRatingPanel();
         }
         this.saveToLocalHistory(stats);
         this.saveRecordToServer(stats);
