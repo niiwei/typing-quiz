@@ -181,15 +181,13 @@
     </style>
 </head>
     <nav class="navbar">
-        <a href="home.html" class="navbar-brand">Typing Quiz</a>
-        <div class="navbar-nav">
-            <a href="home.html" class="nav-link">首页</a>
-            <a href="quizzes.html" class="nav-link active">测验</a>
-            <a href="create.html" class="nav-link">创建</a>
-            <a href="manage.html" class="nav-link">管理</a>
-            <div id="userSection" style="display: none; margin-left: 1rem;">
-                <button onclick="Auth.logout()" class="btn btn-small" style="padding: 0.2rem 0.5rem; border-color: var(--error); color: var(--error);">退出</button>
-            </div>
+        <a href="home.html" class="logo">打字测验</a>
+        <div class="nav-links">
+            <a href="home.html">首页</a>
+            <a href="quizzes.html" class="active">测验</a>
+            <a href="create.html">创建</a>
+            <a href="manage.html">管理</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error);">退出</a>
         </div>
     </nav>
 

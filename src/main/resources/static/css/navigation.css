@@ -1,50 +1,49 @@
-/* 导航栏样式 - Minimalist Zen */
+/* 统一导航样式 - Minimalist Zen */
 .navbar {
-    background: var(--bg);
-    padding: 2rem;
-    border-bottom: 1px solid var(--border);
+    padding: 2rem 4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
+    background: var(--bg);
     z-index: 100;
 }
 
-.navbar-brand {
+.logo {
     font-weight: 800;
     letter-spacing: -0.02em;
     font-size: 1.1rem;
     text-transform: uppercase;
-    color: var(--text-main);
+    cursor: pointer;
     text-decoration: none;
+    color: var(--text-main);
 }
 
-.navbar-nav {
+.nav-links {
     display: flex;
     gap: 2rem;
     align-items: center;
 }
 
-.nav-link {
+.nav-links a {
     color: var(--text-muted);
     text-decoration: none;
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.1em;
-    text-transform: uppercase;
     transition: color 0.2s;
-    padding: 0;
-    border-radius: 0;
+    text-transform: uppercase;
 }
 
-.nav-link:hover, .nav-link.active {
-    background: transparent;
+.nav-links a:hover, .nav-links a.active {
     color: var(--text-main);
 }
 
-.nav-link.active {
-    border-bottom: 2px solid var(--accent);
+.nav-links a.active {
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 2px;
 }
 
 /* 移除旧的渐变和复杂样式 */
