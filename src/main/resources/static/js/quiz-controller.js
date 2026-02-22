@@ -411,6 +411,8 @@ class QuizController {
             this.groupQuizzes = quizIds.map(id => ({ id, title: '' }));
             // 异步加载测验标题
             this.loadQuizTitles(quizIds);
+            // 验证列表有效性（异步清理已完成的测验）
+            this.validateAndCleanStoredList();
         } else {
             // 没有存储的列表，从 API 获取
             const response = await fetch(`${this.apiBase}/review/quizzes`, {
@@ -427,6 +429,41 @@ class QuizController {
         }
         
         if (this.groupQuizzes.length === 0) throw new Error('今日没有待复习测验');
+    }
+    
+    /**
+     * 验证并清理已存储的列表，移除已完成的测验
+     */
+    async validateAndCleanStoredList() {
+        try {
+            const response = await fetch(`${this.apiBase}/review/quizzes`, {
+                headers: this.getAuthHeaders()
+            });
+            if (!response.ok) return;
+            const items = await response.json();
+            const dueItems = items.filter(item => item.label === 'PENDING_LEARN' || item.label === 'PENDING_REVIEW');
+            const dueQuizIds = dueItems.map(item => item.quizId);
+            
+            // 获取当前存储的列表
+            const storedList = sessionStorage.getItem('reviewQuizList');
+            if (!storedList) return;
+            
+            const storedIds = JSON.parse(storedList);
+            // 只保留仍然有效的测验ID
+            const validIds = storedIds.filter(id => dueQuizIds.includes(id));
+            
+            // 如果有变化，更新存储
+            if (validIds.length !== storedIds.length) {
+                console.log(`[复习进度] 清理已完成测验: ${storedIds.length} -> ${validIds.length}`);
+                sessionStorage.setItem('reviewQuizList', JSON.stringify(validIds));
+                // 更新当前列表
+                this.groupQuizzes = validIds.map(id => ({ id, title: '' }));
+                // 重新渲染进度
+                this.renderGroupReviewProgress();
+            }
+        } catch (e) {
+            console.error('验证存储列表失败:', e);
+        }
     }
 
     /**
