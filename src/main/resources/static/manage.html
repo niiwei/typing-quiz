@@ -227,20 +227,27 @@
 
     <!-- 分组模态框 -->
     <div id="group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-        <div style="background: white; padding: 2rem; max-width: 500px; width: 90%; border-radius: 4px;">
+        <div style="background: white; padding: 2rem; max-width: 600px; width: 90%; border-radius: 4px; max-height: 80vh; overflow-y: auto;">
             <h3 id="group-modal-title" style="margin-bottom: 1.5rem; font-weight: 300;">新建分组</h3>
             <input type="hidden" id="group-id">
             <div class="form-group">
-                <label class="form-label">名称 *</label>
+                <label class="form-label">分组名称 *</label>
                 <input type="text" id="group-name" class="form-input" required>
             </div>
             <div class="form-group">
                 <label class="form-label">描述</label>
-                <textarea id="group-description" class="form-input" style="height: 60px;"></textarea>
+                <textarea id="group-description" class="form-input" style="height: 80px;" placeholder="请输入分组描述..."></textarea>
+            </div>
+            <!-- 测验选择区域（编辑时显示） -->
+            <div class="form-group" id="quiz-selection-area" style="display: none;">
+                <label class="form-label">选择要包含的测验</label>
+                <div id="quiz-checkboxes" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 0.75rem; border-radius: 4px;">
+                    <!-- 动态填充测验复选框 -->
+                </div>
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
                 <button class="btn btn-small" onclick="closeGroupModal()">取消</button>
-                <button class="btn btn-small" onclick="saveGroup()">确认</button>
+                <button class="btn btn-small" onclick="saveGroup()">保存</button>
             </div>
         </div>
     </div>
@@ -592,7 +599,38 @@
             document.getElementById('group-name').value = group.name;
             document.getElementById('group-description').value = group.description || '';
             document.getElementById('group-modal-title').textContent = '编辑分组';
+            
+            // 显示测验选择区域并填充数据
+            document.getElementById('quiz-selection-area').style.display = 'block';
+            renderQuizCheckboxes(group.quizIds || []);
+            
             showGroupModal();
+        }
+
+        // 渲染测验复选框列表
+        function renderQuizCheckboxes(selectedQuizIds) {
+            const container = document.getElementById('quiz-checkboxes');
+            const selectedSet = new Set(selectedQuizIds.map(id => parseInt(id)));
+            
+            if (allQuizzes.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.75rem;">暂无测验</div>';
+                return;
+            }
+            
+            container.innerHTML = allQuizzes.map(quiz => {
+                const isChecked = selectedSet.has(quiz.id) ? 'checked' : '';
+                const answerCount = quiz.totalAnswers || 0;
+                return `
+                    <div style="display: flex; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                        <input type="checkbox" id="quiz-cb-${quiz.id}" value="${quiz.id}" ${isChecked} 
+                            style="margin-right: 0.75rem; cursor: pointer;">
+                        <label for="quiz-cb-${quiz.id}" style="cursor: pointer; font-size: 0.8rem; flex: 1;">
+                            ${quiz.title}
+                            <span style="color: var(--text-muted); font-size: 0.7rem;">(${answerCount}个答案)</span>
+                        </label>
+                    </div>
+                `;
+            }).join('');
         }
 
         // 编辑测验
@@ -616,7 +654,6 @@
             }
         }
 
-        // 分组模态框操作
         function showGroupModal() {
             document.getElementById('group-modal').style.display = 'flex';
         }
@@ -626,6 +663,8 @@
             document.getElementById('group-id').value = '';
             document.getElementById('group-name').value = '';
             document.getElementById('group-description').value = '';
+            document.getElementById('quiz-selection-area').style.display = 'none';
+            document.getElementById('quiz-checkboxes').innerHTML = '';
             document.getElementById('group-modal-title').textContent = '新建分组';
         }
 
@@ -639,7 +678,20 @@
                 return;
             }
 
-            const data = { name, description };
+            // 收集选中的测验ID
+            const selectedQuizIds = [];
+            if (id) { // 编辑模式时才收集
+                document.querySelectorAll('#quiz-checkboxes input[type="checkbox"]:checked').forEach(cb => {
+                    selectedQuizIds.push(parseInt(cb.value));
+                });
+            }
+
+            const data = { 
+                name, 
+                description,
+                quizIds: selectedQuizIds
+            };
+            
             const method = id ? 'PUT' : 'POST';
             const url = id ? `/api/groups/${id}` : '/api/groups';
 
@@ -652,6 +704,8 @@
                 if (res.ok) {
                     closeGroupModal();
                     await loadData();
+                } else {
+                    alert('保存失败');
                 }
             } catch (e) {
                 alert('保存失败');

@@ -21,10 +21,10 @@
 
     <div id="quiz-container" class="fade-in">
         <div class="manage-header">
-            <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">创建新测验</h1>
+            <h1 id="page-title" style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">创建新测验</h1>
             <div style="display: flex; gap: 1rem;">
                 <button class="btn btn-small" style="border-color: var(--border);" onclick="showImportModal()">导入 JSON</button>
-                <button class="btn btn-small" onclick="saveQuiz()">保存测验</button>
+                <button class="btn btn-small" id="save-btn" onclick="saveQuiz()">保存测验</button>
             </div>
         </div>
 
@@ -108,8 +108,12 @@
     </div>
 
     <script src="js/api.js"></script>
-    <script src="js/manage.js"></script>
     <script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const editQuizId = urlParams.get('id');
+        let currentQuizData = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             if (!Auth.isLoggedIn()) {
                 window.location.href = 'login.html';
@@ -127,7 +131,59 @@
                     select.appendChild(opt);
                 });
             } catch (e) { console.error('加载分组失败'); }
+            
+            // 如果是编辑模式，加载测验数据
+            if (editQuizId) {
+                await loadQuizForEditing(editQuizId);
+            }
         });
+
+        // 加载测验数据用于编辑
+        async function loadQuizForEditing(id) {
+            try {
+                const res = await fetch(`/api/quizzes/${id}`, { headers: Auth.getAuthHeaders() });
+                if (!res.ok) {
+                    alert('加载测验失败');
+                    return;
+                }
+                
+                const quiz = await res.json();
+                currentQuizData = quiz;
+                
+                // 更新页面标题
+                document.getElementById('page-title').textContent = '编辑测验';
+                document.getElementById('save-btn').textContent = '更新测验';
+                document.title = '编辑测验 - Typing Quiz';
+                
+                // 填充表单数据
+                document.getElementById('quiz-title').value = quiz.title || '';
+                document.getElementById('quiz-description').value = quiz.description || '';
+                document.getElementById('quiz-time-limit').value = quiz.timeLimit || '';
+                
+                // 设置测验类型
+                const typeRadio = document.querySelector(`input[name="quiz-type"][value="${quiz.quizType}"]`);
+                if (typeRadio) {
+                    typeRadio.checked = true;
+                    toggleTypeFields();
+                }
+                
+                // 填充类型特定数据
+                if (quiz.quizType === 'TYPING' && quiz.answers) {
+                    // 将答案数组转换为文本格式
+                    const answersText = quiz.answers.map(a => {
+                        return a.comment ? `${a.content}##${a.comment}` : a.content;
+                    }).join('\n');
+                    document.getElementById('quiz-answers').value = answersText;
+                } else if (quiz.quizType === 'FILL_BLANK' && quiz.content) {
+                    document.getElementById('fill-blank-full-text').value = quiz.content;
+                    updateFillPreview();
+                }
+                
+            } catch (e) {
+                console.error('加载测验失败:', e);
+                alert('加载测验失败');
+            }
+        }
 
         function toggleTypeFields() {
             const type = document.querySelector('input[name="quiz-type"]:checked').value;
@@ -214,25 +270,35 @@
             }
 
             try {
-                const response = await fetch('/api/quizzes', {
-                    method: 'POST',
+                // 根据是否有editQuizId判断是创建还是更新
+                const method = editQuizId ? 'PUT' : 'POST';
+                const url = editQuizId ? `/api/quizzes/${editQuizId}` : '/api/quizzes';
+                
+                const response = await fetch(url, {
+                    method,
                     headers: Auth.getAuthHeaders(),
                     body: JSON.stringify(quizData)
                 });
                 
                 if (response.ok) {
-                    const quiz = await response.json();
+                    const result = await response.json();
+                    const savedQuizId = editQuizId || result.id;
+                    
                     if (groupId) {
                         // 如果选了分组，关联到分组
-                        await fetch(`/api/groups/${groupId}/quizzes/${quiz.id}`, {
+                        await fetch(`/api/groups/${groupId}/quizzes/${savedQuizId}`, {
                             method: 'POST',
                             headers: Auth.getAuthHeaders()
                         });
                     }
-                    alert('保存成功');
+                    alert(editQuizId ? '更新成功' : '保存成功');
                     window.location.href = 'manage.html';
+                } else {
+                    alert(editQuizId ? '更新失败' : '保存失败');
                 }
-            } catch (e) { alert('保存失败'); }
+            } catch (e) { 
+                alert(editQuizId ? '更新失败' : '保存失败'); 
+            }
         }
     </script>
 </body>
