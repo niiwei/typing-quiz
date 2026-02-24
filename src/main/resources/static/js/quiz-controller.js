@@ -509,13 +509,27 @@ class QuizController {
     resetQuizUI() {
         this.foundAnswers.clear();
         this.filledBlanks.clear();
+        
+        // 重置输入框
         const input = document.getElementById('answer-input');
         if (input) {
             input.value = '';
             input.disabled = false;
         }
+        
+        // 重置放弃按钮
         const giveUpBtn = document.getElementById('give-up-btn');
         if (giveUpBtn) giveUpBtn.disabled = false;
+        
+        // 隐藏结果面板
+        const resultsPanel = document.getElementById('results-panel');
+        if (resultsPanel) resultsPanel.style.display = 'none';
+        
+        // 隐藏评级面板（复习模式）
+        const ratingPanel = document.getElementById('rating-panel');
+        if (ratingPanel) ratingPanel.style.display = 'none';
+        
+        // 重置反馈消息
         UIRenderer.showFeedback('', '');
     }
 

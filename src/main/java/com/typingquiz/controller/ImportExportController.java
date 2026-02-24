@@ -65,6 +65,26 @@ public class ImportExportController {
                 .body(dtos);
     }
 
+    @PostMapping("/quizzes/export")
+    public ResponseEntity<List<QuizDTO>> exportQuizzesByIds(@RequestBody List<Long> quizIds, HttpServletRequest request) {
+        Long userId = getUserIdFromRequest(request);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<Quiz> quizzes = quizService.getAllQuizzes(userId);
+        // 只返回指定的测验
+        List<Quiz> filtered = quizzes.stream()
+                .filter(q -> quizIds.contains(q.getId()))
+                .collect(Collectors.toList());
+        List<QuizDTO> dtos = filtered.stream()
+                .map(quizService::convertToDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"quizzes_batch.json\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(dtos);
+    }
+
     @GetMapping("/group/{groupId}/export")
     public ResponseEntity<List<QuizDTO>> exportQuizzesByGroup(@PathVariable Long groupId, HttpServletRequest request) {
         try {

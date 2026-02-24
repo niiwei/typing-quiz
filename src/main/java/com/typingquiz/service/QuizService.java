@@ -7,13 +7,14 @@ import com.typingquiz.dto.FillBlankQuizDTO;
 import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.dto.QuizResponseDTO;
 import com.typingquiz.entity.Answer;
+import com.typingquiz.entity.FillBlankQuiz;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.entity.QuizGroup;
 import com.typingquiz.entity.QuizType;
-import com.typingquiz.repository.AnswerRepository;
-import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.entity.QuizReviewStatus;
 import com.typingquiz.entity.ReviewStatus;
+import com.typingquiz.repository.AnswerRepository;
+import com.typingquiz.repository.FillBlankQuizRepository;
 import com.typingquiz.repository.QuizGroupRepository;
 import com.typingquiz.repository.QuizRepository;
 import com.typingquiz.repository.QuizReviewStatusRepository;
@@ -103,28 +104,38 @@ public class QuizService {
             }
         } else {
             // 打字题：添加答案
-            logger.info("导入打字题: {}, answerList={}, answers={}", 
+            logger.info("导入打字题: {}, answerList={}", 
                 quizDTO.getTitle(), 
-                quizDTO.getAnswerList() != null ? quizDTO.getAnswerList().size() : "null",
-                quizDTO.getAnswers() != null ? quizDTO.getAnswers().size() : "null");
+                quizDTO.getAnswerList() != null ? quizDTO.getAnswerList().size() : "null");
+            
+            // 用于去重已添加的答案内容
+            java.util.Set<String> addedAnswers = new java.util.HashSet<>();
             
             if (quizDTO.getAnswerList() != null && !quizDTO.getAnswerList().isEmpty()) {
                 // 新格式：包含 content 和 comment
                 for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
                     if (answerDTO.getContent() != null && !answerDTO.getContent().trim().isEmpty()) {
-                        Answer answer = new Answer(answerDTO.getContent());
-                        answer.setComment(answerDTO.getComment());
-                        quiz.addAnswer(answer);
-                        logger.info("添加答案: {}", answerDTO.getContent());
+                        String content = answerDTO.getContent().trim();
+                        if (!addedAnswers.contains(content)) {
+                            Answer answer = new Answer(content);
+                            answer.setComment(answerDTO.getComment());
+                            quiz.addAnswer(answer);
+                            addedAnswers.add(content);
+                            logger.info("添加答案: {}", content);
+                        }
                     }
                 }
             } else if (quizDTO.getAnswers() != null) {
-                // 旧格式：纯字符串数组
+                // 旧格式：纯字符串数组（兼容旧数据）
                 for (String answerContent : quizDTO.getAnswers()) {
                     if (answerContent != null && !answerContent.trim().isEmpty()) {
-                        Answer answer = new Answer(answerContent);
-                        quiz.addAnswer(answer);
-                        logger.info("添加答案: {}", answerContent);
+                        String content = answerContent.trim();
+                        if (!addedAnswers.contains(content)) {
+                            Answer answer = new Answer(content);
+                            quiz.addAnswer(answer);
+                            addedAnswers.add(content);
+                            logger.info("添加答案: {}", content);
+                        }
                     }
                 }
             }
@@ -325,11 +336,18 @@ public class QuizService {
         // 查询测验列表
         List<Quiz> quizzes = quizRepository.findByUserIdSimple(userId);
         
-        // 批量查询答案数量
+        // 批量查询打字题答案数量
         List<Object[]> answerCounts = quizRepository.findAnswerCountsByUserId(userId);
         Map<Long, Integer> countMap = new HashMap<>();
         for (Object[] row : answerCounts) {
             countMap.put((Long) row[0], ((Long) row[1]).intValue());
+        }
+        
+        // 批量查询填空题挖空数量
+        List<FillBlankQuiz> fillBlankQuizzes = fillBlankQuizRepository.findAll();
+        Map<Long, Integer> blanksCountMap = new HashMap<>();
+        for (FillBlankQuiz fb : fillBlankQuizzes) {
+            blanksCountMap.put(fb.getQuizId(), fb.getBlanksCount());
         }
         
         // 组装DTO
@@ -339,7 +357,14 @@ public class QuizService {
             dto.setTitle(quiz.getTitle());
             dto.setDescription(quiz.getDescription());
             dto.setTimeLimit(quiz.getTimeLimit());
-            dto.setTotalAnswers(countMap.getOrDefault(quiz.getId(), 0));
+            
+            // 填空题使用blanksCount，打字题使用answers数量
+            if (quiz.getQuizType() == QuizType.FILL_BLANK) {
+                dto.setTotalAnswers(blanksCountMap.getOrDefault(quiz.getId(), 0));
+            } else {
+                dto.setTotalAnswers(countMap.getOrDefault(quiz.getId(), 0));
+            }
+            
             dto.setCreatedAt(quiz.getCreatedAt());
             dto.setQuizType(quiz.getQuizType());
             return dto;
@@ -416,11 +441,23 @@ public class QuizService {
             }
         } else {
             // 打字题：更新答案列表
-            if (quizDTO.getAnswers() != null) {
+            // 检查answerList（包含注释的答案列表）而非answers
+            if (quizDTO.getAnswerList() != null && !quizDTO.getAnswerList().isEmpty()) {
                 // 清除旧答案
                 quiz.getAnswers().clear();
                 
                 // 添加新答案
+                for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
+                    if (answerDTO.getContent() != null && !answerDTO.getContent().trim().isEmpty()) {
+                        Answer answer = new Answer(answerDTO.getContent());
+                        answer.setComment(answerDTO.getComment());
+                        quiz.addAnswer(answer);
+                    }
+                }
+            } else if (quizDTO.getAnswers() != null) {
+                // 兼容旧版前端，只包含答案内容
+                quiz.getAnswers().clear();
+                
                 for (String answerContent : quizDTO.getAnswers()) {
                     if (answerContent != null && !answerContent.trim().isEmpty()) {
                         Answer answer = new Answer(answerContent);
@@ -525,15 +562,13 @@ public class QuizService {
             dto.setGroups(groupNames);
         }
 
-        List<String> answers = quiz.getAnswers().stream()
-                .map(Answer::getContent)
-                .collect(Collectors.toList());
-        dto.setAnswers(answers);
-
-        List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
-                .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
-                .collect(Collectors.toList());
-        dto.setAnswerList(answerList);
+        // 只保留answerList字段用于导出（包含注释信息）
+        if (quiz.getAnswers() != null && !quiz.getAnswers().isEmpty()) {
+            List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
+                    .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
+                    .collect(Collectors.toList());
+            dto.setAnswerList(answerList);
+        }
 
         if (quiz.getQuizType() == QuizType.FILL_BLANK) {
             fillBlankQuizRepository.findByQuizId(quiz.getId()).ifPresent(fillBlankQuiz -> {

@@ -277,8 +277,8 @@
                         const groupParam = groupId ? `&groupId=${groupId}` : '';
                         window.location.href = `index.html?id=${nextQuizId}&mode=review${groupParam}`;
                     } else {
-                        console.log('没有下一个测验，返回复习页');
-                        returnToReviewPage();
+                        console.log('没有下一个测验，显示完成弹窗');
+                        showReviewCompletionModal();
                     }
                 }
             } catch (error) {

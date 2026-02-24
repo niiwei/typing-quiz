@@ -236,6 +236,22 @@ input[type="submit"]:hover {
     box-shadow: none;
     transform: none;
 }
+
+/* 答案内容和注释在同一行显示 */
+.answer-item .answer-content {
+    display: inline;
+    white-space: nowrap;
+}
+
+.answer-item .answer-comment {
+    display: inline;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-left: 0.25rem;
+    white-space: nowrap;
+}
+
 .answer-item.missed {
     color: var(--error);
     font-weight: 600;

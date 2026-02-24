@@ -1,6 +1,7 @@
 package com.typingquiz.dto;
 
 import com.typingquiz.entity.QuizType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 /**
@@ -95,7 +96,9 @@ public class QuizDTO {
 
     /**
      * 获取包含注释的答案列表（用于导出）
+     * @JsonIgnore 避免重复导出 answersWithComments 字段
      */
+    @JsonIgnore
     public List<AnswerCreateDTO> getAnswersWithComments() {
         if (answerList != null && !answerList.isEmpty()) {
             return answerList;

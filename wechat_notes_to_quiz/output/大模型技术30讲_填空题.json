@@ -1,0 +1,440 @@
+[
+  {
+    "title": "嵌入向量：高维转低维向量",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "嵌入向量简称嵌入，能够将高维数据编码为低维向量。我们可以通过嵌入方法，将（稀疏的）独热编码[插图]转化为（非稀疏的）连续稠密向量",
+      "displayText": "____简称嵌入，能够将高维数据编码为低维向量。我们可以通过嵌入方法，将（稀疏的）____[插图]转化为（非稀疏的）连续稠密向量",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 4,
+          "correctAnswer": "嵌入向量",
+          "comment": null
+        },
+        {
+          "startIndex": 41,
+          "endIndex": 45,
+          "correctAnswer": "独热编码",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "嵌入的语义相似性编码特性",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "嵌入的一个基本特性是在编码时会关注输入间的距离或输入相似性。这意味着嵌入会考虑输入的语义，让相似的数据在嵌入空间中距离更近。",
+      "displayText": "____的一个基本特性是在编码时会关注输入间的距离或输入相似性。这意味着嵌入会考虑输入的语义，让相似的数据在嵌入空间中距离更近。",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 2,
+          "correctAnswer": "嵌入",
+          "comment": null
+        }
+      ],
+      "blanksCount": 1
+    }
+  },
+  {
+    "title": "自编码器的训练目标与特征编码",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "自编码器的训练目标在于重建输入图像，换句话说，就是要尽量减小输入图像与其重建输出之间的差异。为了达成这一目的，自编码器会尝试学习如何在潜空间中将相似输入（比如说猫的图片）的特征编码放得更近些",
+      "displayText": "____的训练目标在于重建输入图像，换句话说，就是要尽量减小输入图像与其重建输出之间的差异。为了达成这一目的，自编码器会尝试学习如何在____中将相似输入（比如说猫的图片）的特征编码放得更近些",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 4,
+          "correctAnswer": "自编码器",
+          "comment": null
+        },
+        {
+          "startIndex": 67,
+          "endIndex": 70,
+          "correctAnswer": "潜空间",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "表征优化数据处理易用性",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "表征融入了原始数据的一些基本特征和属性，使其在后续的数据分析和数据处理中都更易使用",
+      "displayText": "____融入了原始数据的一些基本特征和属性，使其在后续的数据分析和____中都更易使用",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 2,
+          "correctAnswer": "表征",
+          "comment": null
+        },
+        {
+          "startIndex": 35,
+          "endIndex": 39,
+          "correctAnswer": "数据处理",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "预训练模型适配鸟类数据集训练",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "在ImageNet这一通用数据集上完成预训练后，我们会基于该预训练模型继续训练，训练目标是一个更小、更具体，且含有我们感兴趣的鸟类图片的数据集（通常情况下，我们只需要改变分类任务特定的输出层，而预训练的网络结构可以照搬）",
+      "displayText": "在ImageNet这一通用____上完成预训练后，我们会基于该____继续训练，训练目标是一个更小、更具体，且含有我们感兴趣的鸟类图片的数据集（通常情况下，我们只需要改变分类任务特定的输出层，而预训练的网络结构可以照搬）",
+      "blanks": [
+        {
+          "startIndex": 30,
+          "endIndex": 35,
+          "correctAnswer": "预训练模型",
+          "comment": null
+        },
+        {
+          "startIndex": 12,
+          "endIndex": 15,
+          "correctAnswer": "数据集",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "自监督学习：无标签数据预训练",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "自监督学习是迁移学习的一种替代方案，它在无标签数据而非有标签数据上进行模型预训练。假设我们现在只有无标签数据集，也就是说我们只能基于数据本身的结构想办法生成标签，从而设计出神经网络能执行的预测任务",
+      "displayText": "____是迁移学习的一种替代方案，它在____而非有标签数据上进行模型预训练。假设我们现在只有无标签数据集，也就是说我们只能基于数据本身的结构想办法生成标签，从而设计出神经网络能执行的预测任务",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 5,
+          "correctAnswer": "自监督学习",
+          "comment": null
+        },
+        {
+          "startIndex": 18,
+          "endIndex": 23,
+          "correctAnswer": "无标签数据",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "小型神经网络无需自监督学习",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "对于只有两三层的感知机这样的小型神经网络来说，自监督学习通常是既不实用也不必要的",
+      "displayText": "对于只有两三层的感知机这样的____来说，____通常是既不实用也不必要的",
+      "blanks": [
+        {
+          "startIndex": 14,
+          "endIndex": 20,
+          "correctAnswer": "小型神经网络",
+          "comment": null
+        },
+        {
+          "startIndex": 19,
+          "endIndex": 24,
+          "correctAnswer": "自监督学习",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "自监督学习的两大分类",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "自监督学习主要分为两大类：自预测和对比自监督学习",
+      "displayText": "自监督学习主要分为两大类：____和____",
+      "blanks": [
+        {
+          "startIndex": 13,
+          "endIndex": 16,
+          "correctAnswer": "自预测",
+          "comment": null
+        },
+        {
+          "startIndex": 19,
+          "endIndex": 26,
+          "correctAnswer": "对比自监督学习",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "自监督学习之嵌入空间构建",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "在对比自监督学习中，我们则是训练神经网络学习一个嵌入空间，其中，相似的输入彼此接近，而不相似的输入则相距很远",
+      "displayText": "在对比____中，我们则是训练神经网络学习一个____，其中，相似的输入彼此接近，而不相似的输入则相距很远",
+      "blanks": [
+        {
+          "startIndex": 3,
+          "endIndex": 8,
+          "correctAnswer": "自监督学习",
+          "comment": null
+        },
+        {
+          "startIndex": 22,
+          "endIndex": 26,
+          "correctAnswer": "嵌入空间",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "神经网络训练之彩票假设",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "彩票假设是一个关于神经网络训练的概念，它认为在一个随机初始化的神经网络中，存在着这样一个子网络（也称为“中奖彩票”）：如果单独训练，在训练步骤相同的情况下，能在测试集上达到与完整的网络一样高的正确率",
+      "displayText": "____是一个关于____训练的概念，它认为在一个随机初始化的神经网络中，存在着这样一个子网络（也称为“中奖彩票”）：如果单独训练，在训练步骤相同的情况下，能在测试集上达到与完整的网络一样高的正确率",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 4,
+          "correctAnswer": "彩票假设",
+          "comment": null
+        },
+        {
+          "startIndex": 9,
+          "endIndex": 13,
+          "correctAnswer": "神经网络",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "寻中奖彩票需训练原始网络",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "到目前为止，仍没有办法在不训练原始网络的情况下找到这些中奖彩票。如果算上剪枝步骤，这个训练过程甚至可能比常规过程成本还高",
+      "displayText": "到目前为止，仍没有办法在不训练____的情况下找到这些____。如果算上剪枝步骤，这个训练过程甚至可能比常规过程成本还高",
+      "blanks": [
+        {
+          "startIndex": 27,
+          "endIndex": 31,
+          "correctAnswer": "中奖彩票",
+          "comment": null
+        },
+        {
+          "startIndex": 15,
+          "endIndex": 19,
+          "correctAnswer": "原始网络",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "注意力机制的起源与应用领域",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "注意力机制最初在2010年起源于图像识别领域，随后被引入循环神经网络，用于辅助长句翻译。",
+      "displayText": "____最初在2010年起源于图像识别领域，随后被引入____，用于辅助长句翻译。",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 5,
+          "correctAnswer": "注意力机制",
+          "comment": null
+        },
+        {
+          "startIndex": 26,
+          "endIndex": 32,
+          "correctAnswer": "循环神经网络",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "全连接层与注意力权重对比",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "全连接层的权重一旦经过训练，不论输入如何，都会保持固定不变。相比之下，图8-1下半部分所示的注意力权重则会根据输入内容的不同而变化，",
+      "displayText": "全连接层的权重一旦经过训练，不论输入如何，都会保持固定不变。相比之下，图8-1下半部分所示的____则会根据输入内容的不同而变化，",
+      "blanks": [
+        {
+          "startIndex": 46,
+          "endIndex": 51,
+          "correctAnswer": "注意力权重",
+          "comment": null
+        }
+      ],
+      "blanksCount": 1
+    }
+  },
+  {
+    "title": "生成式与判别式模型案例对比",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "能体现这两种方式之间差异的经典案例，就是比较朴素贝叶斯分类器和逻辑回归分类器。这两种分类器都能估算分类标签的条件概率分布[插图]，并且可用于分类任务。然而，我们认为逻辑回归是判别式模型，因为它直接对给定的输入特征的分类标签的条件概率分布[插图]进行模型构建，而不对输入数据和输出标签的潜在联合分布做出假设。朴素贝叶斯被认为是生成式模型，因为它对输入数据[插图]和输出标签[插图]的联合概率分布[插图]进行模型构建",
+      "displayText": "能体现这两种方式之间差异的经典案例，就是比较朴素贝叶斯分类器和逻辑回归分类器。这两种分类器都能估算分类标签的条件概率分布[插图]，并且可用于分类任务。然而，我们认为逻辑回归是____，因为它直接对给定的输入特征的分类标签的条件概率分布[插图]进行模型构建，而不对输入数据和输出标签的潜在联合分布做出假设。朴素贝叶斯被认为是____，因为它对输入数据[插图]和输出标签[插图]的联合概率分布[插图]进行模型构建",
+      "blanks": [
+        {
+          "startIndex": 87,
+          "endIndex": 92,
+          "correctAnswer": "判别式模型",
+          "comment": null
+        },
+        {
+          "startIndex": 160,
+          "endIndex": 165,
+          "correctAnswer": "生成式模型",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  },
+  {
+    "title": "GAN多样性差因模式崩溃",
+    "description": null,
+    "timeLimit": null,
+    "answers": null,
+    "answerList": null,
+    "groups": [
+      "大模型技术30讲"
+    ],
+    "quizType": "FILL_BLANK",
+    "fillBlankQuiz": {
+      "fullText": "GAN的另一个主要缺点是生成结果的多样性较差，这通常是由模式崩溃引起的。在这种情况下，生成器仅凭一小部分样本就能成功欺骗判别\n-- 来自微信读书",
+      "displayText": "____的另一个主要缺点是生成结果的多样性较差，这通常是由____引起的。在这种情况下，生成器仅凭一小部分样本就能成功欺骗判别\n-- 来自微信读书",
+      "blanks": [
+        {
+          "startIndex": 0,
+          "endIndex": 3,
+          "correctAnswer": "GAN",
+          "comment": null
+        },
+        {
+          "startIndex": 30,
+          "endIndex": 34,
+          "correctAnswer": "模式崩溃",
+          "comment": null
+        }
+      ],
+      "blanksCount": 2
+    }
+  }
+]

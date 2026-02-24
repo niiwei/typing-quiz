@@ -220,6 +220,22 @@
             </div>
         </div>
 
+        <!-- 批量操作栏 -->
+        <div id="batch-actions" style="display: none; margin-bottom: 1.5rem; padding: 1rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input type="checkbox" id="select-all-quizzes" onchange="toggleSelectAllQuizzes(this)" style="cursor: pointer;">
+                    <label for="select-all-quizzes" style="cursor: pointer; font-size: 0.75rem; color: var(--text-main);">全选</label>
+                    <span style="font-size: 0.65rem; color: var(--text-muted);">（仅选中展开分组的测验）</span>
+                    <span id="selected-count" style="font-size: 0.7rem; color: var(--text-muted);">已选择 0 项</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-small btn-secondary" onclick="batchExportQuizzes()">批量导出</button>
+                    <button class="btn btn-small btn-danger" onclick="batchDeleteQuizzes()">批量删除</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 分组列表 -->
         <div id="groups-container">
             <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.8rem; color: var(--text-muted);">加载中...</div>
@@ -261,6 +277,7 @@
         let expandedGroups = new Map();
         let activeGroupFilter = 'all';
         let activeTypeFilter = 'all';
+        let selectedQuizzes = new Set(); // 选中的测验ID集合
 
         // 初始化
         document.addEventListener('DOMContentLoaded', async () => {
@@ -472,10 +489,13 @@
                 const createdDate = quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString('zh-CN') : '未知';
                 const typeText = quiz.quizType === 'TYPING' ? '打字' : '填空';
                 const answerCount = quiz.totalAnswers || 0;
+                const isSelected = selectedQuizzes.has(quiz.id) ? 'checked' : '';
 
                 return `
-                    <div class="quiz-item">
-                        <div class="quiz-info">
+                    <div class="quiz-item" style="${isSelected ? 'background: var(--bg);' : ''}">
+                        <input type="checkbox" id="quiz-cb-${quiz.id}" value="${quiz.id}" ${isSelected} 
+                            onchange="toggleQuizSelection(${quiz.id})" style="margin-right: 0.75rem; cursor: pointer;">
+                        <div class="quiz-info" style="flex: 1;">
                             <span class="quiz-title">${quiz.title}</span>
                             <span class="quiz-meta">${typeText} • ${answerCount} 个答案 • 创建于 ${createdDate}</span>
                         </div>
@@ -487,6 +507,136 @@
                     </div>
                 `;
             }).join('');
+            
+            // 更新批量操作栏状态
+            updateBatchActions();
+        }
+
+        // 切换测验选择状态
+        function toggleQuizSelection(quizId) {
+            if (selectedQuizzes.has(quizId)) {
+                selectedQuizzes.delete(quizId);
+            } else {
+                selectedQuizzes.add(quizId);
+            }
+            updateBatchActions();
+            
+            // 更新对应测验项的样式
+            const cb = document.getElementById(`quiz-cb-${quizId}`);
+            const item = cb?.closest('.quiz-item');
+            if (item) {
+                item.style.background = cb.checked ? 'var(--bg)' : '#fff';
+            }
+        }
+
+        // 全选/取消全选 - 只选中当前可见的测验
+        function toggleSelectAllQuizzes(source) {
+            // 只选中当前在DOM中可见的测验复选框
+            const visibleCheckboxes = Array.from(document.querySelectorAll('[id^="quiz-cb-"]')).filter(cb => {
+                return cb.offsetParent !== null; // 只选择可见的元素
+            });
+            
+            visibleCheckboxes.forEach(cb => {
+                cb.checked = source.checked;
+                const quizId = parseInt(cb.value);
+                if (source.checked) {
+                    selectedQuizzes.add(quizId);
+                } else {
+                    selectedQuizzes.delete(quizId);
+                }
+                const item = cb.closest('.quiz-item');
+                if (item) {
+                    item.style.background = cb.checked ? 'var(--bg)' : '#fff';
+                }
+            });
+            updateBatchActions();
+        }
+
+        // 更新批量操作栏状态
+        function updateBatchActions() {
+            const batchActions = document.getElementById('batch-actions');
+            const selectedCount = document.getElementById('selected-count');
+            const selectAll = document.getElementById('select-all-quizzes');
+            
+            if (selectedQuizzes.size > 0) {
+                batchActions.style.display = 'block';
+            } else {
+                batchActions.style.display = 'none';
+            }
+            
+            selectedCount.textContent = `已选择 ${selectedQuizzes.size} 项`;
+            
+            // 更新全选复选框状态
+            const totalCheckboxes = document.querySelectorAll('#group-content input[type="checkbox"][id^="quiz-cb-"]').length;
+            const checkedCheckboxes = document.querySelectorAll('#group-content input[type="checkbox"][id^="quiz-cb-"]:checked').length;
+            if (totalCheckboxes > 0) {
+                selectAll.checked = checkedCheckboxes === totalCheckboxes;
+                selectAll.indeterminate = checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes;
+            }
+        }
+
+        // 批量导出测验
+        async function batchExportQuizzes() {
+            if (selectedQuizzes.size === 0) {
+                alert('请先选择要导出的测验');
+                return;
+            }
+            
+            const ids = Array.from(selectedQuizzes);
+            try {
+                const res = await fetch('/api/import-export/quizzes/export', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(ids)
+                });
+                if (!res.ok) { alert('导出失败'); return; }
+                const data = await res.json();
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quizzes_batch_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('导出失败: ' + e.message);
+            }
+        }
+
+        // 批量删除测验
+        async function batchDeleteQuizzes() {
+            if (selectedQuizzes.size === 0) {
+                alert('请先选择要删除的测验');
+                return;
+            }
+            
+            const count = selectedQuizzes.size;
+            if (!confirm(`确定要删除选中的 ${count} 个测验吗？此操作不可恢复。`)) return;
+            
+            const ids = Array.from(selectedQuizzes);
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const id of ids) {
+                try {
+                    const res = await fetch(`/api/quizzes/${id}`, { 
+                        method: 'DELETE', 
+                        headers: getAuthHeaders() 
+                    });
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (e) {
+                    failCount++;
+                }
+            }
+            
+            alert(`删除完成: 成功 ${successCount} 个, 失败 ${failCount} 个`);
+            selectedQuizzes.clear();
+            await loadData();
         }
 
         // 导出分组
@@ -551,17 +701,47 @@
                 
                 // 验证数据格式
                 for (const quiz of quizzes) {
-                    if (!quiz.title || (!quiz.answers && !quiz.answerList)) {
-                        alert('文件格式不正确,请确保包含title和answers字段');
+                    if (!quiz.title) {
+                        alert('文件格式不正确,请确保包含title字段');
                         return;
                     }
+                    // 打字题需要answers或answerList，填空题需要fillBlankQuiz
+                    const isFillBlank = quiz.quizType === 'FILL_BLANK';
+                    if (isFillBlank) {
+                        if (!quiz.fillBlankQuiz && !quiz.fullText) {
+                            alert('文件格式不正确,填空题需要fillBlankQuiz或fullText字段');
+                            return;
+                        }
+                    } else {
+                        if (!quiz.answers && !quiz.answerList) {
+                            alert('文件格式不正确,打字题需要answers或answerList字段');
+                            return;
+                        }
+                    }
                 }
+                
+                // 转换数据格式（兼容wechat_notes_to_quiz生成的格式）
+                const normalizedQuizzes = quizzes.map(quiz => {
+                    // 如果是填空题且没有fillBlankQuiz字段，但有fullText字段，需要转换
+                    if (quiz.quizType === 'FILL_BLANK' && !quiz.fillBlankQuiz && quiz.fullText) {
+                        return {
+                            ...quiz,
+                            fillBlankQuiz: {
+                                fullText: quiz.fullText,
+                                displayText: quiz.displayText || quiz.fullText,
+                                blanks: quiz.blanks || [],
+                                blanksCount: quiz.blanksCount || (quiz.blanks ? quiz.blanks.length : 0)
+                            }
+                        };
+                    }
+                    return quiz;
+                });
                 
                 // 导入
                 const response = await fetch('/api/import-export/quizzes/import', {
                     method: 'POST',
                     headers: getAuthHeaders(),
-                    body: JSON.stringify(quizzes)
+                    body: JSON.stringify(normalizedQuizzes)
                 });
                 
                 const result = await response.json();
