@@ -304,7 +304,8 @@ input[type="submit"]:hover {
 /* 首页统计 */
 .home-hero {
     text-align: center;
-    margin-bottom: 4rem;
+    padding: 4rem 0 3rem;
+    margin-bottom: 2rem;
 }
 .home-stats {
     display: flex;

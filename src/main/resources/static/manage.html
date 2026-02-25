@@ -197,13 +197,14 @@
     </nav>
 
     <div id="quiz-container" class="fade-in">
-        <div class="manage-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-            <h1 style="font-weight: 300; font-size: 1.2rem; letter-spacing: 0.1em;">测验与分组管理</h1>
-            <div style="display: flex; gap: 1rem;">
-                <button class="btn btn-small" onclick="showImportModal()">导入</button>
-                <button class="btn btn-small" onclick="exportAllQuizzes()">导出全部</button>
-                <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
-            </div>
+        <div class="page-header" style="text-align: center; padding: 2rem 0 3rem;">
+            <h1 style="font-weight: 300; font-size: 2rem; letter-spacing: 0.05em; color: var(--text-main); margin-bottom: 0.5rem;">测验与分组管理</h1>
+            <p style="font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.05em;">导入、导出和组织你的测验</p>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-bottom: 2rem;">
+            <button class="btn btn-small" onclick="showImportModal()">导入</button>
+            <button class="btn btn-small" onclick="exportAllQuizzes()">导出全部</button>
+            <button class="btn btn-small" onclick="showGroupModal()">新建分组</button>
         </div>
 
         <!-- 筛选器 -->

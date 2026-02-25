@@ -17,6 +17,23 @@
             background: var(--accent) !important;
             color: var(--bg) !important;
         }
+        /* 页面标题区 - 与创建页、管理页保持一致 */
+        .page-header {
+            text-align: center;
+            padding: 2rem 0 3rem;
+        }
+        .page-header h1 {
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+        .page-header .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
     </style>
 </head>
     <nav class="navbar">
@@ -33,7 +50,9 @@
     </nav>
 
     <div id="quiz-container">
-        <h1 style="font-weight: 300; letter-spacing: 0.2em; font-size: 1.2rem; margin-bottom: 2rem; text-align: center;">所有测验</h1>
+        <div class="page-header">
+            <h1>所有测验</h1>
+        </div>
 
         <!-- 模式切换: 单个 vs 分组 -->
         <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">

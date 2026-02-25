@@ -15,9 +15,23 @@
         }
         .home-hero {
             text-align: center;
-            margin-bottom: 4rem;
-            padding: 6rem 0 4rem;
+            padding: 4rem 0 3rem;
         }
+
+        .home-hero h1 {
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .home-hero .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
         .home-stats {
             display: flex;
             justify-content: center;
@@ -231,11 +245,9 @@
 
     <div id="home-container" class="fade-in">
         <section class="home-hero">
-            <div style="margin-bottom: 2rem;">
-                <h1 style="font-weight: 300; letter-spacing: 0.15em; font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">敲脑壳</h1>
-                <p style="font-size: 0.9rem; color: var(--text-muted); letter-spacing: 0.1em;">MindPop · 硬核记忆工具</p>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); max-width: 500px; margin: 0 auto 3rem; line-height: 1.6;">
+            <h1>敲脑壳</h1>
+            <p class="subtitle">MindPop · 硬核记忆工具</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); max-width: 500px; margin: 1.5rem auto 3rem; line-height: 1.6;">
                 专为复杂、长清单知识设计的「Anki 升级版」提取练习工具。<br>
                 强制主动输出，科学间隔复习，彻底杜绝自我欺骗。
             </p>
