@@ -270,7 +270,7 @@ public class QuizReviewService {
         // 更新状态
         status.setIntervalDays(intervalDays);
         status.setEaseFactor(easeFactor);
-        status.setNextReviewDate(LocalDateTime.now().plusDays(intervalDays));
+        status.setNextReviewDate(LocalDateTime.now(ZONE_ID).plusDays(intervalDays));
         status.setReviewCount(status.getReviewCount() + 1);
         
         // 如果完成复习，回到REVIEW状态

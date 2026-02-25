@@ -833,6 +833,15 @@ class QuizController {
         if (input) input.addEventListener('input', (e) => { if (this.isQuizActive) this.handleInput(e.target.value); });
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) restartBtn.addEventListener('click', () => location.reload());
+        
+        // 添加键盘快捷键：Delete键放弃测验
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && this.isQuizActive) {
+                e.preventDefault();
+                this.giveUp();
+            }
+        });
+        
         if (this.groupMode || this.isReviewMode) {
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'ArrowLeft') { e.preventDefault(); this.navigatePrevQuiz(); }
@@ -857,7 +866,12 @@ class QuizController {
 
     clearInput() {
         const input = document.getElementById('answer-input');
-        if (input) input.value = '';
+        if (input) {
+            input.value = '';
+            // 强制触发输入框刷新，确保完全清空
+            input.blur();
+            input.focus();
+        }
         setTimeout(() => UIRenderer.showFeedback('', ''), 1000);
     }
 
@@ -868,7 +882,7 @@ class QuizController {
     }
 
     giveUp() {
-        if (confirm('确定要放弃吗?将显示所有答案。')) this.endQuiz(true);
+        this.endQuiz(true);
     }
 
     async checkAnswer(input) {
@@ -916,8 +930,9 @@ class QuizController {
             .sort((a, b) => b.startIndex - a.startIndex);
 
         sortedBlanks.forEach(item => {
-            const wasOriginallyEmpty = !originallyFilledIndices.has(item.originalIndex);
-            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="giveup" data-was-empty="${wasOriginallyEmpty ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(item.correctAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
+            const wasOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
+            const wasOriginallyEmpty = !wasOriginallyFilled;
+            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="giveup" data-filled="${wasOriginallyFilled ? '1' : '0'}" data-was-empty="${wasOriginallyEmpty ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(item.correctAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
             result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
         });
         textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');

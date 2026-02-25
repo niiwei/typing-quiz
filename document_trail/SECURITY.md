@@ -1,6 +1,6 @@
 # 安全说明
 
-本文档描述 Typing Quiz 项目的安全政策、最佳实践和漏洞报告流程。
+本文档描述 敲脑壳 MindPop 项目的安全政策、最佳实践和漏洞报告流程。
 
 ## 1. 安全政策
 
@@ -152,4 +152,4 @@ server.servlet.session.timeout=30m
 
 **最后更新**：2026-02-20
 
-**维护者**：Typing Quiz Team
+**维护者**：敲脑壳 MindPop Team

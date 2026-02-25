@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimalist Zen - Typing Quiz Full Prototype</title>
+    <title>敲脑壳 MindPop - 原型设计</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -368,7 +368,7 @@
 <body>
 
     <nav>
-        <div class="logo" onclick="showSection('home')">打字测验</div>
+        <div class="logo" onclick="showSection('home')">敲脑壳 MindPop</div>
         <div class="nav-links">
             <a href="#" onclick="showSection('home')" id="nav-home">首页</a>
             <a href="#" onclick="showSection('quizzes')" id="nav-quizzes">测验</a>
@@ -516,7 +516,7 @@
             <div id="answers-grid" style="margin-bottom: 3rem;">
                 <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
                     <span class="answer-content">教知识不教思维</span>
-                    <span class="answer-comment">#如果一个人比喻成电脑...</span>
+                    <span class="answer-comment">#如果一个人比喻成电脑...#</span>
                 </div>
                 <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
                     <span class="answer-content">教解题不教远观</span>
@@ -526,7 +526,7 @@
                 </div>
                 <div class="answer-item missed" style="border-color: var(--error); color: var(--error);">
                     <span class="answer-content">只教受教不教创造</span>
-                    <span class="answer-comment">#=我定义...</span>
+                    <span class="answer-comment">#=我定义...#</span>
                 </div>
             </div>
 
@@ -560,7 +560,7 @@
                     <div class="missed-list">
                         <div class="missed-item">
                             <span class="missed-content">教知识不教思维</span>
-                            <span class="missed-comment">如果一个人比喻成电脑...</span>
+                            <span class="missed-comment">#如果一个人比喻成电脑...#</span>
                         </div>
                         <div class="missed-item">
                             <span class="missed-content">教解题不教远观</span>
@@ -570,7 +570,7 @@
                         </div>
                         <div class="missed-item">
                             <span class="missed-content">只教受教不教创造</span>
-                            <span class="missed-comment">=我定义...</span>
+                            <span class="missed-comment">#=我定义...#</span>
                         </div>
                     </div>
                 </div>
@@ -737,9 +737,9 @@
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <label class="form-label" style="margin-bottom: 0;">答案列表 (每行一个)</label>
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (#)</button>
                     </div>
-                    <textarea class="form-input" style="height: 150px;" placeholder="答案1##注释&#10;答案2"></textarea>
+                    <textarea class="form-input" style="height: 150px;" placeholder="答案1#注释#&#10;答案2"></textarea>
                 </div>
             </div>
 
@@ -748,9 +748,9 @@
                 <div class="form-group">
                     <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                         <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">🔍 挖空选中文字 ([])</button>
-                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (##)</button>
+                        <button class="btn btn-small" style="padding: 0.2rem 0.5rem; font-size: 0.6rem; border-color: var(--border); color: var(--text-muted);">📝 插入注释 (#)</button>
                     </div>
-                    <textarea class="form-input" style="height: 100px;" placeholder="请输入完整文本，例如：中国的首都是[北京##首都]"></textarea>
+                    <textarea class="form-input" style="height: 100px;" placeholder="请输入完整文本，例如：中国的首都是[北京#首都#]"></textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">填空预览</label>

@@ -46,7 +46,8 @@ public class ReviewStatsService {
         stats.setSuspendedCards(statusCounts.getOrDefault(ReviewStatus.SUSPENDED, 0L).intValue());
 
         // 今日到期数量
-        LocalDateTime now = LocalDateTime.now();
+        java.time.ZoneId ZONE_ID = java.time.ZoneId.of("Asia/Shanghai");
+        LocalDateTime now = LocalDateTime.now(ZONE_ID);
         long dueToday = allStatus.stream()
                 .filter(s -> s.getNextReviewDate() != null && !s.getNextReviewDate().isAfter(now))
                 .filter(s -> s.getStatus() != ReviewStatus.SUSPENDED)

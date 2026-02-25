@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typing Quiz - 打字测验</title>
+    <title>敲脑壳 MindPop - 测验</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
+    <!-- Brand Logo & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/brand/favicon/apple-touch-icon.png">
+    <style>
+    </style>
 </head>
 <body>
     <nav class="navbar">
-        <a href="home.html" class="logo">打字测验</a>
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
         <div class="nav-links">
             <a href="home.html">首页</a>
             <a href="quizzes.html">测验</a>
@@ -186,10 +193,10 @@
         // 更新评级按钮间隔显示
         function updateRatingIntervals(status) {
             const intervals = calculateIntervals(status);
-            document.querySelector('.rating-again span').textContent = intervals[1];
-            document.querySelector('.rating-hard span').textContent = intervals[2];
-            document.querySelector('.rating-good span').textContent = intervals[3];
-            document.querySelector('.rating-easy span').textContent = intervals[4];
+            document.querySelector('.rating-again span.interval').textContent = intervals[1];
+            document.querySelector('.rating-hard span.interval').textContent = intervals[2];
+            document.querySelector('.rating-good span.interval').textContent = intervals[3];
+            document.querySelector('.rating-easy span.interval').textContent = intervals[4];
         }
 
         // 计算间隔

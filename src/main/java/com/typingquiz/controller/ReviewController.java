@@ -229,7 +229,7 @@ public class ReviewController {
         
         // 构建结果
         List<QuizReviewItemDTO> result = new ArrayList<>();
-        LocalDateTime today = LocalDateTime.now();
+        LocalDateTime today = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         
         for (Quiz quiz : group.getQuizzes()) {
             QuizReviewStatus reviewStatus = statusMap.get(quiz.getId());
@@ -296,7 +296,7 @@ public class ReviewController {
             
             // 只返回属于当前用户且有效分组的测验
             List<QuizReviewItemDTO> result = new ArrayList<>();
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
             
             for (QuizReviewStatus status : allStatuses) {
                 // 从Map中获取测验信息（批量查询，无需逐个查询）

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>今日复习 - Typing Quiz</title>
+    <title>敲脑壳 MindPop - 今日复习</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
     <style>
@@ -455,7 +455,7 @@
 <body>
     <!-- 导航栏 -->
     <nav class="navbar">
-        <a href="home.html" class="navbar-brand">🎮 Typing Quiz</a>
+        <a href="home.html" class="navbar-brand">🎮 敲脑壳 MindPop</a>
         <div class="navbar-nav">
             <a href="home.html" class="nav-link">首页</a>
             <a href="quizzes.html" class="nav-link">测验列表</a>
@@ -973,13 +973,25 @@
             const diff = target - now;  // 毫秒差
             
             if (diff <= 0) {
-                return '即将到期';
+                // 已到期，显示已过期时间
+                const seconds = Math.abs(Math.floor(diff / 1000));
+                if (seconds < 60) {
+                    return `${seconds}秒前`;
+                }
+                const minutes = Math.floor(seconds / 60);
+                if (minutes < 60) {
+                    return `${minutes}分钟前`;
+                }
+                return '已到期';
             }
             
+            const seconds = Math.ceil(diff / 1000);
             const minutes = Math.ceil(diff / 60000);  // 转为分钟，向上取整
             const hours = Math.ceil(diff / 3600000);   // 转为小时，向上取整
             
-            if (minutes < 60) {
+            if (seconds < 60) {
+                return `${seconds}秒后`;
+            } else if (minutes < 60) {
                 return `${minutes}分钟后`;
             } else if (hours < 24) {
                 return `${hours}小时后`;

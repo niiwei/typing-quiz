@@ -21,7 +21,7 @@ class UIRenderer {
                 item.classList.add('found');
                 let displayText = answer.content;
                 if (answer.comment) {
-                    displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
+                    displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}#</span>`;
                 }
                 item.innerHTML = displayText;
             } else {
@@ -45,7 +45,7 @@ class UIRenderer {
             
             // 构建显示内容
             if (comment) {
-                item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}</span>`;
+                item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}#</span>`;
             } else {
                 item.textContent = content;
             }
@@ -80,7 +80,7 @@ class UIRenderer {
                 
                 // 构建显示内容
                 if (answer.comment) {
-                    item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}</span>`;
+                    item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}#</span>`;
                 } else {
                     item.textContent = answer.content;
                 }
@@ -118,7 +118,7 @@ class UIRenderer {
                         const content = item.dataset.content;
                         const comment = item.dataset.comment;
                         if (comment) {
-                            item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}</span>`;
+                            item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}#</span>`;
                         } else {
                             item.textContent = content;
                         }
@@ -167,7 +167,7 @@ class UIRenderer {
                 // 构建内容：答案 + 注释
                 let contentHtml = `<span class="missed-content">${answer.content}</span>`;
                 if (answer.comment) {
-                    contentHtml += `<span class="missed-comment">${answer.comment}</span>`;
+                    contentHtml += `<span class="missed-comment">#${answer.comment}#</span>`;
                 }
                 item.innerHTML = contentHtml;
                 missedContainer.appendChild(item);

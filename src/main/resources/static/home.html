@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Typing Quiz - 打字测验</title>
+    <title>敲脑壳 MindPop - 首页</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
+    <!-- Brand Logo & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/brand/favicon/apple-touch-icon.png">
     <style>
         body.home-page {
             background-color: var(--bg);
@@ -214,7 +217,9 @@
 </head>
 <body class="home-page">
     <nav class="navbar">
-        <a href="home.html" class="logo">打字测验</a>
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
         <div class="nav-links">
             <a href="home.html" class="active">首页</a>
             <a href="quizzes.html">测验</a>
@@ -226,7 +231,14 @@
 
     <div id="home-container" class="fade-in">
         <section class="home-hero">
-            <h1 style="font-weight: 200; letter-spacing: 0.2em; font-size: 2rem; margin-bottom: 3rem; color: var(--text-main);">每日目标</h1>
+            <div style="margin-bottom: 2rem;">
+                <h1 style="font-weight: 300; letter-spacing: 0.15em; font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">敲脑壳</h1>
+                <p style="font-size: 0.9rem; color: var(--text-muted); letter-spacing: 0.1em;">MindPop · 硬核记忆工具</p>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); max-width: 500px; margin: 0 auto 3rem; line-height: 1.6;">
+                专为复杂、长清单知识设计的「Anki 升级版」提取练习工具。<br>
+                强制主动输出，科学间隔复习，彻底杜绝自我欺骗。
+            </p>
             
             <div class="home-stats">
                 <div class="stat-box">
@@ -542,14 +554,17 @@
                 content.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">该分组下暂无待复习测验</div>';
                 return;
             }
-            content.innerHTML = items.map(item => `
+            content.innerHTML = items.map(item => {
+                const intervalDisplay = calculateRemainingTime(item.nextReviewDate);
+                console.log(`[DEBUG] Quiz: ${item.quizTitle}, nextReviewDate: ${item.nextReviewDate}, display: ${intervalDisplay}`);
+                return `
                 <div class="quiz-item">
                     <div class="quiz-info">
                         <div class="quiz-title-section">
                             <span class="quiz-title">${item.quizTitle}</span>
                             <span class="quiz-status ${getStatusClass(item.detailedLabel || item.label)}">${getStatusText(item.detailedLabel || item.label)}</span>
                         </div>
-                        <span class="quiz-meta">间隔: ${item.intervalText || '即将到期'} • 已复习 ${item.reviewCount || 0} 次 • 简易度: ${(item.easeFactor / 1000).toFixed(1)}</span>
+                        <span class="quiz-meta">间隔: <span class="debug-interval">${intervalDisplay}</span> • 已复习 ${item.reviewCount || 0} 次 • 简易度: ${(item.easeFactor / 1000).toFixed(1)}</span>
                     </div>
                     <div class="quiz-actions">
                         <button class="btn btn-small" onclick="startQuiz(${item.quizId}, '${groupId}')">开始</button>
@@ -557,7 +572,46 @@
                         <button class="btn btn-small btn-secondary" onclick="resetQuiz(${item.quizId})">重置</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+        }
+
+        // 计算剩余时间（用于学习阶段倒计时）
+        function calculateRemainingTime(nextReviewDate) {
+            if (!nextReviewDate) {
+                return '<10分钟';
+            }
+            
+            const now = new Date();
+            const target = new Date(nextReviewDate);
+            const diff = target - now;  // 毫秒差
+            
+            if (diff <= 0) {
+                // 已到期，显示已过期时间
+                const seconds = Math.abs(Math.floor(diff / 1000));
+                if (seconds < 60) {
+                    return `${seconds}秒前`;
+                }
+                const minutes = Math.floor(seconds / 60);
+                if (minutes < 60) {
+                    return `${minutes}分钟前`;
+                }
+                return '已到期';
+            }
+            
+            const seconds = Math.ceil(diff / 1000);
+            const minutes = Math.ceil(diff / 60000);  // 转为分钟，向上取整
+            const hours = Math.ceil(diff / 3600000);   // 转为小时，向上取整
+            
+            if (seconds < 60) {
+                return `${seconds}秒后`;
+            } else if (minutes < 60) {
+                return `${minutes}分钟后`;
+            } else if (hours < 24) {
+                return `${hours}小时后`;
+            } else {
+                const days = Math.ceil(diff / 86400000);
+                return `${days}天后`;
+            }
         }
 
         function getStatusClass(detailedLabel) {

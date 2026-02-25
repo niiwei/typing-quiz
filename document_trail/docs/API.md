@@ -1,6 +1,6 @@
 # API 接口文档
 
-本文档描述 Typing Quiz 项目的所有 REST API 接口。
+本文档描述 敲脑壳 MindPop 项目的所有 REST API 接口。
 
 ## 认证方式
 
