@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - 敲脑壳 MindPop</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <style>
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .settings-title {
+            font-weight: 200;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .settings-section {
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-info {
+            flex: 1;
+        }
+
+        .setting-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .setting-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .setting-toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: var(--border);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .setting-toggle.active {
+            background: var(--accent);
+        }
+
+        .setting-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .setting-toggle.active::after {
+            transform: translateX(24px);
+        }
+
+        .settings-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
+        <div class="nav-links">
+            <a href="home.html">首页</a>
+            <a href="quizzes.html">测验</a>
+            <a href="create.html">创建</a>
+            <a href="manage.html">管理</a>
+            <a href="settings.html" class="active">设置</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error);">退出</a>
+        </div>
+    </nav>
+
+    <div class="settings-container">
+        <h1 class="settings-title">设置</h1>
+
+        <div class="settings-section">
+            <h2 class="section-title">忽略规则配置</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">自动忽略标点符号</div>
+                    <div class="setting-desc">答题时自动忽略所有标点符号（如句号、逗号、问号等）</div>
+                </div>
+                <div class="setting-toggle" id="toggle-ignore-punctuation" onclick="toggleSetting('ignorePunctuation')"></div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">不区分全半角空格</div>
+                    <div class="setting-desc">全角空格（　）和半角空格（ ）视为相同</div>
+                </div>
+                <div class="setting-toggle" id="toggle-ignore-spaces" onclick="toggleSetting('ignoreSpaces')"></div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">不区分大小写</div>
+                    <div class="setting-desc">大写字母和小写字母视为相同（如 ABC = abc）</div>
+                </div>
+                <div class="setting-toggle" id="toggle-ignore-case" onclick="toggleSetting('ignoreCase')"></div>
+            </div>
+        </div>
+
+        <div class="settings-actions">
+            <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+            <button class="btn btn-secondary" onclick="resetSettings()">恢复默认</button>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        // 默认设置
+        const defaultSettings = {
+            ignorePunctuation: false,
+            ignoreSpaces: false,
+            ignoreCase: false
+        };
+
+        // 当前设置
+        let currentSettings = { ...defaultSettings };
+
+        // 加载设置
+        function loadSettings() {
+            const saved = localStorage.getItem('typingquiz_settings');
+            if (saved) {
+                try {
+                    currentSettings = { ...defaultSettings, ...JSON.parse(saved) };
+                } catch (e) {
+                    console.error('加载设置失败:', e);
+                }
+            }
+            updateUI();
+        }
+
+        // 更新UI显示
+        function updateUI() {
+            document.getElementById('toggle-ignore-punctuation').classList.toggle('active', currentSettings.ignorePunctuation);
+            document.getElementById('toggle-ignore-spaces').classList.toggle('active', currentSettings.ignoreSpaces);
+            document.getElementById('toggle-ignore-case').classList.toggle('active', currentSettings.ignoreCase);
+        }
+
+        // 切换设置
+        function toggleSetting(key) {
+            currentSettings[key] = !currentSettings[key];
+            updateUI();
+        }
+
+        // 保存设置
+        function saveSettings() {
+            localStorage.setItem('typingquiz_settings', JSON.stringify(currentSettings));
+            alert('设置已保存');
+        }
+
+        // 恢复默认设置
+        function resetSettings() {
+            if (confirm('确定要恢复默认设置吗？')) {
+                currentSettings = { ...defaultSettings };
+                localStorage.setItem('typingquiz_settings', JSON.stringify(currentSettings));
+                updateUI();
+                alert('已恢复默认设置');
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadSettings();
+        });
+    </script>
+</body>
+</html>

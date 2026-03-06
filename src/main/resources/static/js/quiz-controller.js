@@ -14,6 +14,7 @@ class QuizController {
         this.quizType = 'TYPING'; // TYPING or FILL_BLANK
         this.fillBlankQuiz = null;
         this.filledBlanks = new Map(); // blankIndex -> userAnswer
+        this.settings = this.loadSettings(); // 加载用户设置
 
         this.groupMode = false;
         this.groupId = null;
@@ -23,6 +24,41 @@ class QuizController {
         this.groupProgress = new Map(); // 存储各测验的进度 {quizId -> {foundAnswers, filledBlanks, completed}}
         this.groupScores = new Map();
         this.currentQuizStatus = null;
+    }
+
+    // 加载用户设置
+    loadSettings() {
+        const defaultSettings = {
+            ignorePunctuation: false,
+            ignoreSpaces: false,
+            ignoreCase: false
+        };
+        const saved = localStorage.getItem('typingquiz_settings');
+        if (saved) {
+            try {
+                return { ...defaultSettings, ...JSON.parse(saved) };
+            } catch (e) {
+                console.error('加载设置失败:', e);
+            }
+        }
+        return defaultSettings;
+    }
+
+    // 根据设置规范化文本
+    normalizeText(text) {
+        let result = text;
+        if (this.settings.ignorePunctuation) {
+            // 移除所有标点符号（中英文标点）
+            result = result.replace(/[\p{P}\p{S}]/gu, '');
+        }
+        if (this.settings.ignoreSpaces) {
+            // 统一全半角空格为半角空格，并去除首尾空格
+            result = result.replace(/[\u3000\s]/g, ' ').trim();
+        }
+        if (this.settings.ignoreCase) {
+            result = result.toLowerCase();
+        }
+        return result;
     }
 
     getAuthHeaders() {
@@ -718,9 +754,14 @@ class QuizController {
 
     handleFillBlankInput(userAnswer) {
         const blanks = this.fillBlankQuiz.blanks || [];
+        const normalizedUserAnswer = this.normalizeText(userAnswer);
+        
         for (let i = 0; i < blanks.length; i++) {
             if (this.filledBlanks.has(i)) continue;
-            if (userAnswer.toLowerCase() === blanks[i].correctAnswer.toLowerCase()) {
+            
+            const normalizedCorrectAnswer = this.normalizeText(blanks[i].correctAnswer);
+            
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
                 this.filledBlanks.set(i, userAnswer);
                 UIRenderer.showFeedback('正确!', 'success');
                 this.clearInput();
@@ -907,6 +948,24 @@ class QuizController {
     }
 
     async checkAnswer(input) {
+        // 先在前端进行本地验证，应用用户设置
+        const normalizedInput = this.normalizeText(input);
+        
+        // 查找匹配的答案（应用设置后）
+        for (const answer of this.answers) {
+            const normalizedAnswer = this.normalizeText(answer.content);
+            if (normalizedInput === normalizedAnswer) {
+                if (this.foundAnswers.has(answer.id)) {
+                    UIRenderer.showFeedback('已回答', 'duplicate');
+                    this.clearInput();
+                } else {
+                    this.markAnswerFound(answer.id, answer.content);
+                }
+                return;
+            }
+        }
+        
+        // 如果前端验证未通过，尝试后端验证（保持原有逻辑）
         try {
             const response = await fetch(`${this.apiBase}/answers/validate`, {
                 method: 'POST',
