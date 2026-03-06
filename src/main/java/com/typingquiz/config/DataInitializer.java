@@ -9,8 +9,11 @@ import com.typingquiz.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+
 import java.io.InputStream;
 import java.util.Optional;
 
@@ -44,8 +47,8 @@ public class DataInitializer implements CommandLineRunner {
         // Create a template user for initial quizzes
         User templateUser = createTemplateUser();
 
-        loadQuizFromClasspath("initial-data/initial-capitals.json", templateUser.getId());
-        loadQuizFromClasspath("initial-data/initial-poetry.json", templateUser.getId());
+        // 自动扫描 initial-data 目录下的所有 JSON 文件
+        loadAllQuizzesFromDirectory(templateUser.getId());
 
         System.out.println("示例数据初始化完成!");
     }
@@ -63,16 +66,29 @@ public class DataInitializer implements CommandLineRunner {
         return userRepository.save(user);
     }
 
-    private void loadQuizFromClasspath(String path, Long userId) {
+    private void loadAllQuizzesFromDirectory(Long userId) {
         try {
-            ClassPathResource resource = new ClassPathResource(path);
-            try (InputStream inputStream = resource.getInputStream()) {
-                QuizDTO quizDTO = objectMapper.readValue(inputStream, QuizDTO.class);
-                quizService.createQuiz(quizDTO, userId);
-                System.out.println("成功加载并创建测验: " + quizDTO.getTitle());
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource[] resources = resolver.getResources("classpath:initial-data/*.json");
+            
+            System.out.println("发现 " + resources.length + " 个官方测验文件");
+            
+            for (Resource resource : resources) {
+                loadQuizFromResource(resource, userId);
             }
         } catch (Exception e) {
-            System.err.println("加载初始化数据失败: " + path);
+            System.err.println("扫描初始数据目录失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void loadQuizFromResource(Resource resource, Long userId) {
+        try (InputStream inputStream = resource.getInputStream()) {
+            QuizDTO quizDTO = objectMapper.readValue(inputStream, QuizDTO.class);
+            quizService.createQuiz(quizDTO, userId);
+            System.out.println("成功加载并创建测验: " + quizDTO.getTitle());
+        } catch (Exception e) {
+            System.err.println("加载初始化数据失败: " + resource.getFilename());
             e.printStackTrace();
         }
     }

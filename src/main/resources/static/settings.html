@@ -113,6 +113,7 @@
             <a href="home.html">首页</a>
             <a href="quizzes.html">测验</a>
             <a href="create.html">创建</a>
+            <a href="stats.html">看板</a>
             <a href="manage.html">管理</a>
             <a href="settings.html" class="active">设置</a>
             <a href="#" onclick="Auth.logout()" style="color: var(--error);">退出</a>
@@ -121,6 +122,30 @@
 
     <div class="settings-container">
         <h1 class="settings-title">设置</h1>
+
+        <div class="settings-section">
+            <h2 class="section-title">界面外观</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">暗黑模式</div>
+                    <div class="setting-desc">切换深色主题，适合夜间使用</div>
+                </div>
+                <div class="setting-toggle" id="toggle-dark-mode" onclick="toggleSetting('darkMode')"></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2 class="section-title">答题辅助</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-label">显示答案注释预览</div>
+                    <div class="setting-desc">在答案格子中显示注释（如：答案 注释内容）</div>
+                </div>
+                <div class="setting-toggle" id="toggle-show-comment-preview" onclick="toggleSetting('showCommentPreview')"></div>
+            </div>
+        </div>
 
         <div class="settings-section">
             <h2 class="section-title">忽略规则配置</h2>
@@ -135,8 +160,8 @@
 
             <div class="setting-item">
                 <div class="setting-info">
-                    <div class="setting-label">不区分全半角空格</div>
-                    <div class="setting-desc">全角空格（　）和半角空格（ ）视为相同</div>
+                    <div class="setting-label">不区分全半角符号</div>
+                    <div class="setting-desc">全角符号（如「」，。）和半角符号（如",.）视为相同</div>
                 </div>
                 <div class="setting-toggle" id="toggle-ignore-spaces" onclick="toggleSetting('ignoreSpaces')"></div>
             </div>
@@ -157,12 +182,15 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/track.js"></script>
     <script>
         // 默认设置
         const defaultSettings = {
-            ignorePunctuation: false,
-            ignoreSpaces: false,
-            ignoreCase: false
+            darkMode: false,
+            showCommentPreview: true,
+            ignorePunctuation: true,
+            ignoreSpaces: true,
+            ignoreCase: true
         };
 
         // 当前设置
@@ -183,15 +211,27 @@
 
         // 更新UI显示
         function updateUI() {
+            document.getElementById('toggle-dark-mode').classList.toggle('active', currentSettings.darkMode);
+            document.getElementById('toggle-show-comment-preview').classList.toggle('active', currentSettings.showCommentPreview);
             document.getElementById('toggle-ignore-punctuation').classList.toggle('active', currentSettings.ignorePunctuation);
             document.getElementById('toggle-ignore-spaces').classList.toggle('active', currentSettings.ignoreSpaces);
             document.getElementById('toggle-ignore-case').classList.toggle('active', currentSettings.ignoreCase);
+            
+            // 应用暗黑模式
+            if (currentSettings.darkMode) {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
         }
 
         // 切换设置
         function toggleSetting(key) {
             currentSettings[key] = !currentSettings[key];
             updateUI();
+            
+            // 所有设置切换后立即保存
+            localStorage.setItem('typingquiz_settings', JSON.stringify(currentSettings));
         }
 
         // 保存设置

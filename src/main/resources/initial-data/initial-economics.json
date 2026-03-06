@@ -1,0 +1,20 @@
+{
+  "title": "经济学基础概念",
+  "description": "微观经济学核心概念",
+  "timeLimit": 240,
+  "answers": [],
+  "answerList": [
+    {"content": "机会成本", "comment": "为得到某种东西而放弃的其他东西"},
+    {"content": "边际效用递减", "comment": "消费量增加，新增满足感减少"},
+    {"content": "供需平衡", "comment": "供给量等于需求量时的价格"},
+    {"content": "弹性", "comment": "需求量对价格变动的敏感程度"},
+    {"content": "比较优势", "comment": "生产某种产品的机会成本较低"},
+    {"content": "外部性", "comment": "经济活动对第三方的影响"},
+    {"content": "公共物品", "comment": "非排他性、非竞争性的物品"},
+    {"content": "信息不对称", "comment": "交易双方信息掌握程度不同"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

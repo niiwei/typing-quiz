@@ -51,4 +51,10 @@ public interface UserDailyActivityRepository extends JpaRepository<UserDailyActi
      */
     @Query("SELECT COUNT(u) FROM UserDailyActivity u WHERE u.userId = :userId AND u.isActive = true")
     Long countTotalActiveDaysByUserId(@Param("userId") Long userId);
+
+    /**
+     * 查询指定日期的所有用户活动（用于站长统计）
+     */
+    @Query("SELECT u FROM UserDailyActivity u WHERE u.activityDate = :date")
+    List<UserDailyActivity> findByActivityDate(@Param("date") LocalDate date);
 }

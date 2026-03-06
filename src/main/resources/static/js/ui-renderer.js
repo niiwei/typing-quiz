@@ -5,8 +5,11 @@
 class UIRenderer {
     /**
      * 渲染答案网格
+     * @param {Array} answers - 答案列表
+     * @param {Set} foundAnswers - 已找到的答案ID集合
+     * @param {boolean} showCommentPreview - 是否显示注释预览
      */
-    static renderAnswersGrid(answers, foundAnswers) {
+    static renderAnswersGrid(answers, foundAnswers, showCommentPreview = false) {
         const grid = document.getElementById('answers-grid');
         grid.innerHTML = '';
 
@@ -20,7 +23,8 @@ class UIRenderer {
             if (foundAnswers.has(answer.id)) {
                 item.classList.add('found');
                 let displayText = answer.content;
-                if (answer.comment) {
+                // 根据设置决定是否显示注释
+                if (showCommentPreview && answer.comment) {
                     displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}#</span>`;
                 }
                 item.innerHTML = displayText;
@@ -34,8 +38,10 @@ class UIRenderer {
 
     /**
      * 高亮已答项
+     * @param {number} answerId - 答案ID
+     * @param {boolean} showCommentPreview - 是否显示注释预览
      */
-    static highlightAnswer(answerId) {
+    static highlightAnswer(answerId, showCommentPreview = false) {
         const item = document.getElementById(`answer-${answerId}`);
         if (item) {
             const content = item.dataset.content;
@@ -43,8 +49,8 @@ class UIRenderer {
             
             item.classList.add('found');
             
-            // 构建显示内容
-            if (comment) {
+            // 构建显示内容，根据设置决定是否显示注释
+            if (showCommentPreview && comment) {
                 item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}#</span>`;
             } else {
                 item.textContent = content;

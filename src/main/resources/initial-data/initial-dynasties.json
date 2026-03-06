@@ -1,0 +1,31 @@
+{
+  "title": "中国朝代速记",
+  "description": "中国历史朝代顺序与起止时间",
+  "timeLimit": 300,
+  "answers": [],
+  "answerList": [
+    {"content": "夏", "comment": "约前2070-前1600年"},
+    {"content": "商", "comment": "约前1600-前1046年"},
+    {"content": "西周", "comment": "前1046-前771年"},
+    {"content": "东周", "comment": "前770-前256年(春秋战国)"},
+    {"content": "秦", "comment": "前221-前207年"},
+    {"content": "西汉", "comment": "前206-公元8年"},
+    {"content": "东汉", "comment": "25-220年"},
+    {"content": "三国", "comment": "220-280年(魏蜀吴)"},
+    {"content": "西晋", "comment": "265-316年"},
+    {"content": "东晋", "comment": "317-420年"},
+    {"content": "南北朝", "comment": "420-589年"},
+    {"content": "隋", "comment": "581-618年"},
+    {"content": "唐", "comment": "618-907年"},
+    {"content": "五代十国", "comment": "907-960年"},
+    {"content": "北宋", "comment": "960-1127年"},
+    {"content": "南宋", "comment": "1127-1279年"},
+    {"content": "元", "comment": "1271-1368年"},
+    {"content": "明", "comment": "1368-1644年"},
+    {"content": "清", "comment": "1644-1912年"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

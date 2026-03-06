@@ -40,4 +40,11 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     Long countByUserIdAndEventTypeSince(@Param("userId") Long userId,
                                         @Param("eventType") String eventType,
                                         @Param("since") LocalDateTime since);
+
+    /**
+     * 根据时间范围查询所有事件
+     */
+    @Query("SELECT e FROM EventLog e WHERE e.createdAt BETWEEN :startTime AND :endTime ORDER BY e.createdAt DESC")
+    List<EventLog> findByTimeRange(@Param("startTime") LocalDateTime startTime,
+                                   @Param("endTime") LocalDateTime endTime);
 }

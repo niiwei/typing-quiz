@@ -1,5 +1,45 @@
 # 敲脑壳 MindPop 更新日志
 
+## [v1.10.0] - 2026-03-06
+
+### 功能新增
+
+#### 官方测验包 - 全自动初始化系统
+
+**功能描述**
+为新用户提供12个高质量的官方测验，注册后自动复制到用户默认分组，实现"进站即学"。
+
+**技术实现**
+1. **DataInitializer 改造为目录扫描模式**
+   - 使用 `PathMatchingResourcePatternResolver` 自动扫描 `initial-data/*.json`
+   - 移除硬编码的文件名列表，改为动态加载
+   - 启动时输出扫描到的文件数量便于调试
+
+2. **12个官方测验文件创建**
+   - `initial-countries.json` - 世界各国名称（195个）
+   - `initial-china-provinces.json` - 中国省级行政区（34个）
+   - `initial-capitals.json` - 世界首都（58个）
+   - `initial-dynasties.json` - 中国朝代速记（19个）
+   - `initial-civil-law.json` - 民法典核心原则（6个）
+   - `initial-economics.json` - 经济学基础概念（8个）
+   - `initial-ielts.json` - 雅思高频短语（9个）
+   - `initial-idioms.json` - 常用成语释义（10个）
+   - `initial-elements.json` - 化学元素周期表（18个）
+   - `initial-anatomy.json` - 人体解剖基础（10个）
+   - `initial-poetry.json` - 古诗词填空（填空题，4首）
+   - `initial-classics.json` - 四大名著速记（8个）
+
+3. **用户注册流程集成**
+   - `UserService.register()` 调用 `copyTemplateQuizzesToUser()`
+   - 从 `template_user` 复制所有官方测验到新用户
+   - 测验自动归入"默认分组"
+
+**修改文件**
+- `src/main/java/com/typingquiz/config/DataInitializer.java` - 改为目录扫描加载
+- `src/main/resources/initial-data/*.json` - 12个官方测验JSON文件
+
+---
+
 ## [v1.9.1] - 2026-03-06
 
 ### Bug修复

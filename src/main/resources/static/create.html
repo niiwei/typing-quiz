@@ -45,7 +45,7 @@
         /* 卡片区块 - 统一边框风格 */
         .create-section {
             border: 1px solid var(--border);
-            background: #fff;
+            background: var(--bg);
             margin-bottom: 1.5rem;
         }
 
@@ -98,7 +98,7 @@
             width: 100%;
             padding: 0.875rem 1rem;
             border: 1px solid var(--border);
-            background: #fff;
+            background: var(--bg);
             font-size: 0.9rem;
             color: var(--text-main);
             transition: border-color 0.2s;
@@ -144,7 +144,7 @@
             border: 1px solid var(--border);
             cursor: pointer;
             transition: all 0.2s;
-            background: #fff;
+            background: var(--bg);
         }
 
         .type-label:hover {
@@ -193,7 +193,7 @@
             padding: 0.35rem 0.75rem;
             font-size: 0.65rem;
             border: 1px solid var(--border);
-            background: #fff;
+            background: var(--bg);
             color: var(--text-muted);
             cursor: pointer;
             transition: all 0.2s;
@@ -298,6 +298,7 @@
             <a href="home.html">首页</a>
             <a href="quizzes.html">测验</a>
             <a href="create.html" class="active">创建</a>
+            <a href="stats.html">看板</a>
             <a href="manage.html">管理</a>
             <a href="settings.html">设置</a>
             <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
@@ -439,6 +440,8 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
     <script>
         // 获取URL参数
         const urlParams = new URLSearchParams(window.location.search);

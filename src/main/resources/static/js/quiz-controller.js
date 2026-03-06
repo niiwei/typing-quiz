@@ -29,14 +29,23 @@ class QuizController {
     // 加载用户设置
     loadSettings() {
         const defaultSettings = {
-            ignorePunctuation: false,
-            ignoreSpaces: false,
-            ignoreCase: false
+            darkMode: false,
+            showCommentPreview: true,
+            ignorePunctuation: true,
+            ignoreSpaces: true,
+            ignoreCase: true
         };
         const saved = localStorage.getItem('typingquiz_settings');
         if (saved) {
             try {
-                return { ...defaultSettings, ...JSON.parse(saved) };
+                const settings = { ...defaultSettings, ...JSON.parse(saved) };
+                // 应用暗黑模式
+                if (settings.darkMode) {
+                    document.documentElement.classList.add('dark-mode');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                }
+                return settings;
             } catch (e) {
                 console.error('加载设置失败:', e);
             }
@@ -640,6 +649,14 @@ class QuizController {
         }
         this.startTimer();
         this.isQuizActive = true;
+        
+        // 自动聚焦输入框
+        setTimeout(() => {
+            const input = document.getElementById('answer-input');
+            if (input && !input.disabled) {
+                input.focus();
+            }
+        }, 100);
     }
 
     renderQuizTypeUI() {
@@ -652,7 +669,7 @@ class QuizController {
         } else {
             if (answersGrid) {
                 answersGrid.style.display = 'grid';
-                UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers);
+                UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers, this.settings.showCommentPreview);
             }
             if (fillBlankSection) fillBlankSection.style.display = 'none';
             UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
@@ -991,7 +1008,7 @@ class QuizController {
 
     markAnswerFound(answerId, displayContent) {
         this.foundAnswers.add(answerId);
-        UIRenderer.highlightAnswer(answerId);
+        UIRenderer.highlightAnswer(answerId, this.settings.showCommentPreview);
         UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
         UIRenderer.showFeedback('正确!', 'success');
         this.clearInput();

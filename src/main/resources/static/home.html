@@ -44,7 +44,7 @@
             min-width: 140px;
             padding: 2rem 1.5rem;
             border: 1px solid var(--border);
-            background: #fff;
+            background: var(--bg);
         }
         .stat-num {
             font-size: 3.5rem;
@@ -71,7 +71,7 @@
         .review-group-card {
             border: 1px solid var(--border);
             margin-bottom: 1rem;
-            background: #fff;
+            background: var(--bg);
             transition: all 0.2s ease;
         }
         .review-group-card:hover {
@@ -157,7 +157,7 @@
             border-bottom: none;
         }
         .quiz-item:hover {
-            background: #fff;
+            background: var(--hover);
         }
         .quiz-info {
             display: flex;
@@ -238,6 +238,7 @@
             <a href="home.html" class="active">首页</a>
             <a href="quizzes.html">测验</a>
             <a href="create.html">创建</a>
+            <a href="stats.html">看板</a>
             <a href="manage.html">管理</a>
             <a href="settings.html">设置</a>
             <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
@@ -319,6 +320,8 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
     <script src="js/review-api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {

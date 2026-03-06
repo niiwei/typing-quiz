@@ -24,7 +24,7 @@
         .group-card {
             border: 1px solid var(--border);
             margin-bottom: 1rem;
-            background: #fff;
+            background: var(--bg);
             transition: all 0.2s ease;
         }
         .group-card:hover {
@@ -102,7 +102,7 @@
             border-bottom: none;
         }
         .quiz-item:hover {
-            background: #fff;
+            background: var(--hover);
         }
         .quiz-info {
             display: flex;
@@ -191,6 +191,7 @@
             <a href="home.html">首页</a>
             <a href="quizzes.html">测验</a>
             <a href="create.html">创建</a>
+            <a href="stats.html">看板</a>
             <a href="manage.html" class="active">管理</a>
             <a href="settings.html">设置</a>
             <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
@@ -251,7 +252,7 @@
 
     <!-- 分组模态框 -->
     <div id="group-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-        <div style="background: white; padding: 2rem; max-width: 600px; width: 90%; border-radius: 4px; max-height: 80vh; overflow-y: auto;">
+        <div style="background: var(--bg); padding: 2rem; max-width: 600px; width: 90%; border-radius: 4px; max-height: 80vh; overflow-y: auto;">
             <h3 id="group-modal-title" style="margin-bottom: 1.5rem; font-weight: 300;">新建分组</h3>
             <input type="hidden" id="group-id">
             <div class="form-group">
@@ -277,6 +278,8 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
     <script>
         // 数据存储
         let allQuizzes = [];
@@ -532,7 +535,7 @@
             const cb = document.getElementById(`quiz-cb-${quizId}`);
             const item = cb?.closest('.quiz-item');
             if (item) {
-                item.style.background = cb.checked ? 'var(--bg)' : '#fff';
+                item.style.background = cb.checked ? 'var(--hover)' : '';
             }
         }
 
@@ -553,7 +556,7 @@
                 }
                 const item = cb.closest('.quiz-item');
                 if (item) {
-                    item.style.background = cb.checked ? 'var(--bg)' : '#fff';
+                    item.style.background = cb.checked ? 'var(--hover)' : '';
                 }
             });
             updateBatchActions();

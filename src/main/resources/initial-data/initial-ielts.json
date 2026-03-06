@@ -1,0 +1,21 @@
+{
+  "title": "雅思高频短语",
+  "description": "雅思写作与口语常用高分短语",
+  "timeLimit": 300,
+  "answers": [],
+  "answerList": [
+    {"content": "take into account", "comment": "考虑到"},
+    {"content": "play a crucial role", "comment": "发挥关键作用"},
+    {"content": "hold the view that", "comment": "持有...观点"},
+    {"content": "bear in mind", "comment": "牢记"},
+    {"content": "make efforts to", "comment": "努力做"},
+    {"content": "lay a solid foundation for", "comment": "为...奠定基础"},
+    {"content": "attach great importance to", "comment": "高度重视"},
+    {"content": "is bound to", "comment": "一定会"},
+    {"content": "make the most of", "comment": "充分利用"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

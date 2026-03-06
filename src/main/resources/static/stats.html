@@ -3,409 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>敲脑壳 MindPop - 学习统计</title>
+    <title>敲脑壳 MindPop - 学习看板</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/navigation.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
     <style>
-        :root {
-            --primary: #4F46E5;
-            --primary-light: #6366F1;
-            --accent: #F97316;
-            --success: #10B981;
-            --warning: #F59E0B;
-            --danger: #EF4444;
-            --bg: #EEF2FF;
-            --text: #312E81;
-            --text-muted: #64748B;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --shadow: 0 4px 20px rgba(79, 70, 229, 0.15);
-            --shadow-hover: 0 8px 40px rgba(79, 70, 229, 0.25);
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: var(--bg);
-        }
-
-        .stats-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* 页面标题 */
-        .page-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-
-        .page-header h1 {
-            font-size: 1.8rem;
-            color: var(--text);
-            margin-bottom: 8px;
-        }
-
-        .page-header p {
-            color: var(--text-muted);
-        }
-
-        /* 概览卡片 */
-        .overview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .overview-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: var(--shadow);
-            transition: transform 0.2s ease;
-        }
-
-        .overview-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .overview-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .overview-value.total { color: var(--primary); }
-        .overview-value.new { color: #6366F1; }
-        .overview-value.learning { color: var(--warning); }
-        .overview-value.review { color: var(--success); }
-        .overview-value.relearning { color: var(--danger); }
-        .overview-value.suspended { color: #9CA3AF; }
-
-        .overview-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        /* 统计区块 */
-        .stats-section {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow);
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* 图表容器 */
-        .chart-container {
-            height: 250px;
-            margin-top: 16px;
-        }
-
-        /* 未来预测图表 */
-        .forecast-chart {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            height: 200px;
-            padding: 20px 0;
-            gap: 4px;
-        }
-
-        .forecast-bar {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .forecast-bar-fill {
-            width: 100%;
-            background: linear-gradient(to top, var(--primary), var(--primary-light));
-            border-radius: 4px 4px 0 0;
-            min-height: 4px;
-            transition: height 0.3s ease;
-        }
-
-        .forecast-bar.today .forecast-bar-fill {
-            background: linear-gradient(to top, var(--success), #34D399);
-        }
-
-        .forecast-bar-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-
-        .forecast-bar-value {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        /* 分布图表 */
-        .distribution-chart {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .dist-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .dist-label {
-            width: 80px;
-            font-size: 0.9rem;
-            color: var(--text);
-        }
-
-        .dist-bar-container {
-            flex: 1;
-            height: 24px;
-            background: #F3F4F6;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .dist-bar-fill {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
-        }
-
-        .dist-bar-fill.interval {
-            background: linear-gradient(to right, #818CF8, var(--primary));
-        }
-
-        .dist-bar-fill.ease {
-            background: linear-gradient(to right, #34D399, var(--success));
-        }
-
-        .dist-value {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: white;
-        }
-
-        /* 历史热力图样式 */
-        .heatmap {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-
-        .heatmap-cell {
-            aspect-ratio: 1;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            color: white;
-        }
-
-        .heatmap-cell.level-0 { background: #E5E7EB; }
-        .heatmap-cell.level-1 { background: #BBF7D0; }
-        .heatmap-cell.level-2 { background: #86EFAC; }
-        .heatmap-cell.level-3 { background: #4ADE80; }
-        .heatmap-cell.level-4 { background: #22C55E; }
-
-        /* 额外统计信息 */
-        .extra-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .extra-stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #F9FAFB;
-            border-radius: 8px;
-        }
-
-        .extra-stat-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .extra-stat-value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        /* 加载状态 */
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: var(--text-muted);
-        }
-
-        /* 空状态 */
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-        }
+        body { background-color: var(--bg); }
+        .page-header { text-align: center; padding: 4rem 0 3rem; }
+        .page-header h1 { font-weight: 300; font-size: 2rem; letter-spacing: 0.05em; color: var(--text-main); margin-bottom: 0.5rem; }
+        .page-header .subtitle { font-size: 0.8rem; color: var(--text-muted); letter-spacing: 0.05em; }
+        .dashboard-container { max-width: 1000px; margin: 0 auto; padding: 0 2rem 4rem; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin-bottom: 1.5rem; }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        .dashboard-card { border: 1px solid var(--border); background: var(--bg); padding: 1.5rem; }
+        .dashboard-card.full-width { grid-column: 1 / -1; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .card-title { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-main); }
+        .card-subtitle { font-size: 0.7rem; color: var(--text-muted); }
+        .today-main { text-align: center; padding: 2rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .today-time { font-size: 3rem; font-weight: 200; color: var(--text-main); line-height: 1; }
+        .today-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.5rem; }
+        .today-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-label { font-size: 0.75rem; color: var(--text-muted); }
+        .detail-value { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+        .detail-value.again { color: var(--error); }
+        .forecast-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 2px; padding: 1rem 0; }
+        .forecast-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .forecast-bar-fill { width: 100%; background: var(--success); min-height: 2px; transition: height 0.3s ease; }
+        .forecast-bar.today .forecast-bar-fill { background: var(--accent); }
+        .forecast-summary { text-align: center; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .forecast-total { font-size: 1rem; font-weight: 600; color: var(--text-main); }
+        .forecast-average { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .pie-container { display: flex; align-items: center; gap: 2rem; }
+        .pie-chart { width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(var(--text-muted) 0deg 0deg, #e5e5e5 0deg 360deg); flex-shrink: 0; }
+        .pie-legend { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+        .legend-item { display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+        .legend-text { display: flex; justify-content: space-between; flex: 1; }
+        .legend-label { color: var(--text-main); }
+        .legend-value { color: var(--text-muted); }
+        .card-total { text-align: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8rem; font-weight: 600; color: var(--text-main); }
+        .history-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 2px; padding: 1rem 0; }
+        .history-bar { flex: 1; background: var(--success); min-height: 2px; transition: height 0.3s ease; }
+        .history-summary { text-align: center; padding-top: 1rem; border-top: 1px solid var(--border); }
+        .heatmap-container { overflow-x: auto; padding-bottom: 0.5rem; }
+        .heatmap-weeks { display: flex; gap: 2px; min-width: 600px; }
+        .heatmap-week { display: grid; grid-template-rows: repeat(7, 1fr); gap: 2px; }
+        .heatmap-day { width: 10px; height: 10px; background: #e5e5e5; }
+        .heatmap-day.level-1 { background: #d1fae5; }
+        .heatmap-day.level-2 { background: #a7f3d0; }
+        .heatmap-day.level-3 { background: #34d399; }
+        .heatmap-day.level-4 { background: #059669; }
+        .heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; font-size: 0.65rem; color: var(--text-muted); }
+        .legend-box { width: 10px; height: 10px; }
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; }
+        .loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <!-- 导航栏 -->
     <nav class="navbar">
-        <a href="home.html" class="navbar-brand">🎮 敲脑壳 MindPop</a>
-        <div class="navbar-nav">
-            <a href="home.html" class="nav-link">首页</a>
-            <a href="quizzes.html" class="nav-link">测验列表</a>
-            <a href="review.html" class="nav-link">今日复习</a>
-            <a href="stats.html" class="nav-link active">统计</a>
-            <a href="manage.html" class="nav-link">管理测验</a>
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
+        <div class="nav-links">
+            <a href="home.html">首页</a>
+            <a href="quizzes.html">测验</a>
+            <a href="create.html">创建</a>
+            <a href="stats.html" class="active">看板</a>
+            <a href="manage.html">管理</a>
+            <a href="settings.html">设置</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
         </div>
     </nav>
 
-    <div class="stats-container">
-        <!-- 页面标题 -->
-        <div class="page-header">
-            <h1>📊 学习统计</h1>
-            <p>掌握你的学习进度和复习规律</p>
-        </div>
+    <div class="page-header">
+        <h1>学习看板</h1>
+        <p class="subtitle">掌握你的学习进度和复习规律</p>
+    </div>
 
-        <!-- 概览卡片 -->
-        <div class="overview-grid" id="overview-grid">
-            <div class="overview-card">
-                <div class="overview-value total" id="total-cards">-</div>
-                <div class="overview-label">总卡片</div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-value new" id="new-cards">-</div>
-                <div class="overview-label">待学习</div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-value learning" id="learning-cards">-</div>
-                <div class="overview-label">学习中</div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-value review" id="review-cards">-</div>
-                <div class="overview-label">待复习</div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-value relearning" id="relearning-cards">-</div>
-                <div class="overview-label">重学中</div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-value suspended" id="suspended-cards">-</div>
-                <div class="overview-label">已暂停</div>
-            </div>
-        </div>
-
-        <!-- 未来30天预测 -->
-        <div class="stats-section">
-            <div class="section-header">
-                <div class="section-title">📈 未来30天复习预测</div>
-            </div>
-            <div class="forecast-chart" id="forecast-chart">
-                <div class="loading">加载中...</div>
-            </div>
-        </div>
-
-        <!-- 间隔分布 -->
-        <div class="stats-section">
-            <div class="section-header">
-                <div class="section-title">📏 复习间隔分布</div>
-            </div>
-            <div class="distribution-chart" id="interval-distribution">
-                <div class="loading">加载中...</div>
-            </div>
-        </div>
-
-        <!-- 简易度分布 -->
-        <div class="stats-section">
-            <div class="section-header">
-                <div class="section-title">🎯 卡片简易度分布</div>
-            </div>
-            <div class="distribution-chart" id="ease-distribution">
-                <div class="loading">加载中...</div>
-            </div>
-        </div>
-
-        <!-- 额外统计信息 -->
-        <div class="stats-section">
-            <div class="section-header">
-                <div class="section-title">📋 详细数据</div>
-            </div>
-            <div class="extra-stats" id="extra-stats">
-                <div class="extra-stat-item">
-                    <span class="extra-stat-label">累计复习次数</span>
-                    <span class="extra-stat-value" id="total-reviews">-</span>
+    <div class="dashboard-container">
+        <div class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">今天</div>
+                    </div>
                 </div>
-                <div class="extra-stat-item">
-                    <span class="extra-stat-label">累计遗忘次数</span>
-                    <span class="extra-stat-value" id="total-lapses">-</span>
+                <div id="today-stats">
+                    <div class="loading">加载中...</div>
                 </div>
-                <div class="extra-stat-item">
-                    <span class="extra-stat-label">平均简易度</span>
-                    <span class="extra-stat-value" id="avg-ease">-</span>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">预测</div>
+                        <div class="card-subtitle">未来30天复习计划</div>
+                    </div>
                 </div>
-                <div class="extra-stat-item">
-                    <span class="extra-stat-label">连续学习天数</span>
-                    <span class="extra-stat-value" id="streak-days">-</span>
+                <div id="forecast-stats">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">测验数量</div>
+                    </div>
+                </div>
+                <div id="card-distribution">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">复习次数</div>
+                        <div class="card-subtitle">过去30天</div>
+                    </div>
+                </div>
+                <div id="review-history">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+
+            <div class="dashboard-card full-width">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">日程表</div>
+                        <div class="card-subtitle">颜色越深，学习的测验数量越多</div>
+                    </div>
+                </div>
+                <div id="heatmap-container">
+                    <div class="loading">加载中...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
     <script>
-        // 页面加载时获取统计数据
         document.addEventListener('DOMContentLoaded', async () => {
             if (!Auth.isLoggedIn()) {
                 window.location.href = 'login.html';
                 return;
             }
-
-            await loadStats();
+            await loadAllStats();
         });
 
-        async function loadStats() {
+        async function loadAllStats() {
+            const token = localStorage.getItem('typingquiz_token');
+
             try {
-                const token = localStorage.getItem('typingquiz_token');
-                const response = await fetch('/api/review/stats', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const [todayStats, reviewStats, history, distribution, heatmap] = await Promise.all([
+                    fetch('/api/stats/today', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                    fetch('/api/review/stats', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                    fetch('/api/stats/history?days=30', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                    fetch('/api/stats/distribution', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                    fetch('/api/stats/heatmap?days=365', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+                ]);
 
-                if (!response.ok) {
-                    throw new Error('获取统计失败');
-                }
-
-                const stats = await response.json();
-                renderStats(stats);
+                renderToday(todayStats);
+                renderForecast(reviewStats.forecast);
+                renderCardDistribution(distribution);
+                renderReviewHistory(history);
+                renderHeatmap(heatmap);
             } catch (error) {
                 console.error('加载统计数据失败:', error);
                 document.querySelectorAll('.loading').forEach(el => {
@@ -414,79 +182,227 @@
             }
         }
 
-        function renderStats(stats) {
-            // 渲染概览卡片
-            document.getElementById('total-cards').textContent = stats.totalCards || 0;
-            document.getElementById('new-cards').textContent = stats.newCards || 0;
-            document.getElementById('learning-cards').textContent = stats.learningCards || 0;
-            document.getElementById('review-cards').textContent = stats.reviewCards || 0;
-            document.getElementById('relearning-cards').textContent = stats.relearningCards || 0;
-            document.getElementById('suspended-cards').textContent = stats.suspendedCards || 0;
+        function renderToday(stats) {
+            const container = document.getElementById('today-stats');
 
-            // 渲染未来预测
-            renderForecast(stats.forecast);
+            if (!stats || stats.totalCards === 0) {
+                container.innerHTML = '<div class="empty-state">今日暂无学习记录</div>';
+                return;
+            }
 
-            // 渲染间隔分布
-            renderDistribution('interval-distribution', stats.intervalDistribution, 'interval');
+            const avgTime = stats.avgTimePerCard || 0;
+            const againPercent = stats.againPercent || 0;
 
-            // 渲染简易度分布
-            renderDistribution('ease-distribution', stats.easeDistribution, 'ease');
-
-            // 渲染额外统计
-            document.getElementById('total-reviews').textContent = stats.totalReviewCount || 0;
-            document.getElementById('total-lapses').textContent = stats.totalLapseCount || 0;
-            document.getElementById('avg-ease').textContent = (stats.averageEaseFactor || 0).toFixed(2);
-            document.getElementById('streak-days').textContent = (stats.streakDays || 0) + ' 天';
+            container.innerHTML = `
+                <div class="today-main">
+                    <div class="today-time">${(stats.totalTimeMinutes || 0).toFixed(2)}</div>
+                    <div class="today-label">分钟 · ${stats.totalCards || 0} 张测验</div>
+                </div>
+                <div class="today-details">
+                    <div class="detail-item">
+                        <span class="detail-label">重来</span>
+                        <span class="detail-value again">${stats.againCount || 0} (${againPercent.toFixed(0)}%)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">新学</span>
+                        <span class="detail-value">${stats.newCards || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">复习</span>
+                        <span class="detail-value">${stats.reviewCards || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">重新学习</span>
+                        <span class="detail-value">${stats.relearningCards || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">连续天数</span>
+                        <span class="detail-value">${stats.streakDays || 0} 天</span>
+                    </div>
+                </div>
+            `;
         }
 
         function renderForecast(forecast) {
-            const container = document.getElementById('forecast-chart');
+            const container = document.getElementById('forecast-stats');
+
             if (!forecast || forecast.length === 0) {
                 container.innerHTML = '<div class="empty-state">暂无预测数据</div>';
                 return;
             }
 
-            const maxCount = Math.max(...forecast.map(d => d.count), 1);
+            const displayForecast = forecast.slice(0, 30);
+            const maxCount = Math.max(...displayForecast.map(d => d.count), 1);
             const today = new Date().toISOString().split('T')[0];
+            const total = displayForecast.reduce((sum, d) => sum + d.count, 0);
+            const tomorrowCount = displayForecast[1]?.count || 0;
 
-            container.innerHTML = forecast.map((day, index) => {
-                const isToday = day.date === today;
-                const height = maxCount > 0 ? (day.count / maxCount * 100) : 0;
-                const dateLabel = new Date(day.date).getDate() + '日';
-
-                return `
-                    <div class="forecast-bar ${isToday ? 'today' : ''}">
-                        <div class="forecast-bar-value">${day.count}</div>
-                        <div class="forecast-bar-fill" style="height: ${Math.max(height, 4)}%"></div>
-                        <div class="forecast-bar-label">${dateLabel}</div>
-                    </div>
-                `;
-            }).join('');
+            container.innerHTML = `
+                <div class="forecast-chart">
+                    ${displayForecast.map((day) => {
+                        const isToday = day.date === today;
+                        const height = maxCount > 0 ? (day.count / maxCount * 100) : 0;
+                        return `
+                            <div class="forecast-bar ${isToday ? 'today' : ''}" title="${day.date}: ${day.count} 张">
+                                <div class="forecast-bar-fill" style="height: ${Math.max(height, 2)}%"></div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div class="forecast-summary">
+                    <div class="forecast-total">总计: ${total} 次复习</div>
+                    <div class="forecast-average">平均 ${(total / 30).toFixed(0)} 次/天 · 明天 ${tomorrowCount} 次</div>
+                </div>
+            `;
         }
 
-        function renderDistribution(containerId, distribution, type) {
-            const container = document.getElementById(containerId);
-            if (!distribution || Object.keys(distribution).length === 0) {
+        function renderCardDistribution(data) {
+            const container = document.getElementById('card-distribution');
+
+            if (!data || !data.counts) {
                 container.innerHTML = '<div class="empty-state">暂无数据</div>';
                 return;
             }
 
-            const maxValue = Math.max(...Object.values(distribution), 1);
+            const counts = data.counts;
+            const percentages = data.percentages;
+            const total = data.total;
 
-            container.innerHTML = Object.entries(distribution).map(([label, value]) => {
-                const width = maxValue > 0 ? (value / maxValue * 100) : 0;
-                return `
-                    <div class="dist-item">
-                        <div class="dist-label">${label}</div>
-                        <div class="dist-bar-container">
-                            <div class="dist-bar-fill ${type}" style="width: ${Math.max(width, 5)}%">
-                                ${width > 15 ? `<span class="dist-value">${value}</span>` : ''}
+            const colors = {
+                '新测验': '#3b82f6',
+                '学习中': '#f59e0b',
+                '待复习': '#10b981',
+                '重学中': '#ef4444',
+                '已暂停': '#9ca3af'
+            };
+
+            let currentAngle = 0;
+            const slices = [];
+            for (const [label, count] of Object.entries(counts)) {
+                if (count > 0) {
+                    const angle = (count / total) * 360;
+                    slices.push({
+                        label,
+                        count,
+                        percent: percentages[label],
+                        color: colors[label] || '#9ca3af',
+                        startAngle: currentAngle,
+                        endAngle: currentAngle + angle
+                    });
+                    currentAngle += angle;
+                }
+            }
+
+            let gradientParts = slices.map(s => 
+                `${s.color} ${s.startAngle}deg ${s.endAngle}deg`
+            );
+            if (gradientParts.length === 0) {
+                gradientParts.push('#e5e5e5 0deg 360deg');
+            }
+
+            container.innerHTML = `
+                <div class="pie-container">
+                    <div class="pie-chart" style="background: conic-gradient(${gradientParts.join(', ')});"></div>
+                    <div class="pie-legend">
+                        ${slices.map(s => `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background: ${s.color}"></div>
+                                <div class="legend-text">
+                                    <span class="legend-label">${s.label}</span>
+                                    <span class="legend-value">${s.count} (${s.percent.toFixed(1)}%)</span>
+                                </div>
                             </div>
-                        </div>
-                        ${width <= 15 ? `<span style="font-size: 0.8rem; color: var(--text-muted); min-width: 30px;">${value}</span>` : ''}
+                        `).join('')}
+                        ${slices.length === 0 ? '<div class="legend-item"><span class="legend-label">暂无测验</span></div>' : ''}
                     </div>
-                `;
-            }).join('');
+                </div>
+                <div class="card-total">总计: ${total} 张测验</div>
+            `;
+        }
+
+        function renderReviewHistory(data) {
+            const container = document.getElementById('review-history');
+
+            if (!data || !data.history || data.history.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无历史数据</div>';
+                return;
+            }
+
+            const history = data.history;
+            const maxCount = Math.max(...history.map(d => d.reviewedCount), 1);
+
+            container.innerHTML = `
+                <div class="history-chart">
+                    ${history.map((day) => {
+                        const height = maxCount > 0 ? (day.reviewedCount / maxCount * 100) : 0;
+                        return `
+                            <div class="history-bar" style="height: ${Math.max(height, 1)}%" title="${day.date}: ${day.reviewedCount} 张"></div>
+                        `;
+                    }).join('')}
+                </div>
+                <div class="history-summary">
+                    <div class="forecast-total">总计: ${data.totalReviewed || 0} 次复习</div>
+                    <div class="forecast-average">${data.activeDays || 0} 天 · 平均 ${data.averagePerDay || 0} 次/天</div>
+                </div>
+            `;
+        }
+
+        function renderHeatmap(data) {
+            const container = document.getElementById('heatmap-container');
+
+            if (!data || !data.data) {
+                container.innerHTML = '<div class="empty-state">暂无数据</div>';
+                return;
+            }
+
+            const today = new Date();
+            const days = [];
+            for (let i = 364; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                days.push({
+                    date: date.toISOString().split('T')[0],
+                    count: 0,
+                    level: 0
+                });
+            }
+
+            const dataMap = new Map(data.data.map(d => [d.date, d]));
+            days.forEach(day => {
+                const actualData = dataMap.get(day.date);
+                if (actualData) {
+                    day.count = actualData.count;
+                    day.level = actualData.level;
+                }
+            });
+
+            const weeks = [];
+            for (let i = 0; i < days.length; i += 7) {
+                weeks.push(days.slice(i, i + 7));
+            }
+
+            container.innerHTML = `
+                <div class="heatmap-container">
+                    <div class="heatmap-weeks">
+                        ${weeks.map(week => `
+                            <div class="heatmap-week">
+                                ${week.map(day => `
+                                    <div class="heatmap-day level-${day.level}" title="${day.date}: ${day.count} 张"></div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="heatmap-legend">
+                    <span>少</span>
+                    <div class="legend-box" style="background: #e5e5e5;"></div>
+                    <div class="legend-box" style="background: #d1fae5;"></div>
+                    <div class="legend-box" style="background: #a7f3d0;"></div>
+                    <div class="legend-box" style="background: #34d399;"></div>
+                    <div class="legend-box" style="background: #059669;"></div>
+                    <span>多</span>
+                </div>
+            `;
         }
     </script>
 </body>

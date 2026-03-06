@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>站点统计 - 敲脑壳 MindPop</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <style>
+        body { background-color: var(--bg); }
+        .page-header { text-align: center; padding: 3rem 0 2rem; }
+        .page-header h1 { font-weight: 300; font-size: 1.5rem; letter-spacing: 0.05em; color: var(--text-main); }
+        .page-header .subtitle { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 0.05em; }
+        
+        .admin-container { max-width: 1200px; margin: 0 auto; padding: 0 2rem 4rem; }
+        .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+        @media (max-width: 768px) { .admin-grid { grid-template-columns: 1fr; } }
+        
+        .admin-card { border: 1px solid var(--border); background: var(--bg); padding: 1.5rem; }
+        .admin-card.full-width { grid-column: 1 / -1; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+        .card-title { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-main); }
+        .card-value { font-size: 2rem; font-weight: 200; color: var(--text-main); margin: 0.5rem 0; }
+        .card-subtitle { font-size: 0.65rem; color: var(--text-muted); }
+        
+        .stat-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-label { color: var(--text-muted); }
+        .stat-value { color: var(--text-main); font-weight: 500; }
+        
+        .chart-container { height: 200px; margin-top: 1rem; }
+        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; gap: 2px; }
+        .bar { flex: 1; background: var(--success); min-height: 2px; transition: height 0.3s ease; }
+        .bar.highlight { background: var(--accent); }
+        
+        .event-table { width: 100%; font-size: 0.7rem; border-collapse: collapse; }
+        .event-table th, .event-table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        .event-table th { color: var(--text-muted); font-weight: 500; }
+        .event-table td { color: var(--text-main); }
+        
+        .loading { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.8rem; }
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.75rem; }
+        
+        .date-filter { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; justify-content: center; }
+        .date-filter button { padding: 0.4rem 0.8rem; font-size: 0.7rem; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; }
+        .date-filter button.active { background: var(--accent); color: white; border-color: var(--accent); }
+        
+        .back-link { display: inline-block; margin-bottom: 1rem; color: var(--text-muted); font-size: 0.7rem; text-decoration: none; }
+        .back-link:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <a href="home.html" class="back-link">← 返回首页</a>
+        
+        <div class="page-header">
+            <h1>站点统计</h1>
+            <p class="subtitle">全站用户行为与系统数据总览</p>
+        </div>
+        
+        <div class="date-filter">
+            <button onclick="setDateRange(7)" id="btn-7d">近7天</button>
+            <button onclick="setDateRange(30)" id="btn-30d" class="active">近30天</button>
+            <button onclick="setDateRange(90)" id="btn-90d">近90天</button>
+        </div>
+        
+        <div class="admin-grid">
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">活跃用户</div>
+                </div>
+                <div class="card-value" id="active-users">-</div>
+                <div class="card-subtitle">指定时间段内有活动的用户数</div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">页面浏览量</div>
+                </div>
+                <div class="card-value" id="total-pv">-</div>
+                <div class="card-subtitle">指定时间段内总PV</div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">复习次数</div>
+                </div>
+                <div class="card-value" id="total-reviews">-</div>
+                <div class="card-subtitle">指定时间段内总复习次数</div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">测验统计</div>
+                </div>
+                <div id="quiz-stats">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">用户分布</div>
+                </div>
+                <div id="user-distribution">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="admin-card">
+                <div class="card-header">
+                    <div class="card-title">设备分布</div>
+                </div>
+                <div id="device-distribution">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="admin-card full-width">
+                <div class="card-header">
+                    <div class="card-title">每日趋势</div>
+                </div>
+                <div id="daily-trend" class="chart-container">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="admin-card full-width">
+                <div class="card-header">
+                    <div class="card-title">热门页面</div>
+                </div>
+                <div id="top-pages">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+            
+            <div class="admin-card full-width">
+                <div class="card-header">
+                    <div class="card-title">最近事件</div>
+                </div>
+                <table class="event-table" id="recent-events">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>用户ID</th>
+                            <th>事件类型</th>
+                            <th>页面</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-tbody">
+                        <tr><td colspan="4" class="loading">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
+    <script>
+        let currentDays = 30;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadAdminStats();
+        });
+        
+        function setDateRange(days) {
+            currentDays = days;
+            document.querySelectorAll('.date-filter button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${days}d`).classList.add('active');
+            loadAdminStats();
+        }
+        
+        async function loadAdminStats() {
+            const token = localStorage.getItem('typingquiz_token');
+            
+            try {
+                const response = await fetch(`/api/admin/stats?days=${currentDays}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        alert('无权访问此页面');
+                        window.location.href = 'home.html';
+                        return;
+                    }
+                    throw new Error('加载失败');
+                }
+                
+                const data = await response.json();
+                renderStats(data);
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+                document.querySelectorAll('.loading').forEach(el => {
+                    el.textContent = '加载失败，请刷新重试';
+                });
+            }
+        }
+        
+        function renderStats(data) {
+            // 核心指标
+            document.getElementById('active-users').textContent = data.activeUsers || 0;
+            document.getElementById('total-pv').textContent = data.totalPageViews || 0;
+            document.getElementById('total-reviews').textContent = data.totalReviews || 0;
+            
+            // 测验统计
+            const quizStats = document.getElementById('quiz-stats');
+            quizStats.innerHTML = `
+                <div class="stat-row">
+                    <span class="stat-label">总测验数</span>
+                    <span class="stat-value">${data.totalQuizzes || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">总用户数</span>
+                    <span class="stat-value">${data.totalUsers || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">今日新用户</span>
+                    <span class="stat-value">${data.newUsersToday || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">今日复习次数</span>
+                    <span class="stat-value">${data.reviewsToday || 0}</span>
+                </div>
+            `;
+            
+            // 用户分布（按学习活跃度）
+            const userDist = document.getElementById('user-distribution');
+            const userDistData = data.userDistribution || {};
+            userDist.innerHTML = `
+                <div class="stat-row">
+                    <span class="stat-label">高活跃用户</span>
+                    <span class="stat-value">${userDistData.highActive || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">活跃用户</span>
+                    <span class="stat-value">${userDistData.active || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">轻度用户</span>
+                    <span class="stat-value">${userDistData.light || 0}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">沉默用户</span>
+                    <span class="stat-value">${userDistData.inactive || 0}</span>
+                </div>
+            `;
+            
+            // 设备分布
+            const deviceDist = document.getElementById('device-distribution');
+            const deviceData = data.deviceDistribution || {};
+            const total = (deviceData.desktop || 0) + (deviceData.tablet || 0) + (deviceData.mobile || 0);
+            deviceDist.innerHTML = `
+                <div class="stat-row">
+                    <span class="stat-label">桌面端</span>
+                    <span class="stat-value">${deviceData.desktop || 0} (${total ? Math.round(deviceData.desktop/total*100) : 0}%)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">平板端</span>
+                    <span class="stat-value">${deviceData.tablet || 0} (${total ? Math.round(deviceData.tablet/total*100) : 0}%)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">移动端</span>
+                    <span class="stat-value">${deviceData.mobile || 0} (${total ? Math.round(deviceData.mobile/total*100) : 0}%)</span>
+                </div>
+            `;
+            
+            // 每日趋势图
+            const dailyTrend = document.getElementById('daily-trend');
+            const dailyData = data.dailyTrend || [];
+            if (dailyData.length > 0) {
+                const maxValue = Math.max(...dailyData.map(d => d.count), 1);
+                dailyTrend.innerHTML = `
+                    <div class="bar-chart">
+                        ${dailyData.map((day, index) => {
+                            const height = maxValue > 0 ? (day.count / maxValue * 100) : 0;
+                            const isToday = index === dailyData.length - 1;
+                            return `
+                                <div class="bar ${isToday ? 'highlight' : ''}" 
+                                     style="height: ${Math.max(height, 2)}%" 
+                                     title="${day.date}: ${day.count} 次"></div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            } else {
+                dailyTrend.innerHTML = '<div class="empty-state">暂无数据</div>';
+            }
+            
+            // 热门页面
+            const topPages = document.getElementById('top-pages');
+            const pages = data.topPages || [];
+            if (pages.length > 0) {
+                topPages.innerHTML = `
+                    ${pages.map(page => `
+                        <div class="stat-row">
+                            <span class="stat-label">${page.path}</span>
+                            <span class="stat-value">${page.count} 次</span>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                topPages.innerHTML = '<div class="empty-state">暂无数据</div>';
+            }
+            
+            // 最近事件
+            const eventsBody = document.getElementById('events-tbody');
+            const events = data.recentEvents || [];
+            if (events.length > 0) {
+                eventsBody.innerHTML = events.map(event => `
+                    <tr>
+                        <td>${new Date(event.createdAt).toLocaleString('zh-CN')}</td>
+                        <td>${event.userId}</td>
+                        <td>${event.eventType}</td>
+                        <td>${event.pagePath || '-'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                eventsBody.innerHTML = '<tr><td colspan="4" class="empty-state">暂无事件记录</td></tr>';
+            }
+        }
+    </script>
+</body>
+</html>

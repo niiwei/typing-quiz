@@ -13,9 +13,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.typingquiz.entity.ReviewStatus;
+import com.typingquiz.repository.QuizReviewStatusRepository;
 import java.util.stream.Collectors;
 
 /**
@@ -31,11 +34,15 @@ public class StatsController {
 
     private final DailyActivityService dailyActivityService;
     private final TrackService trackService;
+    private final QuizReviewStatusRepository reviewStatusRepository;
 
     @Autowired
-    public StatsController(DailyActivityService dailyActivityService, TrackService trackService) {
+    public StatsController(DailyActivityService dailyActivityService, 
+                           TrackService trackService,
+                           QuizReviewStatusRepository reviewStatusRepository) {
         this.dailyActivityService = dailyActivityService;
         this.trackService = trackService;
+        this.reviewStatusRepository = reviewStatusRepository;
     }
 
     /**
@@ -161,6 +168,136 @@ public class StatsController {
         dto.setStreakDays(activity.getStreakDays() != null ? activity.getStreakDays() : 0);
 
         return dto;
+    }
+
+    /**
+     * 获取复习历史记录（对应Anki"复习次数"图表）
+     * 返回过去N天每天的复习数量
+     */
+    @GetMapping("/history")
+    public ResponseEntity<?> getReviewHistory(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(defaultValue = "30") int days) {
+        Long userId = getCurrentUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "未登录"));
+        }
+
+        try {
+            LocalDate endDate = LocalDate.now(ZONE_ID);
+            LocalDate startDate = endDate.minusDays(days);
+
+            // 从每日活动表中获取历史记录
+            List<UserDailyActivity> activities = dailyActivityService
+                    .getUserActivitiesInRange(userId, startDate, endDate);
+
+            // 构建日期到复习数量的映射
+            Map<LocalDate, UserDailyActivity> activityMap = activities.stream()
+                    .collect(Collectors.toMap(UserDailyActivity::getActivityDate, a -> a));
+
+            // 生成完整的历史数据（包含无记录的日期）
+            List<Map<String, Object>> history = new ArrayList<>();
+            for (int i = days - 1; i >= 0; i--) {
+                LocalDate date = endDate.minusDays(i);
+                UserDailyActivity activity = activityMap.get(date);
+
+                Map<String, Object> dayData = new HashMap<>();
+                dayData.put("date", date.toString());
+
+                if (activity != null) {
+                    dayData.put("reviewedCount", activity.getTotalCards());
+                    dayData.put("newCards", activity.getNewLearnedCount() != null ? activity.getNewLearnedCount() : 0);
+                    dayData.put("reviewCards", activity.getReviewCount() != null ? activity.getReviewCount() : 0);
+                    dayData.put("relearningCards", activity.getRelearningCount() != null ? activity.getRelearningCount() : 0);
+                    dayData.put("timeSpent", activity.getTotalTimeSeconds() != null ? activity.getTotalTimeSeconds() : 0);
+                    dayData.put("againCount", activity.getAgainCount() != null ? activity.getAgainCount() : 0);
+                } else {
+                    dayData.put("reviewedCount", 0);
+                    dayData.put("newCards", 0);
+                    dayData.put("reviewCards", 0);
+                    dayData.put("relearningCards", 0);
+                    dayData.put("timeSpent", 0);
+                    dayData.put("againCount", 0);
+                }
+
+                history.add(dayData);
+            }
+
+            // 计算汇总数据
+            int totalReviewed = activities.stream()
+                    .mapToInt(UserDailyActivity::getTotalCards)
+                    .sum();
+            int activeDays = (int) activities.stream()
+                    .filter(a -> a.getTotalCards() > 0)
+                    .count();
+            int totalTime = activities.stream()
+                    .mapToInt(a -> a.getTotalTimeSeconds() != null ? a.getTotalTimeSeconds() : 0)
+                    .sum();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("history", history);
+            result.put("totalReviewed", totalReviewed);
+            result.put("activeDays", activeDays);
+            result.put("averagePerDay", activeDays > 0 ? totalReviewed / activeDays : 0);
+            result.put("totalTimeSeconds", totalTime);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("获取复习历史失败: userId={}, days={}", userId, days, e);
+            return ResponseEntity.badRequest().body("获取失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取测验状态分布（对应Anki"卡片数量"饼图）
+     */
+    @GetMapping("/distribution")
+    public ResponseEntity<?> getCardDistribution(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        Long userId = getCurrentUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "未登录"));
+        }
+
+        try {
+            // 从复习状态表中统计各状态数量
+            var allStatus = reviewStatusRepository.findByUserId(userId);
+
+            // 按状态分组统计
+            Map<String, Long> statusCounts = allStatus.stream()
+                    .collect(Collectors.groupingBy(
+                            s -> s.getStatus().name(),
+                            Collectors.counting()
+                    ));
+
+            // 计算总数
+            long total = allStatus.size();
+
+            // 构建分布数据（使用项目自有的状态名称）
+            Map<String, Object> distribution = new HashMap<>();
+            distribution.put("新测验", statusCounts.getOrDefault("NEW", 0L));
+            distribution.put("学习中", statusCounts.getOrDefault("LEARNING", 0L));
+            distribution.put("待复习", statusCounts.getOrDefault("REVIEW", 0L));
+            distribution.put("重学中", statusCounts.getOrDefault("RELEARNING", 0L));
+            distribution.put("已暂停", statusCounts.getOrDefault("SUSPENDED", 0L));
+
+            // 计算百分比
+            Map<String, Object> percentages = new HashMap<>();
+            for (Map.Entry<String, Object> entry : distribution.entrySet()) {
+                long count = (Long) entry.getValue();
+                percentages.put(entry.getKey(), total > 0 ? Math.round(count * 100.0 / total * 100) / 100.0 : 0);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("counts", distribution);
+            result.put("percentages", percentages);
+            result.put("total", total);
+
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("获取测验分布失败: userId={}", userId, e);
+            return ResponseEntity.badRequest().body("获取失败: " + e.getMessage());
+        }
     }
 
     private Long getCurrentUserId(String authHeader) {

@@ -1,0 +1,30 @@
+{
+  "title": "化学元素周期表",
+  "description": "前18号化学元素符号与名称",
+  "timeLimit": 300,
+  "answers": [],
+  "answerList": [
+    {"content": "氢", "comment": "H - 最轻元素"},
+    {"content": "氦", "comment": "He - 惰性气体"},
+    {"content": "锂", "comment": "Li - 最轻金属"},
+    {"content": "铍", "comment": "Be - 碱土金属"},
+    {"content": "硼", "comment": "B - 类金属"},
+    {"content": "碳", "comment": "C - 生命基础"},
+    {"content": "氮", "comment": "N - 空气主要成分"},
+    {"content": "氧", "comment": "O - 呼吸必需"},
+    {"content": "氟", "comment": "F - 最活泼非金属"},
+    {"content": "氖", "comment": "Ne - 霓虹灯填充气"},
+    {"content": "钠", "comment": "Na - 碱金属"},
+    {"content": "镁", "comment": "Mg - 轻金属"},
+    {"content": "铝", "comment": "Al - 地壳中最丰富金属"},
+    {"content": "硅", "comment": "Si - 半导体材料"},
+    {"content": "磷", "comment": "P - 生命必需元素"},
+    {"content": "硫", "comment": "S - 黄色固体"},
+    {"content": "氯", "comment": "Cl - 消毒剂成分"},
+    {"content": "氩", "comment": "Ar - 保护气体"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}
