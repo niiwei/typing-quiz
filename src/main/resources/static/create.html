@@ -508,7 +508,12 @@
                     }).join('\n');
                     document.getElementById('quiz-answers').value = answersText;
                 } else if (quiz.quizType === 'FILL_BLANK' && quiz.fillBlankQuiz) {
-                    document.getElementById('fill-blank-full-text').value = quiz.fillBlankQuiz.fullText || '';
+                    // 根据 blanks 数组重建正确的 fullText 格式（修复已有错误数据）
+                    const reconstructedText = reconstructFullTextFromBlanks(
+                        quiz.fillBlankQuiz.blanks, 
+                        quiz.fillBlankQuiz.fullText
+                    );
+                    document.getElementById('fill-blank-full-text').value = reconstructedText;
                     updateFillPreview();
                 }
                 
@@ -530,6 +535,24 @@
                 typingFields.classList.remove('active');
                 fillBlankFields.classList.add('active');
             }
+        }
+
+        // 修复填空题格式，将 ## 替换为 #，保留原文内容
+        function reconstructFullTextFromBlanks(blanks, originalFullText) {
+            if (!originalFullText) return '';
+            
+            // 简单替换：将 ## 替换为 #，但保留内容
+            // 例如：[您的用户的需求##"​。对这个...##] → [您的用户的需求#"​。对这个...#]
+            let result = originalFullText;
+            
+            // 将所有的 ## 替换为 #（但保留中间的内容）
+            // 使用正则匹配 [xxx##yyy##] 格式，替换为 [xxx#yyy#]
+            result = result.replace(/\[([^\]]*)##([^#]*)##\]/g, '[$1#$2#]');
+            
+            // 处理单个 ##（未闭合的情况）
+            result = result.replace(/##/g, '#');
+            
+            return result;
         }
 
         function insertCommentSymbol(id) {
@@ -559,8 +582,52 @@
             const end = el.selectionEnd;
             const text = el.value;
             if (start === end) return;
+            
             const selected = text.slice(start, end);
-            el.value = text.slice(0, start) + '#' + selected + '#' + text.slice(end);
+            const before = text.slice(0, start);
+            const after = text.slice(end);
+            
+            // 检查选中的文本是否已包含 # 格式
+            if (selected.includes('#')) {
+                // 已包含 #，不再添加（避免重复）
+                return;
+            }
+            
+            // 检查是否在方括号内
+            const lastOpenBracket = before.lastIndexOf('[');
+            const lastCloseBracket = before.lastIndexOf(']');
+            const nextCloseBracket = after.indexOf(']');
+            const nextOpenBracket = after.indexOf('[');
+            
+            // 如果在方括号内（[ 之后且在 ] 之前）
+            if (lastOpenBracket > lastCloseBracket && nextCloseBracket !== -1) {
+                // 在方括号内，直接在选中文本后添加 #注释#
+                // 格式：[选中文本#注释#]
+                const commentPlaceholder = '#注释#';
+                el.value = before + selected + commentPlaceholder + after;
+                el.focus();
+                // 选中"注释"两个字，方便用户直接输入替换
+                const commentStart = start + selected.length + 1;
+                el.setSelectionRange(commentStart, commentStart + 2);
+                updateFillPreview();
+                return;
+            }
+            
+            // 如果选中的是完整的 [答案]（包含方括号）
+            if (selected.startsWith('[') && selected.endsWith(']')) {
+                // 在方括号内添加注释
+                const innerContent = selected.slice(1, -1);
+                const commentPlaceholder = '#注释#';
+                el.value = before + '[' + innerContent + commentPlaceholder + after;
+                el.focus();
+                const commentStart = start + innerContent.length + 2;
+                el.setSelectionRange(commentStart, commentStart + 2);
+                updateFillPreview();
+                return;
+            }
+            
+            // 默认情况：简单地在选中文本前后添加 #（用于普通文本添加注释标记）
+            el.value = before + '#' + selected + '#' + after;
             el.focus();
             el.setSelectionRange(end + 2, end + 2);
         }
@@ -691,7 +758,7 @@
                 
                 blanks.push({
                     startIndex: startIndex,
-                    endIndex: startIndex + correctAnswer.length,
+                    endIndex: startIndex + correctAnswer.length,  // endIndex 是答案在纯文本中的结束位置（不含注释）
                     correctAnswer: correctAnswer,
                     comment: comment
                 });

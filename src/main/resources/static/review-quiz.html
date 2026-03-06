@@ -587,12 +587,25 @@
             }
         }
 
+        // 当前测验的输入处理器（用于移除旧监听器）
+        let currentInputHandler = null;
+        let currentKeypressHandler = null;
+        let answeredCount = 0;
+
         // 初始化答案输入处理
         function initAnswerInput(answers) {
             const input = document.getElementById('answer-input');
-            let answeredCount = 0;
-
-            input.addEventListener('input', (e) => {
+            
+            // 移除旧的事件监听器
+            if (currentInputHandler) {
+                input.removeEventListener('input', currentInputHandler);
+            }
+            
+            // 重置计数器
+            answeredCount = 0;
+            
+            // 创建新的处理器
+            currentInputHandler = function(e) {
                 const value = e.target.value.trim().toLowerCase();
                 if (!value) return;
 
@@ -611,13 +624,22 @@
                         }
                     }
                 });
-            });
+            };
+            
+            input.addEventListener('input', currentInputHandler);
         }
 
         // 初始化填空题输入
         function initFillBlankInput(correctAnswer) {
             const input = document.getElementById('answer-input');
-            input.addEventListener('keypress', (e) => {
+            
+            // 移除旧的事件监听器
+            if (currentKeypressHandler) {
+                input.removeEventListener('keypress', currentKeypressHandler);
+            }
+            
+            // 创建新的处理器
+            currentKeypressHandler = function(e) {
                 if (e.key === 'Enter') {
                     const value = input.value.trim();
                     if (value.toLowerCase() === correctAnswer.toLowerCase()) {
@@ -626,7 +648,9 @@
                         showFeedback('答案不正确，请重试', 'error');
                     }
                 }
-            });
+            };
+            
+            input.addEventListener('keypress', currentKeypressHandler);
         }
 
         // 更新分数显示
@@ -872,6 +896,19 @@
         // 继续复习
         async function continueReview() {
             hideCompletionModal();
+            
+            // 重新获取今日进度（可能有新测验到期）
+            await loadTodayProgress();
+            
+            // 检查是否真的有未完成的测验
+            if (todayCompleted >= todayTotal) {
+                // 实际已完成，重新显示完成弹窗
+                console.log('[继续复习] 实际已完成，重新显示完成弹窗');
+                showCompletionModal();
+                return;
+            }
+            
+            // 继续加载下一个测验
             await loadNextQuiz();
         }
 

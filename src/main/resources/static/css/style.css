@@ -237,19 +237,24 @@ input[type="submit"]:hover {
     transform: none;
 }
 
-/* 答案内容和注释在同一行显示 */
+/* 答案内容和注释上下排列 */
+.answer-item {
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
 .answer-item .answer-content {
-    display: inline;
-    white-space: nowrap;
+    display: block;
+    word-break: break-word;
+    font-weight: 600;
 }
 
 .answer-item .answer-comment {
-    display: inline;
+    display: block;
     color: var(--text-muted);
     font-size: 0.75rem;
     font-weight: 400;
-    margin-left: 0.25rem;
-    white-space: nowrap;
+    word-break: break-word;
 }
 
 .answer-item.missed {

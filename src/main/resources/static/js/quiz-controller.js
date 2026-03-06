@@ -867,12 +867,33 @@ class QuizController {
     clearInput() {
         const input = document.getElementById('answer-input');
         if (input) {
-            input.value = '';
-            // 强制触发输入框刷新，确保完全清空
-            input.blur();
-            input.focus();
+            // 检查是否在输入法组合中，如果是则等待组合结束
+            if (input.isComposing) {
+                input.addEventListener('compositionend', () => {
+                    this._doClearInput(input);
+                }, { once: true });
+            } else {
+                this._doClearInput(input);
+            }
         }
         setTimeout(() => UIRenderer.showFeedback('', ''), 1000);
+    }
+
+    _doClearInput(input) {
+        // 使用 requestAnimationFrame 确保在渲染帧开始时清空
+        requestAnimationFrame(() => {
+            input.value = '';
+            // 显式触发 input 事件，确保监听器感知变化
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // 再次使用 setTimeout 确保在所有事件处理完成后二次清空
+            setTimeout(() => {
+                if (input.value !== '') {
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                input.focus();
+            }, 0);
+        });
     }
 
     startTimer() {

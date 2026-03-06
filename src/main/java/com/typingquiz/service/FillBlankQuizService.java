@@ -169,7 +169,6 @@ public class FillBlankQuizService {
         FillBlankQuizDTO dto = new FillBlankQuizDTO();
         dto.setId(entity.getId());
         dto.setQuizId(entity.getQuizId());
-        dto.setFullText(entity.getFullText());
         dto.setDisplayText(entity.getDisplayText());
         dto.setBlanksCount(entity.getBlanksCount());
         
@@ -180,10 +179,61 @@ public class FillBlankQuizService {
                     new TypeReference<List<FillBlankQuizDTO.BlankInfo>>() {}
             );
             dto.setBlanks(blanks);
+            
+            // 根据 blanks 重建 fullText（修复注释丢失问题）
+            String reconstructedFullText = reconstructFullText(entity.getFullText(), blanks);
+            dto.setFullText(reconstructedFullText);
+            
         } catch (JsonProcessingException e) {
             throw new RuntimeException("反序列化填空信息失败");
         }
         
         return dto;
+    }
+    
+    /**
+     * 根据 blanks 数组重建 fullText，确保注释格式正确
+     * 修复已有数据中注释丢失导致显示为 ## 的问题
+     */
+    private String reconstructFullText(String originalFullText, List<FillBlankQuizDTO.BlankInfo> blanks) {
+        if (blanks == null || blanks.isEmpty()) {
+            return originalFullText;
+        }
+        
+        // 按起始位置排序（降序，从后向前替换）
+        List<FillBlankQuizDTO.BlankInfo> sortedBlanks = blanks.stream()
+                .sorted((a, b) -> b.getStartIndex() - a.getStartIndex())
+                .collect(Collectors.toList());
+        
+        StringBuilder result = new StringBuilder(originalFullText);
+        
+        for (FillBlankQuizDTO.BlankInfo blank : sortedBlanks) {
+            int start = blank.getStartIndex();
+            int end = blank.getEndIndex();
+            String correctAnswer = blank.getCorrectAnswer();
+            String comment = blank.getComment();
+            
+            // 重建填空格式：[答案#注释#] 或 [答案]
+            String reconstructedBlank;
+            if (comment != null && !comment.trim().isEmpty()) {
+                reconstructedBlank = "[" + correctAnswer + "#" + comment + "#]";
+            } else {
+                reconstructedBlank = "[" + correctAnswer + "]";
+            }
+            
+            // 替换原文本中的填空部分
+            // 注意：这里假设 start 和 end 是答案在去除标记后的位置
+            // 我们需要在 originalFullText 中找到对应的 [xxx] 并替换
+            
+            // 找到 start 位置前的最后一个 [
+            int bracketStart = result.lastIndexOf("[", start + 1);
+            int bracketEnd = result.indexOf("]", start);
+            
+            if (bracketStart != -1 && bracketEnd != -1 && bracketEnd > bracketStart) {
+                result.replace(bracketStart, bracketEnd + 1, reconstructedBlank);
+            }
+        }
+        
+        return result.toString();
     }
 }
