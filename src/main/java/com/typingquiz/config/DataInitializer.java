@@ -37,15 +37,16 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (quizRepository.count() > 0) {
-            System.out.println("数据库已有数据,跳过初始化");
+        // 创建或获取 template_user
+        User templateUser = createTemplateUser();
+        
+        // 检查 template_user 是否已有测验，有则跳过
+        if (quizRepository.countByUserId(templateUser.getId()) > 0) {
+            System.out.println("template_user 已有测验，跳过初始化");
             return;
         }
 
         System.out.println("开始初始化示例数据...");
-
-        // Create a template user for initial quizzes
-        User templateUser = createTemplateUser();
 
         // 自动扫描 initial-data 目录下的所有 JSON 文件
         loadAllQuizzesFromDirectory(templateUser.getId());
