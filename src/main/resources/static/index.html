@@ -410,6 +410,20 @@
 
         // 页面加载时检查复习模式
         checkReviewMode();
+        
+        // 移动端输入法处理：输入框获得焦点时滚动到可视区域
+        const answerInput = document.getElementById('answer-input');
+        if (answerInput) {
+            answerInput.addEventListener('focus', () => {
+                // 检测是否为移动设备（屏幕宽度小于768px或存在touch事件支持）
+                const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+                if (isMobile) {
+                    setTimeout(() => {
+                        answerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300); // 延迟等待键盘弹出
+                }
+            });
+        }
     </script>
 </body>
 </html>

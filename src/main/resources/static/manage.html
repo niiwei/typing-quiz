@@ -108,23 +108,63 @@
             display: flex;
             flex-direction: column;
             gap: 0.25rem;
+            flex: 1;
+            min-width: 0; /* 允许收缩 */
+            margin-right: 0.75rem;
         }
         .quiz-title {
             font-size: 0.8rem;
             color: var(--text-main);
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .quiz-meta {
             font-size: 0.7rem;
             color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .quiz-actions {
             display: flex;
             gap: 0.5rem;
+            flex-shrink: 0;
         }
         .quiz-actions .btn-small {
             padding: 0.4rem 0.75rem;
             font-size: 0.7rem;
+        }
+        
+        /* 移动端测验项优化 */
+        @media (max-width: 640px) {
+            .quiz-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+                gap: 0.75rem;
+            }
+            .quiz-info {
+                margin-right: 0;
+                width: 100%;
+            }
+            .quiz-title, .quiz-meta {
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+            }
+            .quiz-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .quiz-actions .btn-small {
+                padding: 0.35rem 0.5rem;
+                font-size: 0.65rem;
+            }
         }
         .btn-secondary {
             border-color: var(--border);
