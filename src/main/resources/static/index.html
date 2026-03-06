@@ -56,6 +56,7 @@
                    autocomplete="off"
                    spellcheck="false" />
             <div id="feedback-message" style="font-size: 0.7rem; height: 1rem; margin-top: 0.5rem;"></div>
+            <button id="hint-btn" class="btn btn-small" onclick="showHint()" style="margin-right: 1rem;">提示 (显示一个答案)</button>
             <button id="give-up-btn" class="btn btn-small give-up-btn" onclick="giveUp()">放弃并结算</button>
         </div>
 
@@ -331,6 +332,62 @@
                     window.location.href = `index.html?id=${nextQuizId}&mode=review`;
                 } else {
                     showReviewCompletionModal();
+                }
+            }
+        }
+
+        // 提示功能：显示一个未答出的答案
+        function showHint() {
+            // 获取全局 quizController 实例
+            if (!window.quizController || !window.quizController.isQuizActive) {
+                alert('测验未开始或已结束');
+                return;
+            }
+
+            const controller = window.quizController;
+            
+            if (controller.quizType === 'FILL_BLANK') {
+                // 填空题模式：找到一个未填写的空
+                const blanks = controller.fillBlankQuiz?.blanks || [];
+                let revealed = false;
+                
+                for (let i = 0; i < blanks.length; i++) {
+                    if (!controller.filledBlanks.has(i)) {
+                        // 显示这个答案
+                        const answer = blanks[i].correctAnswer;
+                        controller.filledBlanks.set(i, answer);
+                        controller.renderFillBlankQuiz();
+                        controller.updateFillBlankScore();
+                        UIRenderer.showFeedback(`提示: ${answer}`, 'hint');
+                        revealed = true;
+                        
+                        // 检查是否全部完成
+                        if (controller.filledBlanks.size === blanks.length) {
+                            controller.endQuiz();
+                        }
+                        break;
+                    }
+                }
+                
+                if (!revealed) {
+                    alert('已经没有可提示的答案了');
+                }
+            } else {
+                // 打字题模式：找到一个未答出的答案
+                const answers = controller.answers || [];
+                let revealed = false;
+                
+                for (const answer of answers) {
+                    if (!controller.foundAnswers.has(answer.id)) {
+                        // 标记为已找到
+                        controller.markAnswerFound(answer.id, answer.content);
+                        revealed = true;
+                        break;
+                    }
+                }
+                
+                if (!revealed) {
+                    alert('已经没有可提示的答案了');
                 }
             }
         }

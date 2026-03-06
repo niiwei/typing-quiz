@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const quizId = getQuizIdFromUrl();
         quizController = new QuizController(quizId);
+        window.quizController = quizController; // 暴露到全局以便提示功能访问
         await quizController.init();
     } catch (error) {
         console.error('应用初始化失败:', error);

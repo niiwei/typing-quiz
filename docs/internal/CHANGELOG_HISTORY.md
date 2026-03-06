@@ -1,5 +1,120 @@
 # 敲脑壳 MindPop 更新日志
 
+## [v1.9.1] - 2026-03-06
+
+### Bug修复
+
+#### 填空题编辑时注释格式错误 ✅
+
+**问题描述**
+编辑已有填空题时，注释部分显示为 `##` 而不是正确的 `#注释#` 格式，导致填空题结构混乱。
+
+**根因分析**
+- 前端 `parseFillBlankText` 函数解析填空格式时出错
+- 错误数据已持久化到数据库，后端直接返回存储的 `fullText` 包含错误格式
+- 正则表达式匹配和字符串替换逻辑存在缺陷
+
+**解决方案**
+- `create.html`: 添加 `reconstructFullTextFromBlanks()` 函数修复已有数据格式
+- 将 `##` 替换为 `#`，保留原始题目文本内容
+- 修复 `wrapSelectionWithHash()` 函数，正确添加注释占位符
+
+**修改文件**
+- `src/main/resources/static/create.html`
+
+---
+
+#### 复习模式测验卡顿问题 ✅
+
+**问题描述**
+复习模式偶尔会在第一个测验卡住，需要刷新页面才能继续，用户无法顺利导航到下一个测验。
+
+**根因分析**
+- `review-quiz.html` 的 `initAnswerInput()` 和 `initFillBlankInput()` 每次加载测验都会添加新的事件监听器
+- 旧的事件监听器未被移除，导致多个监听器同时工作
+- 旧监听器干扰新测验的输入处理逻辑
+
+**解决方案**
+- `review-quiz.html`: 使用命名函数存储事件处理器
+- 添加 `removeEventListener()` 在加载新测验前移除旧监听器
+- 使用全局变量 `currentInputHandler` 和 `currentKeypressHandler` 追踪当前处理器
+
+**修改文件**
+- `src/main/resources/static/review-quiz.html`
+
+---
+
+#### 打字题答案框文本溢出 ✅
+
+**问题描述**
+打字题答案/注释过长时会冲出答案格子边界，文字挤在一起无法正常显示。
+
+**根因分析**
+- `style.css` 中 `.answer-item` 使用 `white-space: nowrap` 禁止换行
+- 格子最小宽度只有 120px，但长文本强制不换行导致溢出
+- 答案和注释左右排列，空间不足
+
+**解决方案**
+- `style.css`: 将答案和注释改为上下排列（`flex-direction: column`）
+- 使用 `word-break: break-word` 允许长单词自动换行
+- 增加 `gap: 0.25rem` 保持答案与注释间距
+
+**修改文件**
+- `src/main/resources/static/css/style.css`
+
+---
+
+#### 填空题后端DTO转换修复 ✅
+
+**问题描述**
+后端返回的填空题 `fullText` 中注释格式不正确，影响前端编辑功能。
+
+**根因分析**
+- `FillBlankQuizService.toDTO()` 直接返回数据库存储的 `fullText`
+- 数据库中的 `fullText` 可能包含错误格式（如 `##`）
+
+**解决方案**
+- `FillBlankQuizService.java`: 添加 `reconstructFullText()` 方法
+- 根据 `blanks` 数组重建正确的 `[答案#注释#]` 格式
+- 修复已有数据中注释丢失导致显示异常的问题
+
+**修改文件**
+- `src/main/java/com/typingquiz/service/FillBlankQuizService.java`
+
+---
+
+#### 输入框清空不可靠 ✅
+
+**问题描述**
+填空题作答后输入框有时无法完全清空，残留字符影响下一题作答。
+
+**根因分析**
+- `quiz-controller.js` 的 `clearInput()` 方法仅设置 `input.value = ''`
+- 未处理输入法组合状态（`isComposing`）
+- 未触发 `input` 事件通知监听器变化
+
+**解决方案**
+- `quiz-controller.js`: 增强 `clearInput()` 方法
+- 使用 `requestAnimationFrame` + `setTimeout` 双重保障
+- 显式触发 `input` 事件确保监听器感知变化
+- 处理输入法组合状态，等待组合结束后再清空
+
+**修改文件**
+- `src/main/resources/static/js/quiz-controller.js`
+
+---
+
+**修改文件汇总**
+- `src/main/java/com/typingquiz/service/FillBlankQuizService.java` - 后端DTO转换修复
+- `src/main/resources/static/create.html` - 填空题编辑格式修复
+- `src/main/resources/static/css/style.css` - 答案框样式优化
+- `src/main/resources/static/js/quiz-controller.js` - 输入框清空修复
+- `src/main/resources/static/review-quiz.html` - 事件监听器修复
+
+**提交记录**: `f0eee58` - 修复填空题编辑和显示相关问题
+
+---
+
 ## [v1.9.0] - 2026-02-23
 
 ### 测验分组体系深度重构

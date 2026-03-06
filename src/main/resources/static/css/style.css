@@ -210,6 +210,24 @@ input[type="submit"]:hover {
     color: white;
 }
 
+/* 提示按钮样式 */
+#hint-btn {
+    margin-top: 2rem;
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+#hint-btn:hover {
+    background: var(--warning);
+    color: white;
+}
+
+#hint-btn:disabled {
+    border-color: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+}
+
 /* 答案网格 */
 #answers-grid {
     display: grid;
