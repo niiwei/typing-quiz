@@ -5,6 +5,7 @@ import com.typingquiz.repository.UserDailyActivityRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,19 @@ public class DailyActivityService {
     public void recordReviewRating(Long userId, int rating, int timeSpent, boolean isNewCard, String status) {
         LocalDate today = LocalDate.now(ZONE_ID);
 
+        try {
+            doRecordReviewRating(userId, rating, timeSpent, isNewCard, status, today);
+        } catch (DataIntegrityViolationException e) {
+            // 并发冲突：记录已存在，重试一次（这次会执行更新而非插入）
+            logger.warn("每日活动记录并发冲突，正在重试: userId={}", userId);
+            doRecordReviewRating(userId, rating, timeSpent, isNewCard, status, today);
+        }
+    }
+
+    /**
+     * 实际执行评级记录更新
+     */
+    private void doRecordReviewRating(Long userId, int rating, int timeSpent, boolean isNewCard, String status, LocalDate today) {
         Optional<UserDailyActivity> existing = dailyActivityRepository
                 .findByUserIdAndActivityDate(userId, today);
 
