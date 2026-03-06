@@ -20,6 +20,7 @@ import com.typingquiz.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -600,8 +601,13 @@ public class ReviewController {
                     statusBeforeName, intervalDays, easeFactor);
             
             // 更新今日统计
-            dailyActivityService.recordReviewRating(userId, rating, timeSpent, 
-                    isNewCard, statusBeforeName);
+            try {
+                dailyActivityService.recordReviewRating(userId, rating, timeSpent, 
+                        isNewCard, statusBeforeName);
+            } catch (DataIntegrityViolationException e) {
+                // 每日活动记录冲突，忽略此错误（不影响评级提交流程）
+                logger.warn("每日活动记录并发冲突，已忽略: userId={}", userId);
+            }
             
             // 获取分组ID（如果有）
             Integer groupIdInt = request.get("groupId");
@@ -661,8 +667,13 @@ public class ReviewController {
                     statusBeforeName, intervalDays, easeFactor);
             
             // 更新今日统计（复习阶段不是新卡片）
-            dailyActivityService.recordReviewRating(userId, rating, timeSpent,
-                    false, statusBeforeName);
+            try {
+                dailyActivityService.recordReviewRating(userId, rating, timeSpent,
+                        false, statusBeforeName);
+            } catch (DataIntegrityViolationException e) {
+                // 每日活动记录冲突，忽略此错误（不影响评级提交流程）
+                logger.warn("每日活动记录并发冲突，已忽略: userId={}", userId);
+            }
             
             // 获取分组ID（如果有）
             Integer groupIdInt = request.get("groupId");
