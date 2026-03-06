@@ -625,7 +625,7 @@ public class ReviewController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("提交学习评级失败: quizId={}, userId={}, rating={}", quizId, userId, rating, e);
-            return ResponseEntity.badRequest().body("提交失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "提交失败", "message", e.getMessage()));
         }
     }
 
@@ -691,7 +691,7 @@ public class ReviewController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("提交复习评级失败: quizId={}, userId={}, rating={}", quizId, userId, rating, e);
-            return ResponseEntity.badRequest().body("提交失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "提交失败", "message", e.getMessage()));
         }
     }
 
