@@ -14,6 +14,8 @@ import com.typingquiz.repository.QuizReviewStatusRepository;
 import com.typingquiz.service.LearningService;
 import com.typingquiz.service.QuizReviewService;
 import com.typingquiz.service.ReviewStatsService;
+import com.typingquiz.service.TrackService;
+import com.typingquiz.service.DailyActivityService;
 import com.typingquiz.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,8 @@ public class ReviewController {
     private final ReviewStatsService reviewStatsService;
     private final QuizReviewStatusRepository reviewStatusRepository;
     private final LearningService learningService;
+    private final TrackService trackService;
+    private final DailyActivityService dailyActivityService;
 
     @Autowired
     public ReviewController(QuizReviewService quizReviewService,
@@ -55,13 +59,17 @@ public class ReviewController {
                            QuizRepository quizRepository,
                            ReviewStatsService reviewStatsService,
                            QuizReviewStatusRepository reviewStatusRepository,
-                           LearningService learningService) {
+                           LearningService learningService,
+                           TrackService trackService,
+                           DailyActivityService dailyActivityService) {
         this.quizReviewService = quizReviewService;
         this.quizGroupRepository = quizGroupRepository;
         this.quizRepository = quizRepository;
         this.reviewStatsService = reviewStatsService;
         this.reviewStatusRepository = reviewStatusRepository;
         this.learningService = learningService;
+        this.trackService = trackService;
+        this.dailyActivityService = dailyActivityService;
     }
 
     /**
@@ -573,7 +581,27 @@ public class ReviewController {
         }
 
         try {
+            // 获取提交前的状态用于埋点
+            QuizReviewStatus statusBefore = quizReviewService.getQuizStatus(quizId, userId);
+            String statusBeforeName = statusBefore.getStatus().name();
+            boolean isNewCard = statusBefore.getStatus() == ReviewStatus.NEW;
+            
             LearnResponseDTO response = learningService.submitLearningRating(quizId, userId, rating);
+            
+            // 埋点：记录评级提交
+            Integer timeSpent = request.get("timeSpent");
+            if (timeSpent == null) timeSpent = 0;
+            
+            // 防止空指针，使用默认值
+            int intervalDays = response.getIntervalDays() != null ? response.getIntervalDays() : 0;
+            int easeFactor = statusBefore.getEaseFactor() != null ? statusBefore.getEaseFactor() : 2500;
+            
+            trackService.trackReviewRating(userId, quizId, rating, timeSpent, 
+                    statusBeforeName, intervalDays, easeFactor);
+            
+            // 更新今日统计
+            dailyActivityService.recordReviewRating(userId, rating, timeSpent, 
+                    isNewCard, statusBeforeName);
             
             // 获取分组ID（如果有）
             Integer groupIdInt = request.get("groupId");
@@ -614,8 +642,27 @@ public class ReviewController {
         }
 
         try {
+            // 获取提交前的状态用于埋点
+            QuizReviewStatus statusBefore = quizReviewService.getQuizStatus(quizId, userId);
+            String statusBeforeName = statusBefore.getStatus().name();
+            
             // 处理复习评级
             LearnResponseDTO response = quizReviewService.submitReviewRating(quizId, userId, rating);
+            
+            // 埋点：记录评级提交
+            Integer timeSpent = request.get("timeSpent");
+            if (timeSpent == null) timeSpent = 0;
+            
+            // 防止空指针，使用默认值
+            int intervalDays = response.getIntervalDays() != null ? response.getIntervalDays() : 0;
+            int easeFactor = statusBefore.getEaseFactor() != null ? statusBefore.getEaseFactor() : 2500;
+            
+            trackService.trackReviewRating(userId, quizId, rating, timeSpent,
+                    statusBeforeName, intervalDays, easeFactor);
+            
+            // 更新今日统计（复习阶段不是新卡片）
+            dailyActivityService.recordReviewRating(userId, rating, timeSpent,
+                    false, statusBeforeName);
             
             // 获取分组ID（如果有）
             Integer groupIdInt = request.get("groupId");

@@ -436,6 +436,7 @@
     <script src="js/review-api.js"></script>
     <script src="js/timer.js"></script>
     <script src="js/ui-renderer.js"></script>
+    <script src="js/track.js"></script>
 
     <script>
         // 复习模式全局状态
@@ -751,6 +752,10 @@
 
             console.log('[评级] 开始提交评级 - quizId:', currentQuizId, 'rating:', rating);
 
+            // 计算耗时（秒）
+            const timeSpent = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            console.log('[评级] 本次耗时:', timeSpent, '秒');
+
             try {
                 const params = new URLSearchParams(window.location.search);
                 const groupId = params.get('groupId');
@@ -758,9 +763,9 @@
                 let result;
 
                 if (status === 'NEW' || status === 'LEARNING' || status === 'RELEARNING') {
-                    result = await ReviewAPI.submitLearnRating(currentQuizId, rating, groupId);
+                    result = await ReviewAPI.submitLearnRating(currentQuizId, rating, groupId, timeSpent);
                 } else {
-                    result = await ReviewAPI.submitReviewRating(currentQuizId, rating, groupId);
+                    result = await ReviewAPI.submitReviewRating(currentQuizId, rating, groupId, timeSpent);
                 }
 
                 console.log('[评级] 收到响应:', result);

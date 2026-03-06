@@ -52,10 +52,12 @@ const ReviewAPI = {
      * @param {number} quizId - 测验ID
      * @param {number} rating - 评级 (1=重来, 2=困难, 3=良好, 4=简单)
      * @param {number} groupId - 分组ID（可选）
+     * @param {number} timeSpent - 耗时（秒，可选）
      */
-    async submitLearnRating(quizId, rating, groupId = null) {
+    async submitLearnRating(quizId, rating, groupId = null, timeSpent = 0) {
         const body = { rating };
         if (groupId) body.groupId = parseInt(groupId);
+        if (timeSpent) body.timeSpent = timeSpent;
         return api.post(`/review/${quizId}/learn`, body);
     },
 
@@ -64,10 +66,12 @@ const ReviewAPI = {
      * @param {number} quizId - 测验ID
      * @param {number} rating - 评级 (1=重来, 2=困难, 3=良好, 4=简单)
      * @param {number} groupId - 分组ID（可选）
+     * @param {number} timeSpent - 耗时（秒，可选）
      */
-    async submitReviewRating(quizId, rating, groupId = null) {
+    async submitReviewRating(quizId, rating, groupId = null, timeSpent = 0) {
         const body = { rating };
         if (groupId) body.groupId = parseInt(groupId);
+        if (timeSpent) body.timeSpent = timeSpent;
         return api.post(`/review/${quizId}/review`, body);
     },
 
