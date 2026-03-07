@@ -185,19 +185,46 @@ public class FillBlankQuizService {
             // 如果 fullText 包含了标记，索引就会对不上
             
             String rawFullText = entity.getFullText();
-            // 使用非贪婪匹配替换所有的 [xxx] 为占位符
-            String placeholderText = rawFullText.replaceAll("\\[.*?\\]", "___PLANK___");
+            // 先将数据库中的双井号 ## 替换为单井号 #，以匹配 blanks_info 中的索引
+            String normalizedText = rawFullText.replace("##", "#");
+            // 使用正则匹配方括号内的所有内容，确保完整匹配 [答案#注释#] 格式
+            String placeholderText = normalizedText.replaceAll("\\[[^\\]]*\\]", "___PLANK___");
             String[] segments = placeholderText.split("___PLANK___", -1);
             
+            // 重建纯文本 fullText，并重新计算 blanks 的索引
             StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < segments.length; i++) {
-                sb.append(segments[i]);
-                if (i < blanks.size()) {
-                    // 这里必须用 correctAnswer，因为它代表了挖空部分的原始文本长度
-                    sb.append(blanks.get(i).getCorrectAnswer());
+            int currentIndex = 0;
+            List<FillBlankQuizDTO.BlankInfo> updatedBlanks = new ArrayList<>();
+            
+            for (int i = 0; i < blanks.size(); i++) {
+                // 添加当前段落到纯文本
+                if (i < segments.length) {
+                    sb.append(segments[i]);
+                    currentIndex += segments[i].length();
                 }
+                
+                // 记录 blank 的新索引
+                FillBlankQuizDTO.BlankInfo oldBlank = blanks.get(i);
+                FillBlankQuizDTO.BlankInfo newBlank = new FillBlankQuizDTO.BlankInfo();
+                newBlank.setStartIndex(currentIndex);
+                newBlank.setCorrectAnswer(oldBlank.getCorrectAnswer());
+                newBlank.setComment(oldBlank.getComment());
+                
+                // 添加答案文本到纯文本
+                sb.append(oldBlank.getCorrectAnswer());
+                newBlank.setEndIndex(currentIndex + oldBlank.getCorrectAnswer().length());
+                currentIndex = newBlank.getEndIndex();
+                
+                updatedBlanks.add(newBlank);
             }
+            
+            // 添加最后一段（如果有）
+            if (blanks.size() < segments.length) {
+                sb.append(segments[segments.length - 1]);
+            }
+            
             dto.setFullText(sb.toString());
+            dto.setBlanks(updatedBlanks);
             
         } catch (JsonProcessingException e) {
             throw new RuntimeException("反序列化填空信息失败");
