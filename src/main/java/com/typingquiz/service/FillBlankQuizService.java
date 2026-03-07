@@ -200,7 +200,7 @@ public class FillBlankQuizService {
             return originalFullText;
         }
         
-        // 按起始位置排序（降序，从后向前替换）
+        // 按起始位置排序（降序，从后向前替换，避免索引偏移问题）
         List<FillBlankQuizDTO.BlankInfo> sortedBlanks = blanks.stream()
                 .sorted((a, b) -> b.getStartIndex() - a.getStartIndex())
                 .collect(Collectors.toList());
@@ -208,8 +208,6 @@ public class FillBlankQuizService {
         StringBuilder result = new StringBuilder(originalFullText);
         
         for (FillBlankQuizDTO.BlankInfo blank : sortedBlanks) {
-            int start = blank.getStartIndex();
-            int end = blank.getEndIndex();
             String correctAnswer = blank.getCorrectAnswer();
             String comment = blank.getComment();
             
@@ -221,14 +219,30 @@ public class FillBlankQuizService {
                 reconstructedBlank = "[" + correctAnswer + "]";
             }
             
-            // 替换原文本中的填空部分
-            // 注意：这里假设 start 和 end 是答案在去除标记后的位置
-            // 我们需要在 originalFullText 中找到对应的 [xxx] 并替换
+            // 在原始文本中找到该填空的位置（通过查找 [ + correctAnswer + ] 的模式）
+            // 需要考虑可能有或没有注释的情况
+            String patternWithoutComment = "[" + correctAnswer + "]";
+            String patternWithComment = "[" + correctAnswer + "#";
             
-            // 找到 start 位置前的最后一个 [
-            int bracketStart = result.lastIndexOf("[", start + 1);
-            int bracketEnd = result.indexOf("]", start);
+            int bracketStart = -1;
+            int bracketEnd = -1;
             
+            // 先尝试查找带注释的模式（更具体）
+            int commentPatternIndex = result.indexOf(patternWithComment);
+            if (commentPatternIndex != -1) {
+                // 找到了带注释的模式，查找对应的 ]
+                bracketStart = commentPatternIndex;
+                bracketEnd = result.indexOf("]", bracketStart);
+            } else {
+                // 尝试查找不带注释的模式
+                int simplePatternIndex = result.indexOf(patternWithoutComment);
+                if (simplePatternIndex != -1) {
+                    bracketStart = simplePatternIndex;
+                    bracketEnd = bracketStart + patternWithoutComment.length();
+                }
+            }
+            
+            // 如果找到了匹配的括号，进行替换
             if (bracketStart != -1 && bracketEnd != -1 && bracketEnd > bracketStart) {
                 result.replace(bracketStart, bracketEnd + 1, reconstructedBlank);
             }
