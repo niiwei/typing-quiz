@@ -826,6 +826,33 @@ class QuizController {
         this.replaceFillBlankWrappers(textEl);
     }
 
+    /**
+     * 创建填空题包装器 HTML（游戏模式）
+     */
+    createFillBlankWrapper(index, item, userAnswer, isFilled, isCurrent) {
+        const mode = 'play';
+        const filled = isFilled ? '1' : '0';
+        const state = isCurrent ? 'current' : '';
+        const answer = encodeURIComponent(userAnswer || '');
+        const correct = encodeURIComponent(item.correctAnswer || '');
+        const comment = encodeURIComponent(item.comment || '');
+        
+        return `<span class="fill-blank-wrapper" data-mode="${mode}" data-filled="${filled}" data-state="${state}" data-blank-index="${index}" data-answer="${answer}" data-correct="${correct}" data-comment="${comment}"></span>`;
+    }
+
+    /**
+     * 创建填空题包装器 HTML（放弃模式）
+     */
+    createFillBlankWrapperForGiveUp(index, item, isOriginallyFilled) {
+        const mode = 'giveup';
+        const filled = isOriginallyFilled ? '1' : '0';
+        const wasEmpty = !isOriginallyFilled ? '1' : '0';
+        const correct = encodeURIComponent(item.correctAnswer || '');
+        const comment = encodeURIComponent(item.comment || '');
+        
+        return `<span class="fill-blank-wrapper" data-mode="${mode}" data-filled="${filled}" data-was-empty="${wasEmpty}" data-blank-index="${index}" data-answer="${correct}" data-correct="${correct}" data-comment="${comment}"></span>`;
+    }
+
     handleInput(input) {
         if (!input || input.trim() === '') return;
         if (this.quizType === 'FILL_BLANK') {
@@ -1082,23 +1109,5 @@ class QuizController {
         if (this.foundAnswers.size === this.answers.length) {
             this.endQuiz();
         }
-    }
-
-    renderFillBlankQuizForGiveUp(originallyFilledIndices) {
-        const textEl = document.getElementById('fill-blank-text');
-        if (!this.fillBlankQuiz || !textEl) return;
-        const blanks = this.fillBlankQuiz.blanks || [];
-        let result = this.fillBlankQuiz.fullText;
-        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
-            .sort((a, b) => b.startIndex - a.startIndex);
-
-        sortedBlanks.forEach(item => {
-            const wasOriginallyFilled = originallyFilledIndices.has(item.originalIndex);
-            const wasOriginallyEmpty = !wasOriginallyFilled;
-            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="giveup" data-filled="${wasOriginallyFilled ? '1' : '0'}" data-was-empty="${wasOriginallyEmpty ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(item.correctAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
-            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
-        });
-        textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
-        this.replaceFillBlankWrappers(textEl);
     }
 }
