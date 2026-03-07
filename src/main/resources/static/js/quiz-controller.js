@@ -746,16 +746,82 @@ class QuizController {
         const textEl = document.getElementById('fill-blank-text');
         if (!this.fillBlankQuiz || !textEl) return;
         const blanks = this.fillBlankQuiz.blanks || [];
-        let result = this.fillBlankQuiz.fullText;
-        const sortedBlanks = blanks.map((blank, index) => ({...blank, originalIndex: index}))
-            .sort((a, b) => b.startIndex - a.startIndex);
+        const fullText = this.fillBlankQuiz.fullText || '';
 
-        sortedBlanks.forEach(item => {
-            const isFilled = this.filledBlanks.has(item.originalIndex);
-            const userAnswer = isFilled ? (this.filledBlanks.get(item.originalIndex) || '') : '';
-            const wrapperHTML = `<span class="fill-blank-wrapper" data-mode="play" data-filled="${isFilled ? '1' : '0'}" data-blank-index="${item.originalIndex}" data-answer="${encodeURIComponent(userAnswer)}" data-correct="${encodeURIComponent(item.correctAnswer)}" data-comment="${encodeURIComponent(item.comment || '')}"></span>`;
-            result = result.substring(0, item.startIndex) + wrapperHTML + result.substring(item.endIndex);
+        // 辅助函数：转义 HTML 字符
+        const escapeHTML = (str) => {
+            return str.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[m]));
+        };
+
+        // 按 startIndex 从小到大排序，确保替换顺序
+        const sortedBlanks = [...blanks].sort((a, b) => a.startIndex - b.startIndex);
+        
+        let result = '';
+        let lastIndex = 0;
+        
+        sortedBlanks.forEach((item, i) => {
+            // 拼接并转义填空前的文本片段
+            result += escapeHTML(fullText.substring(lastIndex, item.startIndex));
+            
+            const isFilled = this.filledBlanks.has(i);
+            const userAnswer = isFilled ? this.filledBlanks.get(i) : '';
+            const isCurrent = i === this.currentBlankIndex;
+            
+            // 构造填空包装器的 HTML (这是我们主动插入的标签，不应被转义)
+            const wrapperHTML = this.createFillBlankWrapper(i, item, userAnswer, isFilled, isCurrent);
+            result += wrapperHTML;
+            
+            lastIndex = item.endIndex;
         });
+        
+        // 拼接并转义剩余的文本片段
+        result += escapeHTML(fullText.substring(lastIndex));
+        
+        // 渲染到页面，并处理换行
+        textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
+        this.replaceFillBlankWrappers(textEl);
+    }
+
+    renderFillBlankQuizForGiveUp(originallyFilledIndices) {
+        const textEl = document.getElementById('fill-blank-text');
+        if (!this.fillBlankQuiz || !textEl) return;
+        const blanks = this.fillBlankQuiz.blanks || [];
+        const fullText = this.fillBlankQuiz.fullText || '';
+
+        // 辅助函数：转义 HTML 字符
+        const escapeHTML = (str) => {
+            return str.replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[m]));
+        };
+
+        const sortedBlanks = [...blanks].sort((a, b) => a.startIndex - b.startIndex);
+        
+        let result = '';
+        let lastIndex = 0;
+        
+        sortedBlanks.forEach((item, i) => {
+            result += escapeHTML(fullText.substring(lastIndex, item.startIndex));
+            
+            const isOriginallyFilled = originallyFilledIndices.has(i);
+            const wrapperHTML = this.createFillBlankWrapperForGiveUp(i, item, isOriginallyFilled);
+            result += wrapperHTML;
+            
+            lastIndex = item.endIndex;
+        });
+        
+        result += escapeHTML(fullText.substring(lastIndex));
+        
         textEl.innerHTML = result.replace(/\n/g, '<div class="manual-break"></div>');
         this.replaceFillBlankWrappers(textEl);
     }

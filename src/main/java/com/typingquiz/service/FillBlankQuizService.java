@@ -180,17 +180,20 @@ public class FillBlankQuizService {
             );
             dto.setBlanks(blanks);
             
-            // 重要：将 fullText 还原为不含 [xxx] 标记的纯文本
+            // 重要：将 fullText 还原为不含任何 [xxx] 标记的纯文本
             // 因为前端 renderFillBlankQuiz 是根据 blanks 里的 startIndex/endIndex 在 fullText 上插入标签的
             // 如果 fullText 包含了标记，索引就会对不上
-            String purePlainText = entity.getFullText().replaceAll("\\[[^\\]]*\\]", "___PLANK___");
-            // 这里我们需要还原出真正的纯文本（即创建时 parseFillBlankText 处理前的原始输入去标记后的样子）
-            // 由于数据库中存储的是带标记的 fullText，最可靠的方法是按顺序用答案替换标记位
-            String[] segments = purePlainText.split("___PLANK___", -1);
+            
+            String rawFullText = entity.getFullText();
+            // 使用非贪婪匹配替换所有的 [xxx] 为占位符
+            String placeholderText = rawFullText.replaceAll("\\[.*?\\]", "___PLANK___");
+            String[] segments = placeholderText.split("___PLANK___", -1);
+            
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < segments.length; i++) {
                 sb.append(segments[i]);
                 if (i < blanks.size()) {
+                    // 这里必须用 correctAnswer，因为它代表了挖空部分的原始文本长度
                     sb.append(blanks.get(i).getCorrectAnswer());
                 }
             }
