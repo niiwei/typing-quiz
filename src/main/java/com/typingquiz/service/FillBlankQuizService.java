@@ -193,58 +193,34 @@ public class FillBlankQuizService {
     
     /**
      * 根据 blanks 数组重建 fullText，确保注释格式正确
-     * 修复已有数据中注释丢失导致显示为 ## 的问题
+     * 修复已有数据中注释丢失或显示错误的问题
      */
     private String reconstructFullText(String originalFullText, List<FillBlankQuizDTO.BlankInfo> blanks) {
         if (blanks == null || blanks.isEmpty()) {
             return originalFullText;
         }
         
-        // 按起始位置排序（降序，从后向前替换，避免索引偏移问题）
-        List<FillBlankQuizDTO.BlankInfo> sortedBlanks = blanks.stream()
-                .sorted((a, b) -> b.getStartIndex() - a.getStartIndex())
-                .collect(Collectors.toList());
+        // 1. 提取所有纯文本部分（非挖空部分）
+        // 我们需要从原始文本中移除所有的 [xxx] 标记，得到纯净的背景文本
+        String plainText = originalFullText.replaceAll("\\[[^\\]]*\\]", "___PLANK___");
+        String[] segments = plainText.split("___PLANK___", -1);
         
-        StringBuilder result = new StringBuilder(originalFullText);
-        
-        for (FillBlankQuizDTO.BlankInfo blank : sortedBlanks) {
-            String correctAnswer = blank.getCorrectAnswer();
-            String comment = blank.getComment();
-            
-            // 重建填空格式：[答案#注释#] 或 [答案]
-            String reconstructedBlank;
-            if (comment != null && !comment.trim().isEmpty()) {
-                reconstructedBlank = "[" + correctAnswer + "#" + comment + "#]";
-            } else {
-                reconstructedBlank = "[" + correctAnswer + "]";
-            }
-            
-            // 在原始文本中找到该填空的位置（通过查找 [ + correctAnswer + ] 的模式）
-            // 需要考虑可能有或没有注释的情况
-            String patternWithoutComment = "[" + correctAnswer + "]";
-            String patternWithComment = "[" + correctAnswer + "#";
-            
-            int bracketStart = -1;
-            int bracketEnd = -1;
-            
-            // 先尝试查找带注释的模式（更具体）
-            int commentPatternIndex = result.indexOf(patternWithComment);
-            if (commentPatternIndex != -1) {
-                // 找到了带注释的模式，查找对应的 ]
-                bracketStart = commentPatternIndex;
-                bracketEnd = result.indexOf("]", bracketStart);
-            } else {
-                // 尝试查找不带注释的模式
-                int simplePatternIndex = result.indexOf(patternWithoutComment);
-                if (simplePatternIndex != -1) {
-                    bracketStart = simplePatternIndex;
-                    bracketEnd = bracketStart + patternWithoutComment.length();
+        // 2. 按顺序重新构造
+        // 假设 blanks 数组的顺序与文本中出现的顺序一致（这是前端保存时的逻辑）
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < segments.length; i++) {
+            result.append(segments[i]);
+            if (i < blanks.size()) {
+                FillBlankQuizDTO.BlankInfo blank = blanks.get(i);
+                String correctAnswer = blank.getCorrectAnswer();
+                String comment = blank.getComment();
+                
+                result.append("[");
+                result.append(correctAnswer);
+                if (comment != null && !comment.trim().isEmpty()) {
+                    result.append("#").append(comment).append("#");
                 }
-            }
-            
-            // 如果找到了匹配的括号，进行替换
-            if (bracketStart != -1 && bracketEnd != -1 && bracketEnd > bracketStart) {
-                result.replace(bracketStart, bracketEnd + 1, reconstructedBlank);
+                result.append("]");
             }
         }
         
