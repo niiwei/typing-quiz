@@ -180,50 +180,26 @@ public class FillBlankQuizService {
             );
             dto.setBlanks(blanks);
             
-            // 根据 blanks 重建 fullText（修复注释丢失问题）
-            String reconstructedFullText = reconstructFullText(entity.getFullText(), blanks);
-            dto.setFullText(reconstructedFullText);
+            // 重要：将 fullText 还原为不含 [xxx] 标记的纯文本
+            // 因为前端 renderFillBlankQuiz 是根据 blanks 里的 startIndex/endIndex 在 fullText 上插入标签的
+            // 如果 fullText 包含了标记，索引就会对不上
+            String purePlainText = entity.getFullText().replaceAll("\\[[^\\]]*\\]", "___PLANK___");
+            // 这里我们需要还原出真正的纯文本（即创建时 parseFillBlankText 处理前的原始输入去标记后的样子）
+            // 由于数据库中存储的是带标记的 fullText，最可靠的方法是按顺序用答案替换标记位
+            String[] segments = purePlainText.split("___PLANK___", -1);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < segments.length; i++) {
+                sb.append(segments[i]);
+                if (i < blanks.size()) {
+                    sb.append(blanks.get(i).getCorrectAnswer());
+                }
+            }
+            dto.setFullText(sb.toString());
             
         } catch (JsonProcessingException e) {
             throw new RuntimeException("反序列化填空信息失败");
         }
         
         return dto;
-    }
-    
-    /**
-     * 根据 blanks 数组重建 fullText，确保注释格式正确
-     * 修复已有数据中注释丢失或显示错误的问题
-     */
-    private String reconstructFullText(String originalFullText, List<FillBlankQuizDTO.BlankInfo> blanks) {
-        if (blanks == null || blanks.isEmpty()) {
-            return originalFullText;
-        }
-        
-        // 1. 提取所有纯文本部分（非挖空部分）
-        // 我们需要从原始文本中移除所有的 [xxx] 标记，得到纯净的背景文本
-        String plainText = originalFullText.replaceAll("\\[[^\\]]*\\]", "___PLANK___");
-        String[] segments = plainText.split("___PLANK___", -1);
-        
-        // 2. 按顺序重新构造
-        // 假设 blanks 数组的顺序与文本中出现的顺序一致（这是前端保存时的逻辑）
-        StringBuilder result = new StringBuilder();
-        for (int i = 0; i < segments.length; i++) {
-            result.append(segments[i]);
-            if (i < blanks.size()) {
-                FillBlankQuizDTO.BlankInfo blank = blanks.get(i);
-                String correctAnswer = blank.getCorrectAnswer();
-                String comment = blank.getComment();
-                
-                result.append("[");
-                result.append(correctAnswer);
-                if (comment != null && !comment.trim().isEmpty()) {
-                    result.append("#").append(comment).append("#");
-                }
-                result.append("]");
-            }
-        }
-        
-        return result.toString();
     }
 }
