@@ -1,5 +1,51 @@
 # 敲脑壳 MindPop 更新日志
 
+## [v1.10.1] - 2026-03-07
+
+### 功能优化
+
+#### 用户信息展示常驻
+**问题描述**
+admin.html 页面的用户列表会随着日期筛选（近7天/30天/90天）重新加载，导致用户体验不佳。用户希望用户列表常驻显示，不随日期筛选而变化。
+
+**根因分析**
+原有实现中，用户列表是通过 `/api/admin/stats` 接口统一返回的，该接口会根据日期范围参数查询统计数据，因此切换日期时会重新加载包括用户列表在内的所有数据。
+
+**解决方案**
+1. **后端新增独立接口**：在 `AdminController.java` 中添加 `/api/admin/users` 接口，专门用于获取所有注册用户列表，不受日期参数影响。
+2. **Repository 添加排序方法**：在 `UserRepository.java` 中添加 `findAllByOrderByCreatedAtDesc()` 方法，按注册时间倒序排列用户。
+3. **前端独立加载**：在 `admin.html` 中：
+   - 页面加载时独立调用 `loadUserList()` 获取用户列表
+   - 添加 `renderUserList()` 函数单独渲染用户表格
+   - 从 `renderStats()` 中移除用户列表渲染逻辑，使其不受日期筛选影响
+
+**修改文件**
+- `src/main/java/com/typingquiz/controller/AdminController.java` - 新增 `/api/admin/users` 接口
+- `src/main/java/com/typingquiz/repository/UserRepository.java` - 添加 `findAllByOrderByCreatedAtDesc()` 方法
+- `src/main/resources/static/admin.html` - 分离用户列表加载逻辑，使其常驻显示
+
+---
+
+### 功能新增
+
+#### 站点统计页面增加用户信息展示
+**问题描述**
+管理员希望在站点统计页面（admin.html）能够直接看到所有已注册的用户列表，包括用户名、邮箱和注册时间。
+
+**根因分析**
+原有的 `admin.html` 仅展示了活跃用户数、PV、复习次数等聚合指标，缺乏明细的用户清单。
+
+**解决方案**
+1. **后端修改**：修改 `AdminController.java` 中的 `/api/admin/stats` 接口，调用 `userRepository.findAll()` 获取所有用户，并封装到返回的 Map 中。
+2. **前端修改**：在 `admin.html` 中新增一个“用户信息”卡片，包含一个表格用于渲染用户数据。
+3. **JS 渲染**：在 `admin.html` 的 `renderStats` 函数中增加对 `userList` 的处理逻辑，动态生成表格行。
+
+**修改文件**
+- `src/main/java/com/typingquiz/controller/AdminController.java` - 接口增加用户列表返回
+- `src/main/resources/static/admin.html` - 增加 UI 展示和渲染逻辑
+
+---
+
 ## [v1.10.0] - 2026-03-06
 
 ### 功能新增

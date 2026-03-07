@@ -147,6 +147,19 @@ public class AdminController {
                     })
                     .collect(Collectors.toList());
 
+            // 10. 获取所有用户信息
+            List<User> allUsersList = userRepository.findAll();
+            List<Map<String, Object>> userList = allUsersList.stream()
+                    .map(u -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", u.getId());
+                        m.put("username", u.getUsername());
+                        m.put("email", u.getEmail());
+                        m.put("createdAt", u.getCreatedAt());
+                        return m;
+                    })
+                    .collect(Collectors.toList());
+
             // 组装结果
             Map<String, Object> result = new HashMap<>();
             result.put("activeUsers", activeUsers);
@@ -161,6 +174,7 @@ public class AdminController {
             result.put("dailyTrend", dailyTrend);
             result.put("topPages", topPages);
             result.put("recentEvents", recentEventsData);
+            result.put("userList", userList);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
@@ -240,6 +254,39 @@ public class AdminController {
         if (eventData.contains("\"deviceType\":\"tablet\"")) return "tablet";
         if (eventData.contains("\"deviceType\":\"desktop\"")) return "desktop";
         return "unknown";
+    }
+
+    /**
+     * 获取所有注册用户列表
+     * 常驻显示，不随日期筛选变化
+     */
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        
+        Long userId = getCurrentUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "未登录"));
+        }
+
+        try {
+            List<User> allUsersList = userRepository.findAllByOrderByCreatedAtDesc();
+            List<Map<String, Object>> userList = allUsersList.stream()
+                    .map(u -> {
+                        Map<String, Object> m = new HashMap<>();
+                        m.put("id", u.getId());
+                        m.put("username", u.getUsername());
+                        m.put("email", u.getEmail());
+                        m.put("createdAt", u.getCreatedAt());
+                        return m;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(Map.of("users", userList));
+        } catch (Exception e) {
+            logger.error("获取用户列表失败", e);
+            return ResponseEntity.badRequest().body("获取用户列表失败: " + e.getMessage());
+        }
     }
 
     private Long getCurrentUserId(String authHeader) {
