@@ -273,8 +273,9 @@
                 </div>
             </div>
             
-            <div style="margin-top: 4rem;">
+            <div style="margin-top: 4rem; display: flex; gap: 1rem; justify-content: center;">
                 <button class="btn" id="start-review-btn" onclick="startDailyReview()">开始复习流</button>
+                <button class="btn btn-secondary" onclick="startQuickTutorial()">快速上手</button>
             </div>
         </section>
 
@@ -739,6 +740,31 @@
                 alert(`已搁置的测验（共${buried.length}个）:\n${titles}`);
             } catch (error) {
                 console.error('获取搁置列表失败:', error);
+            }
+        }
+
+        async function startQuickTutorial() {
+            try {
+                // 获取所有测验列表
+                const response = await fetch('/api/quizzes', { headers: Auth.getAuthHeaders() });
+                if (!response.ok) {
+                    alert('获取测验列表失败');
+                    return;
+                }
+                const quizzes = await response.json();
+                
+                // 查找"四大名著速记"测验
+                const targetQuiz = quizzes.find(q => q.title === '四大名著速记');
+                if (!targetQuiz) {
+                    alert('未找到"四大名著速记"测验');
+                    return;
+                }
+                
+                // 直接跳转到测验页面
+                window.location.href = `index.html?id=${targetQuiz.id}&mode=practice`;
+            } catch (error) {
+                console.error('快速上手失败:', error);
+                alert('启动快速上手失败，请刷新重试');
             }
         }
 
