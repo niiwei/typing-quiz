@@ -764,5 +764,686 @@
             }
         }
     </script>
+
+    <!-- 新用户引导弹窗 -->
+    <div id="onboarding-modal" class="onboarding-modal" style="display: none;">
+        <div class="onboarding-overlay"></div>
+        <div class="onboarding-container">
+            <div class="onboarding-content">
+                <!-- 关闭按钮 -->
+                <button class="onboarding-close" onclick="closeOnboarding()">×</button>
+                
+                <!-- 进度指示器 -->
+                <div class="onboarding-progress">
+                    <div class="progress-dot active" data-page="1"></div>
+                    <div class="progress-dot" data-page="2"></div>
+                    <div class="progress-dot" data-page="3"></div>
+                    <div class="progress-dot" data-page="4"></div>
+                    <div class="progress-dot" data-page="5"></div>
+                    <div class="progress-dot" data-page="6"></div>
+                    <div class="progress-dot" data-page="7"></div>
+                    <div class="progress-dot" data-page="8"></div>
+                </div>
+
+                <!-- 第1页：欢迎 -->
+                <div class="onboarding-page active" data-page="1">
+                    <div class="onboarding-logo">
+                        <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳" style="height: 60px; width: auto;">
+                    </div>
+                    <h2 class="onboarding-title">欢迎来到敲脑壳</h2>
+                    <p class="onboarding-desc">
+                        MindPop 是一款专为复杂、长清单知识设计的硬核记忆工具
+                    </p>
+                    <div class="onboarding-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">⚡</span>
+                            <span><strong>强制主动输出</strong> - 单框连击交互，敲对关键词答案才会跳出，强制大脑硬核提取</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🧠</span>
+                            <span><strong>科学间隔复习</strong> - 内置 SM-2 算法，遵循遗忘曲线，自动规划每日复习任务</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📋</span>
+                            <span><strong>结构化记忆适配</strong> - 完美处理"一对多"复杂场景，朝代、条款、名词无一遗漏</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✨</span>
+                            <span><strong>极简极致体验</strong> - 无序答题、JSON导入导出，为硬核学习者打造丝滑工作流</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第2页：寻找测验 -->
+                <div class="onboarding-page" data-page="2">
+                    <div class="onboarding-icon">🎯</div>
+                    <h2 class="onboarding-title">开启你的第一次测验</h2>
+                    <p class="onboarding-desc">了解如何在系统中快速查找和定位你的测验</p>
+                    <div class="video-container">
+                        <video id="video-page-2" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/寻找测验.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第3页：提示功能 -->
+                <div class="onboarding-page" data-page="3">
+                    <div class="onboarding-icon">💡</div>
+                    <h2 class="onboarding-title">遇到卡点？点击提示</h2>
+                    <p class="onboarding-desc">学习遇到困难时，智能提示帮你突破瓶颈</p>
+                    <div class="video-container">
+                        <video id="video-page-3" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/提示.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第4页：答题完成 -->
+                <div class="onboarding-page" data-page="4">
+                    <div class="onboarding-icon">✅</div>
+                    <h2 class="onboarding-title">查看测验结果</h2>
+                    <p class="onboarding-desc">完成后回顾结果，了解你的掌握程度</p>
+                    <div class="video-container">
+                        <video id="video-page-4" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/答题完成.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第5页：复习推送 -->
+                <div class="onboarding-page" data-page="5">
+                    <div class="onboarding-icon">🔄</div>
+                    <h2 class="onboarding-title">无痛背书，每日推送</h2>
+                    <p class="onboarding-desc">内置艾宾浩斯遗忘曲线算法，自动安排最佳复习时间</p>
+                    <div class="video-container">
+                        <video id="video-page-5" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/复习推送.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第6页：创建测验 -->
+                <div class="onboarding-page" data-page="6">
+                    <div class="onboarding-icon">📝</div>
+                    <h2 class="onboarding-title">1分钟定制记忆测验</h2>
+                    <p class="onboarding-desc">快速创建打字题或填空题，打造专属学习内容</p>
+                    <div class="video-container">
+                        <video id="video-page-6" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/创建测验.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第7页：测验分组 -->
+                <div class="onboarding-page" data-page="7">
+                    <div class="onboarding-icon">📂</div>
+                    <h2 class="onboarding-title">自定义分组，科学管理</h2>
+                    <p class="onboarding-desc">通过分组功能组织测验，让知识体系清晰有序</p>
+                    <div class="video-container">
+                        <video id="video-page-7" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/测验分组.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第8页：开始 -->
+                <div class="onboarding-page" data-page="8">
+                    <div class="onboarding-icon">🚀</div>
+                    <h2 class="onboarding-title">准备好了吗？</h2>
+                    <p class="onboarding-desc">
+                        记忆不是重复阅读，而是主动提取。<br>
+                        准备好开始你的高效学习之旅了吗？
+                    </p>
+                    <div class="onboarding-final-actions">
+                        <button class="btn btn-primary" onclick="closeOnboarding()">开始使用</button>
+                        <label class="skip-future-label">
+                            <input type="checkbox" id="skip-future-checkbox">
+                            <span>下次不再显示此引导</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="onboarding-nav">
+                    <button class="btn btn-nav btn-prev" onclick="prevPage()" style="visibility: hidden;">上一页</button>
+                    <button class="btn btn-nav btn-next" onclick="nextPage()">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 引导弹窗样式 */
+        .onboarding-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .onboarding-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .onboarding-container {
+            position: relative;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .onboarding-content {
+            position: relative;
+            padding: 2.5rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .onboarding-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .onboarding-close:hover {
+            background: var(--hover);
+            color: var(--text-main);
+        }
+
+        /* 进度指示器 */
+        .onboarding-progress {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s;
+        }
+
+        .progress-dot.active {
+            background: var(--accent);
+            transform: scale(1.2);
+        }
+
+        /* 页面内容 */
+        .onboarding-page {
+            display: none;
+            animation: pageFadeIn 0.4s ease-out;
+        }
+
+        .onboarding-page.active {
+            display: block;
+        }
+
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .onboarding-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .onboarding-title {
+            font-size: 1.5rem;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .onboarding-desc {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Logo样式 */
+        .onboarding-logo {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .onboarding-logo img {
+            height: 60px;
+            width: auto;
+        }
+
+        /* 功能详情列表 */
+        .feature-detail-list {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .feature-detail-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-check {
+            color: var(--success);
+            font-size: 1rem;
+        }
+
+        .feature-detail-header h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .feature-detail-item p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        /* 功能列表 */
+        .onboarding-features {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            line-height: 1.5;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* 功能卡片网格 */
+        .onboarding-features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .feature-card {
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            background: var(--hover);
+        }
+
+        .feature-card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .feature-card p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* 视频区域 - 适配竖屏视频 */
+        .video-container {
+            margin: 1.5rem auto;
+            border: 1px solid var(--border);
+            background: var(--hover);
+            max-width: 480px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .video-placeholder {
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .video-placeholder p {
+            font-size: 1rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .video-placeholder span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* 快速提示 */
+        .quick-tips {
+            background: var(--hover);
+            border-left: 3px solid var(--accent);
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .quick-tips h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .quick-tips ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quick-tips li {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 0.35rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .quick-tips li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* 最终页面操作 */
+        .onboarding-final-actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .onboarding-final-actions .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 1rem 3rem;
+            font-size: 0.85rem;
+        }
+
+        .onboarding-final-actions .btn-primary:hover {
+            background: var(--text-muted);
+        }
+
+        .skip-future-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .skip-future-label input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* 导航按钮 */
+        .onboarding-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-nav {
+            padding: 0.6rem 1.5rem;
+            font-size: 0.7rem;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .onboarding-content {
+                padding: 1.5rem;
+            }
+
+            .onboarding-features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .onboarding-title {
+                font-size: 1.25rem;
+            }
+
+            .onboarding-nav {
+                flex-direction: row;
+                gap: 1rem;
+            }
+        }
+    </style>
+
+    <script>
+        // 引导弹窗状态
+        let currentPage = 1;
+        const totalPages = 8;
+
+        // 检查是否需要显示引导（首次访问或用户未选择跳过）
+        function shouldShowOnboarding() {
+            const skipOnboarding = localStorage.getItem('skipOnboarding');
+            const hasVisited = localStorage.getItem('hasVisitedBefore');
+            
+            // 如果用户明确选择跳过，或者已经访问过但旧版本没有skip标志
+            if (skipOnboarding === 'true') {
+                return false;
+            }
+            
+            // 首次访问显示引导
+            return true;
+        }
+
+        // 显示引导弹窗
+        function showOnboarding() {
+            if (!shouldShowOnboarding()) return;
+            
+            const modal = document.getElementById('onboarding-modal');
+            modal.style.display = 'flex';
+            
+            // 标记已访问
+            localStorage.setItem('hasVisitedBefore', 'true');
+        }
+
+        // 关闭引导弹窗
+        function closeOnboarding() {
+            const modal = document.getElementById('onboarding-modal');
+            const skipCheckbox = document.getElementById('skip-future-checkbox');
+            
+            // 如果用户选择不再显示
+            if (skipCheckbox && skipCheckbox.checked) {
+                localStorage.setItem('skipOnboarding', 'true');
+            }
+            
+            modal.style.display = 'none';
+            
+            // 暂停所有视频播放（第2-7页有视频）
+            for (let i = 2; i <= 7; i++) {
+                const video = document.getElementById(`video-page-${i}`);
+                if (video && !video.paused) {
+                    video.pause();
+                }
+            }
+        }
+
+        // 切换到指定页面
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            
+            // 隐藏当前页面
+            document.querySelector(`.onboarding-page[data-page="${currentPage}"]`).classList.remove('active');
+            document.querySelector(`.progress-dot[data-page="${currentPage}"]`).classList.remove('active');
+            
+            // 显示新页面
+            currentPage = page;
+            document.querySelector(`.onboarding-page[data-page="${currentPage}"]`).classList.add('active');
+            document.querySelector(`.progress-dot[data-page="${currentPage}"]`).classList.add('active');
+            
+            // 更新导航按钮
+            updateNavButtons();
+        }
+
+        // 下一页
+        function nextPage() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        // 更新导航按钮状态
+        function updateNavButtons() {
+            const prevBtn = document.querySelector('.btn-prev');
+            const nextBtn = document.querySelector('.btn-next');
+            
+            // 上一页按钮
+            if (currentPage === 1) {
+                prevBtn.style.visibility = 'hidden';
+            } else {
+                prevBtn.style.visibility = 'visible';
+            }
+            
+            // 下一页按钮（最后一页显示"完成"）
+            if (currentPage === totalPages) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.textContent = '下一页';
+            }
+        }
+
+        // 键盘导航支持
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('onboarding-modal');
+            if (modal.style.display === 'none') return;
+            
+            if (e.key === 'ArrowRight' && currentPage < totalPages) {
+                nextPage();
+            } else if (e.key === 'ArrowLeft' && currentPage > 1) {
+                prevPage();
+            } else if (e.key === 'Escape') {
+                closeOnboarding();
+            }
+        });
+
+        // 页面加载完成后显示引导
+        document.addEventListener('DOMContentLoaded', () => {
+            // 延迟一点显示，确保页面完全加载
+            setTimeout(showOnboarding, 500);
+        });
+    </script>
 </body>
 </html>
