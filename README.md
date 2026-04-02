@@ -1,464 +1,179 @@
-# 敲脑壳 MindPop - 专为复杂知识设计的硬核记忆工具
+# 敲脑壳 MindPop
 
-一个专为复杂、长清单知识设计的「Anki 升级版」提取练习工具。采用 JetPunk 风格的"单框连击"交互，无需手动提交，只有当你真正敲对关键词，答案才会砰然跳出。这种设计彻底切断了"看一眼答案"的退路，强迫大脑完成最硬核的提取练习，彻底杜绝自我欺骗。
+> 专为复杂知识设计的硬核记忆工具  
+> 强制主动输出 × 科学间隔复习 × 结构化记忆
 
-## 💎 品牌核心
+<p align="center">
+  <a href="#功能特性">功能特性</a> •
+  <a href="#在线体验">在线体验</a> •
+  <a href="#快速开始">快速开始</a> •
+  <a href="#技术栈">技术栈</a> •
+  <a href="#截图展示">截图</a>
+</p>
 
-- **产品名称：** 敲脑壳 (MindPop)
-- **定位：** 专为复杂、长清单知识设计的「Anki 升级版」提取练习工具
-- **核心优势：** 强制主动输出 × 科学间隔复习 × 结构化记忆
+---
 
-## 🚀 产品核心特性
+## ✨ 为什么选择敲脑壳？
 
-- ✅ **强制主动输出：** 采用"单框连击"交互，无需手动提交。只有当你真正敲对关键词，答案才会砰然跳出，彻底杜绝自我欺骗
-- ✅ **科学间隔复习：** 内置 Anki 同款 SM-2 算法，基于遗忘曲线自动规划每日复习任务
-- ✅ **结构化记忆：** 完美适配历史朝代、法条要点、医学名词、简答题等"一对多"的复杂记忆场景
-- ✅ **极致交互体验：** 支持无序答题、导入导出 JSON 数据、测验分组以及智能忽略答案注释
-- ✅ **数据持久化：** 数据保存到文件，重启不丢失
-- ✅ **测验管理：** 创建、编辑、删除测验
-- ✅ **数据库管理：** 按测验或答案维度检索数据
-- ✅ **放弃功能：** 测验中可放弃并查看所有答案
-- ✅ **实时搜索：** 数据库管理支持实时搜索
-- ✅ **测验分组：** 创建分组并自由关联测验
-- ✅ **答案注释：** 为答案添加注释，答题时忽略注释部分
+传统记忆工具的问题：**看提示回想答案 → 点击查看答案 → "啊我想起来了"**
 
-## 技术栈
+这种自我欺骗式学习效率极低。敲脑壳采用 **"单框连击"** 交互设计：
 
-### 后端
-- **框架**: Spring Boot 2.7.x
-- **数据持久化**: Spring Data JPA
-- **数据库**: MySQL 8.0
-- **认证**: JWT (JJWT) + Spring Security (BCrypt)
-- **构建工具**: Maven
+- ✍️ **输入即匹配** - 无需手动提交，敲对关键词答案自动跳出  
+- 🚫 **彻底防欺骗** - 不敲对不显示，强迫大脑完成硬核提取  
+- 🎯 **无序答题** - 任意顺序回答，避免死记硬背顺序  
 
-### 前端
-- HTML5
-- CSS3
-- Vanilla JavaScript (ES6+)
-- Fetch API
+> 记忆不是重复阅读，而是**主动提取**。
 
-## 环境要求
+---
 
-- Java JDK 11 或更高版本 ✅
-- Maven 3.6+ (可选,项目包含Maven Wrapper)
-- MySQL 8.0 (本地或远程)
+## � 功能特性
 
-## 快速开始
+### 核心机制
 
-### 1. 检查 Java 环境
+| 特性 | 说明 |
+|------|------|
+| **强制主动输出** | JetPunk风格单框连击，敲对才显示答案 |
+| **SM-2间隔复习** | Anki同款算法，遗忘临界点精准推送 |
+| **5种状态流转** | 新测验→学习中→待复习→今日复习→重学中 |
+| **4级评级体系** | 重来/困难/良好/简单，算法自动计算下次复习时间 |
 
-```bash
-java -version
-```
+### 功能模块
 
-如果未安装,请访问: https://adoptium.net/
+- 📚 **测验管理** - 创建/编辑/删除测验，支持打字题和填空题
+- 📂 **分组管理** - 多对多分组关联，科学组织知识体系
+- 📊 **学习统计** - 今日/本周/本月数据可视化
+- 📥 **导入导出** - JSON格式一键迁移
+- 👤 **用户系统** - JWT认证，严格数据隔离
+- 🎁 **官方测验包** - 12个高质量测验，新用户注册即送
 
-### 2. 环境检测（可选）
+---
 
-**Windows:**
-```bash
-setup.bat
-```
+## 🌐 在线体验
 
-**Linux/Mac:**
-```bash
-chmod +x setup.sh
-./setup.sh
-```
+**访问地址：** http://47.102.147.127:8080
 
-脚本会自动检测 Java 和 Maven，并下载项目依赖。
+**试用账户：**
+- 用户名：`test8`
+- 密码：`test8`
 
-### 3. 启动应用
+> 💡 支持手机浏览器访问
 
-**Windows:**
+---
+
+## 🛠️ 快速开始
+
+### 环境要求
+
+- Java 11+
+- MySQL 8.0（本地或远程）
+
+### 一键启动
+
+**Windows：**
 ```bash
 start.bat
 ```
 
-**Linux/Mac:**
+**Mac/Linux：**
 ```bash
-chmod +x start.sh
 ./start.sh
 ```
 
-应用将在 http://localhost:8080 启动
+访问 http://localhost:8080
 
-### 4. 访问应用
+### 手动启动
 
-应用启动后会自动打开浏览器,或手动访问:
-
-- **首页:** http://localhost:8080/home.html (主页导航)
-- **测验列表:** http://localhost:8080/quizzes.html
-- **测验管理:** http://localhost:8080/manage.html (创建/编辑/删除测验)
-- **数据库管理:** http://localhost:8080/database.html (查询和检索数据)
-- **直接测验:** http://localhost:8080/index.html?id=1
-- **注册/登录:** http://localhost:8080/register.html
-
-## 🎮 如何玩
-
-1. 选择一个测验(或直接访问默认的"世界首都"测验)
-2. 在输入框中输入答案
-3. 答案正确会立即显示并计分
-4. 尝试在时间限制内答出所有答案!
-
-## 💡 提示
-
-- 答案不区分大小写
-- 不需要按回车键,输入匹配即可
-- 可以任意顺序回答
-- 重复输入会提示"已回答"
-
-## 📝 创建测验
-
-### 方法1: 使用管理页面(推荐)
-访问 http://localhost:8080/manage.html 使用可视化界面创建测验
-
-### 方法2: 使用API
 ```bash
-curl -X POST http://localhost:8080/api/quizzes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "我的测验",
-    "description": "测验描述",
-    "timeLimit": 300,
-    "answers": ["答案1", "答案2", "答案3"]
-  }'
+# 设置数据库地址
+export MYSQL_HOST=your_mysql_host  # Linux/Mac
+set MYSQL_HOST=your_mysql_host     # Windows
+
+# 启动应用
+./mvnw spring-boot:run
 ```
 
-## 🛑 停止应用
+---
 
-在运行应用的命令行窗口按 `Ctrl+C`
+## 📸 截图展示
 
-## API文档
+<p align="center">
+  <i>截图待补充</i>
+</p>
 
-### 测验相关
+---
 
-#### 获取所有测验
-```
-GET /api/quizzes
-```
+## 🏗️ 技术栈
 
-#### 获取测验详情
-```
-GET /api/quizzes/{id}
-```
+### 后端
+- **框架**: Spring Boot 2.7
+- **数据库**: MySQL 8.0 + Spring Data JPA
+- **安全**: JWT + Spring Security (BCrypt)
+- **构建**: Maven
 
-#### 创建测验
-```
-POST /api/quizzes
-Content-Type: application/json
+### 前端
+- **原生技术**: HTML5 + CSS3 + Vanilla JavaScript (ES6+)
+- **交互**: Fetch API + LocalStorage
+- **设计**: 空·息·恒·信极简理念
 
-{
-  "title": "世界首都",
-  "description": "说出世界各国的首都",
-  "timeLimit": 600,
-  "answers": ["北京", "东京", "伦敦", ...]
-}
-```
+### 部署
+- **容器化**: Docker
+- **服务器**: 阿里云 ECS
+- **CI/CD**: Git + SSH 自动部署
 
-#### 更新测验
-```
-PUT /api/quizzes/{id}
-Content-Type: application/json
+---
 
-{
-  "title": "世界首都(更新)",
-  "description": "说出世界各国的首都",
-  "timeLimit": 300,
-  "answers": ["北京", "东京", "伦敦", ...]
-}
-```
-
-#### 删除测验
-```
-DELETE /api/quizzes/{id}
-```
-
-#### 获取测验答案
-```
-GET /api/quizzes/{id}/answers
-```
-
-### 答案相关
-
-#### 验证答案
-```
-POST /api/answers/validate
-Content-Type: application/json
-
-{
-  "quizId": 1,
-  "input": "beijing"
-}
-```
-
-#### 搜索答案
-```
-GET /api/answers/search?content=北京
-```
-
-### 数据库管理相关
-
-#### 获取数据库统计信息
-```
-GET /api/database/stats
-```
-
-#### 按测验ID查询答案
-```
-GET /api/database/quiz/{id}/answers
-```
-
-#### 按测验名称搜索
-```
-GET /api/database/quiz/search?name=关键字
-```
-
-#### 按答案ID查询所属测验
-```
-GET /api/database/answer/{id}/quiz
-```
-
-#### 按答案内容搜索
-```
-GET /api/database/answer/search?content=关键字
-```
-
-### 导入导出相关
-
-#### 导出单个测验
-```
-GET /api/import-export/quiz/{id}/export
-```
-
-#### 导出所有测验
-```
-GET /api/import-export/quizzes/export
-```
-
-#### 导入单个测验
-```
-POST /api/import-export/quiz/import
-Content-Type: application/json
-
-{
-  "title": "测验标题",
-  "description": "测验描述",
-  "timeLimit": 300,
-  "answers": ["答案1", "答案2", ...]
-}
-```
-
-#### 批量导入测验
-```
-POST /api/import-export/quizzes/import
-Content-Type: application/json
-
-[
-  {
-    "title": "测验1",
-    "answers": ["答案1", "答案2"]
-  },
-  {
-    "title": "测验2",
-    "answers": ["答案3", "答案4"]
-  }
-]
-```
-
-## 项目结构
+## 📁 项目结构
 
 ```
 typing-quiz/
 ├── src/main/java/com/typingquiz/
-│   ├── TypingQuizApplication.java    # 应用入口
-│   ├── config/                       # 配置类
-│   │   ├── DataInitializer.java     # 数据初始化
-│   │   └── SecurityConfig.java       # Spring Security 配置
-│   ├── entity/                       # 实体类
-│   │   ├── Quiz.java                 # 测验主实体
-│   │   ├── Answer.java               # 答案实体
-│   │   ├── User.java                 # 用户实体
-│   │   ├── QuizGroup.java            # 测验分组实体
-│   │   ├── FillBlankQuiz.java        # 填空题实体
-│   │   └── QuizType.java             # 测验类型枚举
-│   ├── repository/                   # 数据访问层 (Spring Data JPA)
-│   ├── service/                      # 业务逻辑层
-│   ├── controller/                   # REST API 控制器
-│   ├── dto/                          # 数据传输对象
-│   ├── exception/                    # 异常处理
-│   └── util/                         # 工具类 (JwtUtil)
-├── src/main/resources/
-│   ├── application.properties        # 应用配置
-│   └── static/                       # 前端资源 (HTML/CSS/JS)
-├── pom.xml
-├── Dockerfile
-├── start.bat                         # 本地启动 (连接云端 MySQL)
-└── README.md
+│   ├── entity/        # 实体类 (Quiz, Answer, User, QuizGroup...)
+│   ├── repository/    # 数据访问层 (Spring Data JPA)
+│   ├── service/       # 业务逻辑层
+│   ├── controller/    # REST API 控制器
+│   └── config/        # 配置类
+├── src/main/resources/static/  # 前端页面
+├── initial-data/      # 官方测验包
+└── docs/              # 文档
 ```
 
-## 分层架构
+---
 
-```
-Controller (REST API) → Service (业务逻辑) → Repository (数据访问) → Entity (数据模型)
-```
+## 🗺️ 项目里程碑
 
-## 安全设计
+| 版本 | 时间 | 里程碑 |
+|------|------|--------|
+| v1.0 | 2025.11 | 基础打字测验功能 |
+| v1.3 | 2025.12 | 用户系统 + JWT认证 |
+| v1.6 | 2026.02 | **间隔重复复习系统上线** |
+| v1.8 | 2026.02 | 极简风UI全面重构 |
+| v1.9 | 2026.02 | 测验分组体系重构 |
+| v1.10 | 2026.03 | 官方测验包 + 引导视频 |
 
-### JWT 认证
-- Token 有效期: 24小时
-- 签名算法: HS256
-- 前端请求需携带: `Authorization: Bearer <token>`
+---
 
-### 账户数据隔离
-- 所有数据查询按 `userId` 过滤
-- 用户只能访问自己的测验和分组
+## 📖 相关文档
 
-### 密码加密
-- 使用 BCrypt (Spring Security)
-- 防彩虹表攻击
+- [API 文档](document_trail/docs/API.md)
+- [数据库设计](document_trail/docs/DB_SCHEMA.md)
+- [更新日志](document_trail/CHANGELOG.md)
+- [开发指南](docs/internal/AI_DEVELOPMENT_GUIDE.md)
 
-## 开发指南
+---
 
-### 构建项目
-```bash
-./mvnw clean install
-```
+## 🤝 贡献
 
-### 运行测试
-```bash
-./mvnw test
-```
+欢迎 Issue 和 PR！
 
-### 打包应用
-```bash
-./mvnw package
-```
+---
 
-生成的JAR文件位于 `target/typing-quiz-1.0.0.jar`
+## 📄 许可证
 
-### 运行打包后的应用
-```bash
-java -jar target/typing-quiz-1.0.0.jar
-```
+[MIT](LICENSE)
 
-## 故障排除
+---
 
-### Java未安装
-如果看到"未检测到Java JDK"错误:
-1. 访问 https://adoptium.net/
-2. 下载并安装Java 11或更高版本
-3. 重新运行setup脚本
-
-### 端口被占用
-如果8080端口被占用,修改 `application.properties`:
-```properties
-server.port=8081
-```
-
-### H2控制台无法访问
-确保 `application.properties` 中启用了H2控制台:
-```properties
-spring.h2.console.enabled=true
-```
-
-### 数据库文件位置
-数据保存在 `data/` 目录下:
-- `data/typingquiz.mv.db` - 数据库文件
-- 如需重置数据,删除此文件夹即可
-
-### 备份数据
-复制 `data/` 文件夹即可备份所有测验数据
-
-## 云服务器部署指南
-
-### 常见问题与解决方案
-
-#### 问题1: Dockerfile 找不到
-**错误信息:**
-```
-ERROR: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
-```
-
-**原因:** 执行 `docker build` 时当前目录不是项目根目录。
-
-**解决方案:**
-1. 执行 `pwd` 确认当前目录
-2. 确保目录包含 `Dockerfile`、`pom.xml` 和 `src/` 文件夹
-3. 如果在错误的子目录，执行 `cd ..` 返回上级目录
-
-#### 问题2: Git 推送失败 - 大文件限制
-**错误信息:**
-```
-error: GH001: Large files detected. You may want to try Git Large File Storage.
-```
-
-**原因:** 提交了大文件（如 `tools/` 目录下的开发工具）。
-
-**解决方案:**
-1. 本地执行 `git rm -r --cached tools/` 移除大文件
-2. 执行 `git commit -m "chore: remove large tools directory"` 提交更改
-3. 执行 `git push` 推送到 GitHub
-
-**预防措施:** 确保 `.gitignore` 包含以下内容:
-```
-# 开发工具
-tools/
-```
-
-#### 问题3: 构建速度慢 - 每次都下载依赖
-**原因:** Docker 多阶段构建会重复下载 Maven 依赖。
-
-**优化方案:** 修改 `Dockerfile` 利用缓存层:
-```dockerfile
-# 先复制依赖文件
-COPY pom.xml .
-# 下载依赖（利用缓存）
-RUN mvn dependency -B
-# 再复制代码并构建
-COPY src ./src
-RUN mvn package -DskipTests
-```
-
-### 部署步骤
-
-1. **SSH 连接到服务器:**
-   ```bash
-   ssh root@47.102.147.127
-   ```
-
-2. **进入项目目录:**
-   ```bash
-   cd /app/typing-quiz
-   ```
-
-3. **拉取最新代码:**
-   ```bash
-   git pull
-   ```
-
-4. **构建并部署:**
-   ```bash
-   docker build -t typing-quiz-app .
-   docker rm -f typing-quiz-app
-   docker run -d -p 8080:8080 --name typing-quiz-app -v ./data:/app/data typing-quiz-app
-   ```
-
-5. **验证部署:**
-   访问 http://47.102.147.127:8080
-
-### 目录结构说明
-
-服务器上可能存在多个 `typing-quiz` 目录:
-- `/app/typing-quiz` - 项目根目录（包含 Dockerfile）
-- `/app/typing-quiz/typing-quiz` - 空目录或数据目录
-
-执行 `ls -la` 确认目录结构后再操作。
-
-## 许可证
-
-MIT License
-
-## 作者
-
-敲脑壳 MindPop Team
+<p align="center">
+  Made with ❤️ by 敲脑壳 MindPop Team
+</p>
