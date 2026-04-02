@@ -1,8 +1,28 @@
-# 设置云端数据库环境变量
-$env:MYSQL_HOST = "47.102.147.127"
+# 加载 .env 文件中的环境变量
+$envFile = ".env"
+if (Test-Path $envFile) {
+    Write-Host "正在加载环境变量..." -ForegroundColor Green
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match "^([^#][^=]*)=(.*)$") {
+            $name = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+        }
+    }
+} else {
+    Write-Host "警告: 未找到 .env 文件，使用默认配置" -ForegroundColor Yellow
+    Write-Host "请复制 .env.example 为 .env 并填写真实配置"
+}
+
+# 检查必要的环境变量
+if (-not $env:MYSQL_HOST) {
+    $env:MYSQL_HOST = "localhost"
+    Write-Host "警告: MYSQL_HOST 未设置，使用默认值 localhost" -ForegroundColor Yellow
+}
 
 echo "========================================"
-echo "正在启动 Typing Quiz 应用 (连接云端数据库)..."
+echo "正在启动 Typing Quiz 应用..."
+echo "MySQL 主机: $($env:MYSQL_HOST)"
 echo "========================================"
 echo ""
 echo "应用地址: http://localhost:8080"

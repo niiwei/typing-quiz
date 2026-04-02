@@ -214,7 +214,8 @@ src/main/java/com/typingquiz/
 
 ```java
 // JwtUtil.java
-private static final String SECRET = "typingquizsecretkey2024";
+// JWT密钥从环境变量获取，生产环境必须设置JWT_SECRET环境变量
+private static final String SECRET = System.getenv().getOrDefault("JWT_SECRET", "dev_secret_key_change_in_production");
 private static final long EXPIRATION = 86400000L; // 24小时
 ```
 
@@ -372,8 +373,8 @@ server.port=8080
 
 # MySQL 数据库配置
 spring.datasource.url=jdbc:mysql://${MYSQL_HOST:localhost}:3306/typing_quiz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-spring.datasource.username=typingquiz
-spring.datasource.password=pianzigunsb123..
+spring.datasource.username=${MYSQL_USER:typingquiz}
+spring.datasource.password=${MYSQL_PASSWORD:your_mysql_password}
 
 # JPA 配置
 spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
@@ -387,8 +388,9 @@ spring.jpa.hibernate.ddl-auto=update
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | MYSQL_HOST | localhost | MySQL 服务器地址 |
-| 本地开发 | 47.102.147.127 | 连接云端数据库 |
-| 云端部署 | localhost | 使用本地 MySQL |
+| MYSQL_USER | typingquiz | MySQL 用户名 |
+| MYSQL_PASSWORD | - | MySQL 密码（必填） |
+| JWT_SECRET | - | JWT密钥（必填） |
 
 ---
 

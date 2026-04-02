@@ -27,8 +27,8 @@
 ### 2.1 认证安全
 
 ```java
-// JWT 签名密钥
-private static final String SECRET = "typingquizsecretkey2024";
+// JWT 签名密钥（从环境变量获取）
+private static final String SECRET = System.getenv().getOrDefault("JWT_SECRET", "dev_secret_key_change_in_production");
 private static final long EXPIRATION = 86400000L; // 24小时
 
 // Token 结构：userId:username

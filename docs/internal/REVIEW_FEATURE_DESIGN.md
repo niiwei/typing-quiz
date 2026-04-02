@@ -1363,7 +1363,7 @@ renderGroupProgress()
 通过 SSH 免密登录，一键部署到云服务器：
 
 ```powershell
-ssh -i C:\Users\29982\.ssh\typing_quiz_deploy root@47.102.147.127 "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+ssh -i ~/.ssh/your_deploy_key root@your_server_ip "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
 ```
 
 ### 常见问题处理
@@ -1400,8 +1400,8 @@ git pull
 
 | 配置项 | 值 |
 |--------|-----|
-| 服务器地址 | 47.102.147.127 |
-| SSH 密钥 | C:\Users\29982\.ssh\typing_quiz_deploy |
+| 服务器地址 | your_server_ip |
+| SSH 密钥 | ~/.ssh/your_deploy_key |
 | 项目目录 | /app/typing-quiz |
 | 容器名称 | typing-quiz-app |
 | 端口映射 | 8080 (host 网络模式) |

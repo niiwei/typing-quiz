@@ -6,7 +6,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 public class JwtUtil {
 
-    private static final String SECRET = "typingquizsecretkey2024";
+    // 从环境变量获取JWT密钥，默认仅用于开发环境
+    private static final String SECRET = System.getenv().getOrDefault("JWT_SECRET", "dev_secret_key_change_in_production");
     private static final long EXPIRATION = 86400000L;
 
     public static String generateToken(Long userId, String username) {

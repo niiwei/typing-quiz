@@ -63,14 +63,14 @@ start.bat
 已配置 SSH 免密登录，一键部署：
 
 ```powershell
-ssh -i C:\Users\29982\.ssh\typing_quiz_deploy root@47.102.147.127 "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+ssh -i ~/.ssh/your_deploy_key root@your_server_ip "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
 ```
 
 ### 手动部署步骤
 
 ```bash
 # 1. SSH 登录服务器
-ssh root@47.102.147.127
+ssh root@your_server_ip
 
 # 2. 进入项目目录
 cd /app/typing-quiz
@@ -92,8 +92,8 @@ docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-q
 
 | 配置项 | 值 |
 |--------|-----|
-| 服务器地址 | 47.102.147.127 |
-| SSH 密钥 | C:\Users\29982\.ssh\typing_quiz_deploy |
+| 服务器地址 | your_server_ip |
+| SSH 密钥 | ~/.ssh/your_deploy_key |
 | 项目目录 | /app/typing-quiz |
 | 容器名称 | typing-quiz-app |
 | 端口映射 | 8080 (host 网络模式) |
@@ -117,7 +117,7 @@ FLUSH PRIVILEGES;
 | 配置项 | 值 |
 |--------|-----|
 | 数据库类型 | MySQL 8.0 |
-| 服务器地址 | 47.102.147.127 |
+| 服务器地址 | your_server_ip |
 | 端口 | 3306 |
 | 数据库名 | typing_quiz |
 | 字符集 | utf8mb4_unicode_ci |
@@ -126,29 +126,29 @@ FLUSH PRIVILEGES;
 
 | 用户 | 密码 | 用途 |
 |------|------|------|
-| root | pianzigunsb123.. | 数据库管理（创建数据库、用户、授权） |
-| typingquiz | pianzigunsb123.. | 应用代码连接数据库 |
+| root | your_mysql_password | 数据库管理（创建数据库、用户、授权） |
+| typingquiz | your_mysql_password | 应用代码连接数据库 |
 
 **应用配置（application.properties）：**
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/typing_quiz?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
 spring.datasource.username=typingquiz
-spring.datasource.password=pianzigunsb123..
+spring.datasource.password=your_mysql_password
 ```
 
 **远程连接示例：**
 ```bash
-mysql -h 47.102.147.127 -u typingquiz -p typing_quiz
+mysql -h your_server_ip -u typingquiz -p typing_quiz
 ```
 
 ### 4.3 数据库备份
 
 ```bash
 # 备份
-mysqldump -h 47.102.147.127 -u typingquiz -p typing_quiz > backup.sql
+mysqldump -h your_server_ip -u typingquiz -p typing_quiz > backup.sql
 
 # 恢复
-mysql -h 47.102.147.127 -u typingquiz -p typing_quiz < backup.sql
+mysql -h your_server_ip -u typingquiz -p typing_quiz < backup.sql
 ```
 
 ## 5. 常见问题处理
@@ -213,7 +213,7 @@ git push --force
 docker rm -f typing-quiz-app
 
 # 恢复数据库备份
-mysql -h 47.102.147.127 -u typingquiz -p typing_quiz < backup.sql
+mysql -h your_server_ip -u typingquiz -p typing_quiz < backup.sql
 
 # 重新启动
 docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: typing-quiz-app
+    network_mode: host
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_USER=${MYSQL_USER:-typingquiz}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-default_password}
+      - JWT_SECRET=${JWT_SECRET:-change_in_production}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -14,7 +14,7 @@
 
 ```bash
 # 设置环境变量连接数据库
-set MYSQL_HOST=47.102.147.127  # Windows
+set MYSQL_HOST=your_server_ip  # Windows
 export MYSQL_HOST=localhost      # Linux/Mac
 
 # 启动开发服务器

@@ -1,5 +1,16 @@
 @echo off
 
+:: 检查是否存在 .env 文件并加载
+if exist .env (
+    echo 正在加载环境变量...
+    for /f "usebackq tokens=1,2 delims==" %%a in (.env) do (
+        set %%a=%%b
+    )
+) else (
+    echo 警告: 未找到 .env 文件，使用默认配置
+    echo 请复制 .env.example 为 .env 并填写真实配置
+)
+
 :: 关闭之前可能占用端口的 Java 进程
 echo 正在确保清理所有残留的 java.exe 进程...
 taskkill /F /IM java.exe /T 2>nul
@@ -11,8 +22,11 @@ if %errorlevel% == 0 (
 )
 echo.
 
-:: 设置 MySQL 连接地址（本地开发连云服务器）
-set MYSQL_HOST=47.102.147.127
+:: 检查 MySQL_HOST 是否已设置
+if "%MYSQL_HOST%"=="" (
+    set MYSQL_HOST=localhost
+    echo 警告: MYSQL_HOST 未设置，使用默认值 localhost
+)
 
 echo ========================================
 echo 正在启动 Typing Quiz 应用...

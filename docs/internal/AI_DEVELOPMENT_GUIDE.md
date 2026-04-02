@@ -12,8 +12,8 @@
 | 技术栈 | Spring Boot 2.7.18 + MySQL 8.0 + Vanilla JS |
 | 构建工具 | Maven |
 | Java 版本 | 11 |
-| 服务器 | 47.102.147.127:8080 |
-| 数据库 | MySQL 8.0 (47.102.147.127) |
+| 服务器 | your_server_ip:8080 |
+| 数据库 | MySQL 8.0 (your_server_ip) |
 
 ## 核心功能
 
@@ -43,7 +43,7 @@ typing-quiz/
 │   └── static/          # 前端资源 (HTML/CSS/JS)
 ├── pom.xml
 ├── Dockerfile
-├── start.bat            # 本地启动 (MYSQL_HOST=47.102.147.127)
+├── start.bat            # 本地启动 (MYSQL_HOST=your_server_ip)
 └── docs/
 ```
 
@@ -95,16 +95,16 @@ git push
 适用场景: 无 IDE 环境或需要纯命令行构建时。
 - **CMD**:
   ```bash
-  set MYSQL_HOST=47.102.147.127 && .\mvnw.cmd spring-boot:run
+  set MYSQL_HOST=your_server_ip && .\mvnw.cmd spring-boot:run
   ```
 - **PowerShell**:
   ```powershell
-  $env:MYSQL_HOST="47.102.147.127"; .\mvnw.cmd spring-boot:run
+  $env:MYSQL_HOST="your_server_ip"; .\mvnw.cmd spring-boot:run
   ```
 
 #### 3. IDE 启动 (IntelliJ IDEA)
 - 在 **Run/Debug Configurations** -> **Environment variables** 中添加：
-  `MYSQL_HOST=47.102.147.127`
+  `MYSQL_HOST=your_server_ip`
 - 运行 `TypingQuizApplication.java`。
 
 ### 云端部署
@@ -114,19 +114,19 @@ git push
 已配置 SSH 免密登录，可从 Windows 自动部署：
 
 ```powershell
-ssh -i C:\Users\29982\.ssh\typing_quiz_deploy root@47.102.147.127 "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+ssh -i ~/.ssh/your_deploy_key root@your_server_ip "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
 ```
 
 **配置说明：**
-- SSH 密钥位置：`C:\Users\29982\.ssh\typing_quiz_deploy`
-- 服务器地址：`47.102.147.127`
+- SSH 密钥位置：`~/.ssh/your_deploy_key`
+- 服务器地址：`your_server_ip`
 - 首次配置需执行：将公钥添加到服务器的 `~/.ssh/authorized_keys`
 
 #### 手动部署
 
 ```bash
-# 1. SSH 登录
-ssh root@47.102.147.127
+# 1. SSH 登录服务器
+ssh root@your_server_ip
 
 # 2. 进入项目目录
 cd /app/typing-quiz
@@ -152,8 +152,8 @@ docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-q
 
 | 用户 | 用途 | 密码 |
 |------|------|------|
-| root | 管理员 | pianzigunsb123.. |
-| typingquiz | 应用连接 | pianzigunsb123.. |
+| root | 管理员 | your_mysql_password |
+| typingquiz | 应用连接 | your_mysql_password |
 
 连接字符串：
 ```properties

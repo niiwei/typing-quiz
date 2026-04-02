@@ -44,3 +44,17 @@ tools/
 
 # Reference versions (for comparison only)
 40d8f67-ref/
+
+# Environment variables and sensitive config
+.env
+.env.local
+.env.production
+application-local.properties
+application-prod.properties
+
+# SSH keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+.ssh/
