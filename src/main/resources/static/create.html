@@ -409,7 +409,7 @@
                         <div class="editor-toolbar">
                             <button type="button" class="toolbar-btn" onclick="wrapSelectionWithBrackets()">挖空选中</button>
                             <button type="button" class="toolbar-btn" onclick="wrapSelectionWithHash('fill-blank-full-text')">添加注释</button>
-                            <button type="button" class="toolbar-btn" onclick="showAiGenerateModal()" style="margin-left: auto; color: var(--accent); border-color: var(--accent);">🤖 AI 生成填空</button>
+                            <a href="ai-create.html" class="toolbar-btn" style="margin-left: auto; color: var(--accent); border-color: var(--accent); text-decoration: none; display: inline-block;">🤖 AI 批量创建</a>
                         </div>
                         <div class="answer-editor">
                             <textarea id="fill-blank-full-text" class="form-input" style="min-height: 150px;" placeholder="输入完整文本，选中文字后点击"挖空"按钮创建填空...&#10;例如：中国的首都是[北京#首都#]" oninput="updateFillPreview()"></textarea>
@@ -437,35 +437,7 @@
                 <button type="button" id="save-btn" class="btn" onclick="saveQuiz()">保存测验</button>
             </div>
 
-        </form>
-
-        <!-- AI 生成填空题弹窗 -->
-        <div id="ai-generate-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
-            <div style="width: 90%; max-width: 600px; max-height: 80vh; background: var(--bg); border: 1px solid var(--border); overflow: auto;">
-                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="margin: 0; font-size: 1rem; font-weight: 600;">🤖 AI 生成填空题</h3>
-                    <button onclick="closeAiModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
-                </div>
-                <div style="padding: 1.5rem;">
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label class="form-label">书名 <span class="optional">(可选)</span></label>
-                        <input type="text" id="ai-book-name" class="form-input" placeholder="例如：大模型技术30讲">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label class="form-label">微信读书笔记内容 *</label>
-                        <textarea id="ai-note-input" class="form-input" style="min-height: 200px;" placeholder="粘贴微信读书导出的划线笔记内容...&#10;&#10;格式示例：&#10;《书名》&#10;&#10;◆ 嵌入向量简称嵌入，能够将高维数据编码为低维向量...&#10;◆ 嵌入的一个基本特性是在编码时会关注输入间的距离..."></textarea>
-                    </div>
-                    <div id="ai-loading" style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);">
-                        <span>🤖 AI 正在生成...</span>
-                    </div>
-                    <div id="ai-error" style="display: none; color: var(--error); padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--error);"></div>
-                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                        <button type="button" class="btn-text" onclick="closeAiModal()">取消</button>
-                        <button type="button" id="ai-generate-btn" class="btn" onclick="generateFillBlankWithAi()">生成</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    </form>
 
     <script src="js/api.js"></script>
     <script src="js/theme.js"></script>
@@ -868,81 +840,6 @@
                 }
             } catch (e) { 
                 alert(editQuizId ? '更新失败' : '保存失败'); 
-            }
-        }
-
-        function showAiGenerateModal() {
-            document.getElementById('ai-generate-modal').style.display = 'flex';
-            document.getElementById('ai-error').style.display = 'none';
-            document.getElementById('ai-loading').style.display = 'none';
-            document.getElementById('ai-note-input').value = '';
-            document.getElementById('ai-book-name').value = '';
-        }
-
-        function closeAiModal() {
-            document.getElementById('ai-generate-modal').style.display = 'none';
-        }
-
-        async function generateFillBlankWithAi() {
-            const noteContent = document.getElementById('ai-note-input').value.trim();
-            if (!noteContent) {
-                showAiError('请输入笔记内容');
-                return;
-            }
-
-            const bookName = document.getElementById('ai-book-name').value.trim();
-
-            document.getElementById('ai-error').style.display = 'none';
-            document.getElementById('ai-loading').style.display = 'block';
-            document.getElementById('ai-generate-btn').disabled = true;
-
-            try {
-                const response = await fetch('/api/ai/generate-fill-blank', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...Auth.getAuthHeaders()
-                    },
-                    body: JSON.stringify({ noteContent, bookName })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || '生成失败');
-                }
-
-                applyAiGeneratedFillBlank(data);
-                closeAiModal();
-                document.getElementById('fill-blank-full-text').value = data.fullText;
-                updateFillPreview();
-                
-            } catch (error) {
-                showAiError(error.message);
-            } finally {
-                document.getElementById('ai-loading').style.display = 'none';
-                document.getElementById('ai-generate-btn').disabled = false;
-            }
-        }
-
-        function showAiError(message) {
-            const errorEl = document.getElementById('ai-error');
-            errorEl.textContent = message;
-            errorEl.style.display = 'block';
-        }
-
-        function applyAiGeneratedFillBlank(data) {
-            if (data.title) {
-                document.getElementById('quiz-title').value = data.title;
-            }
-            if (data.groups && data.groups.length > 0) {
-                const select = document.getElementById('quiz-group-select');
-                for (let option of select.options) {
-                    if (option.textContent === data.groups[0]) {
-                        option.selected = true;
-                        break;
-                    }
-                }
             }
         }
     </script>
