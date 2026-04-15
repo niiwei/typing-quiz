@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲脑壳 MindPop - AI 批量创建</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/brand/favicon/apple-touch-icon.png">
+    <style>
+        .ai-create-page {
+            background-color: #ffffff;
+            min-height: 100vh;
+            color: #171717;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ai-create-hero {
+            text-align: center;
+            padding: 4rem 0 3rem;
+        }
+
+        .ai-create-hero h1 {
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-create-hero .subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .ai-create-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+
+        .input-section {
+            border: 1px solid var(--border);
+            background: var(--bg);
+            margin-bottom: 1.5rem;
+        }
+
+        .input-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--hover);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-header h2 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .format-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .input-body {
+            padding: 1.5rem;
+        }
+
+        .note-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+
+        .note-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .generate-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+            margin-top: 1rem;
+            padding: 0;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e5e5e5;
+            border-top-color: #000000;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #737373;
+            min-width: 120px;
+        }
+
+        .progress-bar-container {
+            height: 3px;
+            background: #e5e5e5;
+            border-radius: 2px;
+            overflow: hidden;
+            width: 180px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #000000;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .result-section {
+            display: none;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .result-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--hover);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-header h2 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .select-all-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .save-selected-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .save-selected-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .save-selected-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+        }
+
+        .quiz-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .quiz-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .quiz-item:last-child {
+            border-bottom: none;
+        }
+
+        .quiz-checkbox {
+            margin-top: 0.25rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .quiz-content {
+            flex: 1;
+        }
+
+        .quiz-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .quiz-preview {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            background: var(--hover);
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+
+        .quiz-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .quiz-index {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            min-width: 30px;
+        }
+
+        .error-message {
+            color: var(--error);
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid var(--error);
+            background: rgba(255, 0, 0, 0.05);
+        }
+
+        .success-message {
+            color: var(--success);
+            padding: 1rem;
+            margin: 1rem 0;
+            border: 1px solid var(--success);
+            background: rgba(0, 255, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="ai-create-page">
+    <nav class="navbar">
+        <a href="index.html" class="logo">MindPop</a>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="create.html">创建测验</a>
+            <a href="manage.html">管理</a>
+        </div>
+    </nav>
+
+    <div class="ai-create-hero">
+        <h1>🤖 AI 批量创建填空题</h1>
+        <p class="subtitle">将微信读书笔记批量转换为测验</p>
+    </div>
+
+    <div class="ai-create-container">
+        <div class="input-section">
+            <div class="input-header">
+                <h2>笔记内容</h2>
+                <span class="format-hint">格式：每条划线以 ◆ 开头</span>
+            </div>
+            <div class="input-body">
+                <textarea id="note-input" class="note-textarea" placeholder="《书名》
+
+◆ 划线笔记1内容...
+◆ 划线笔记2内容...
+◆ 划线笔记3内容...
+
+（空行分隔不同段落）"></textarea>
+                <button id="generate-btn" class="generate-btn" onclick="generateBatch()">🤖 开始生成</button>
+            </div>
+        </div>
+
+        <div id="progress-section" class="progress-section">
+            <div class="progress-info">
+                <div class="progress-spinner"></div>
+                <span id="progress-text" class="progress-text">正在生成...</span>
+            </div>
+            <div class="progress-bar-container">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+        </div>
+
+        <div id="error-section" class="error-message" style="display: none;"></div>
+
+        <div id="result-section" class="result-section">
+            <div class="result-header">
+                <h2>生成结果 (<span id="quiz-count">0</span> 道测验)</h2>
+                <div class="result-actions">
+                    <label class="select-all-label">
+                        <input type="checkbox" id="select-all" onchange="toggleAll()"> 全选
+                    </label>
+                    <button id="save-btn" class="save-selected-btn" onclick="saveSelected()" disabled>保存选中 (0)</button>
+                </div>
+            </div>
+            <div id="quiz-list" class="quiz-list"></div>
+        </div>
+
+        <div id="success-section" class="success-message" style="display: none;">
+            ✓ 成功保存 <span id="saved-count">0</span> 道测验！
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        let generatedQuizzes = [];
+        let selectedQuizzes = new Set();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+        });
+
+        let currentController = null;
+
+        async function generateBatch() {
+            const noteText = document.getElementById('note-input').value.trim();
+            if (!noteText) {
+                showError('请输入笔记内容');
+                return;
+            }
+
+            hideError();
+            hideSuccess();
+            showProgress(0, '正在连接...');
+            document.getElementById('generate-btn').disabled = true;
+
+            try {
+                currentController = new AbortController();
+                const timeoutId = setTimeout(() => currentController.abort(), 360000);
+
+                const response = await fetch('/api/ai/generate-fill-blank-batch-stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...Auth.getAuthHeaders()
+                    },
+                    body: JSON.stringify({ noteText }),
+                    signal: currentController.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '生成失败');
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            const dataStr = line.slice(5).trim();
+                            if (!dataStr) continue;
+
+                            try {
+                                const data = JSON.parse(dataStr);
+                                if (data.type === 'progress') {
+                                    const percent = Math.round((data.completed / data.total) * 100);
+                                    showProgress(percent, data.message);
+                                } else if (data.success !== undefined) {
+                                    hideProgress();
+                                    if (data.success) {
+                                        renderQuizList(data.quizzes || []);
+                                    } else {
+                                        showError(data.error || '生成失败');
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn('解析SSE数据失败:', e);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                hideProgress();
+                console.error('生成失败:', error);
+                if (error.name === 'AbortError') {
+                    showError('请求超时（6分钟），请重试或减少笔记数量');
+                } else {
+                    showError('生成失败: ' + error.message);
+                }
+            } finally {
+                document.getElementById('generate-btn').disabled = false;
+                currentController = null;
+            }
+        }
+
+        function showProgress(percent, message) {
+            document.getElementById('progress-section').style.display = 'block';
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = message || '正在调用 AI 生成...';
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-section').style.display = 'none';
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('error-section');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error-section').style.display = 'none';
+        }
+
+        function hideSuccess() {
+            document.getElementById('success-section').style.display = 'none';
+        }
+
+        function renderQuizList(quizzes) {
+            generatedQuizzes = quizzes || [];
+            selectedQuizzes.clear();
+            
+            const listEl = document.getElementById('quiz-list');
+            const countEl = document.getElementById('quiz-count');
+            const resultSection = document.getElementById('result-section');
+            
+            countEl.textContent = generatedQuizzes.length;
+            resultSection.style.display = 'block';
+            listEl.innerHTML = '';
+
+            if (generatedQuizzes.length === 0) {
+                listEl.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-muted);">未生成任何测验</div>';
+                return;
+            }
+
+            generatedQuizzes.forEach((quiz, index) => {
+                const fillBlank = quiz.fillBlankQuiz;
+                const displayText = (fillBlank && fillBlank.displayText) 
+                    ? fillBlank.displayText.replace(/____/g, '_____')
+                    : '';
+                const keywords = (fillBlank && fillBlank.blanks) 
+                    ? fillBlank.blanks.map(b => b.correctAnswer).join('、')
+                    : '';
+
+                const item = document.createElement('div');
+                item.className = 'quiz-item';
+                item.innerHTML = `
+                    <input type="checkbox" class="quiz-checkbox" data-index="${index}" onchange="toggleQuiz(${index})">
+                    <span class="quiz-index">[${index + 1}]</span>
+                    <div class="quiz-content">
+                        <div class="quiz-title">${escapeHtml(quiz.title || '无标题')}</div>
+                        <div class="quiz-preview">${escapeHtml(displayText)}</div>
+                        <div class="quiz-meta">关键词：${escapeHtml(keywords)}</div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+
+            updateSaveButton();
+        }
+
+        function toggleQuiz(index) {
+            if (selectedQuizzes.has(index)) {
+                selectedQuizzes.delete(index);
+            } else {
+                selectedQuizzes.add(index);
+            }
+            updateSaveButton();
+        }
+
+        function toggleAll() {
+            const selectAll = document.getElementById('select-all').checked;
+            const checkboxes = document.querySelectorAll('.quiz-checkbox');
+            
+            selectedQuizzes.clear();
+            if (selectAll) {
+                checkboxes.forEach((cb, i) => {
+                    cb.checked = true;
+                    selectedQuizzes.add(i);
+                });
+            }
+            updateSaveButton();
+        }
+
+        function updateSaveButton() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.textContent = `保存选中 (${selectedQuizzes.size})`;
+            saveBtn.disabled = selectedQuizzes.size === 0;
+        }
+
+        async function saveSelected() {
+            if (selectedQuizzes.size === 0) return;
+
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = '保存中...';
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const index of selectedQuizzes) {
+                const quiz = generatedQuizzes[index];
+                try {
+                    const response = await fetch('/api/quizzes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...Auth.getAuthHeaders()
+                        },
+                        body: JSON.stringify(quiz)
+                    });
+
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (e) {
+                    failCount++;
+                }
+            }
+
+            document.getElementById('result-section').style.display = 'none';
+            const successEl = document.getElementById('success-section');
+            document.getElementById('saved-count').textContent = successCount;
+            successEl.style.display = 'block';
+
+            saveBtn.disabled = false;
+            saveBtn.textContent = `保存选中 (${selectedQuizzes.size})`;
+
+            selectedQuizzes.clear();
+            generatedQuizzes = [];
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

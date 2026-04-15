@@ -9,6 +9,7 @@ public class FillBlankQuizDTO {
 
     private Long id;
     private Long quizId;
+    private String title;
     private String fullText;
     private String displayText;
     private List<BlankInfo> blanks;
@@ -83,6 +84,14 @@ public class FillBlankQuizDTO {
 
     public void setQuizId(Long quizId) {
         this.quizId = quizId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getFullText() {
