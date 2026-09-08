@@ -1,6 +1,9 @@
 package com.typingquiz.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typingquiz.dto.ValidationResponse;
+import com.typingquiz.dto.AnswerMatchDTO;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.repository.AnswerRepository;
@@ -12,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 答案服务类
@@ -26,11 +31,14 @@ public class AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuizRepository quizRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public AnswerService(AnswerRepository answerRepository, QuizRepository quizRepository) {
+    public AnswerService(AnswerRepository answerRepository, QuizRepository quizRepository,
+                         ObjectMapper objectMapper) {
         this.answerRepository = answerRepository;
         this.quizRepository = quizRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -40,6 +48,13 @@ public class AnswerService {
      * @return 验证结果
      */
     public ValidationResponse validateAnswer(Long quizId, String input) {
+        return validateAnswer(quizId, input, true, true, true);
+    }
+
+    public ValidationResponse validateAnswer(Long quizId, String input,
+                                             Boolean ignorePunctuation,
+                                             Boolean ignoreSpaces,
+                                             Boolean ignoreCase) {
         logger.info("验证答案: quizId={}, input={}", quizId, input);
         
         // 验证输入
@@ -48,28 +63,86 @@ public class AnswerService {
             return new ValidationResponse(false, null, null, false);
         }
 
-        // 标准化输入(转小写,去空格)
-        String normalizedInput = normalizeContent(input);
+        boolean punctuation = ignorePunctuation == null || ignorePunctuation;
+        boolean spaces = ignoreSpaces == null || ignoreSpaces;
+        boolean caseInsensitive = ignoreCase == null || ignoreCase;
+        String normalizedInput = normalizeContent(input, punctuation, spaces, caseInsensitive);
         logger.info("标准化输入: {}", normalizedInput);
 
-        // 查询答案
-        Optional<Answer> answerOpt = answerRepository
-                .findFirstByQuizIdAndNormalizedContent(quizId, normalizedInput);
+        // normalizedContent is kept for legacy search/indexing, but validation must use
+        // the user's current settings rather than one persisted normalization policy.
+        List<AnswerMatchDTO> matches = findMatches(quizId, normalizedInput, punctuation, spaces, caseInsensitive);
         
-        logger.info("查询结果: {}", answerOpt.isPresent() ? "找到答案" : "未找到");
+        logger.info("查询结果: {}", matches.isEmpty() ? "未找到" : "找到答案");
 
-        if (answerOpt.isPresent()) {
-            Answer answer = answerOpt.get();
-            logger.info("答案ID: {}, 内容: {}", answer.getId(), answer.getContent());
-            return new ValidationResponse(
-                true,
-                answer.getId(),
-                answer.getContent(),  // 返回原始大小写
-                false  // 前端负责跟踪已找到的答案
-            );
+        if (!matches.isEmpty()) {
+            AnswerMatchDTO first = matches.get(0);
+            ValidationResponse response = new ValidationResponse(true, first.getAnswerId(),
+                    first.getDisplayContent(), false);
+            response.setMatches(matches);
+            return response;
         }
 
         return new ValidationResponse(false, null, null, false);
+    }
+
+    private List<AnswerMatchDTO> findMatches(Long quizId, String normalizedInput,
+                                              boolean ignorePunctuation, boolean ignoreSpaces,
+                                              boolean ignoreCase) {
+        Map<Long, AnswerMatchDTO> matches = new LinkedHashMap<>();
+        for (Answer answer : answerRepository.findByQuizId(quizId)) {
+            List<Integer> partIndices = new ArrayList<>();
+            if (normalizedInput.equals(normalizeContent(answer.getContent(), ignorePunctuation,
+                    ignoreSpaces, ignoreCase))) {
+                if (Integer.valueOf(2).equals(answer.getFormatVersion()) && answer.getPartsJson() != null) {
+                    partIndices.addAll(allPartIndices(answer));
+                } else {
+                    partIndices.add(0);
+                }
+            } else if (Integer.valueOf(2).equals(answer.getFormatVersion()) && answer.getPartsJson() != null) {
+                partIndices.addAll(matchingPartIndices(answer, normalizedInput, ignorePunctuation,
+                        ignoreSpaces, ignoreCase));
+            }
+            if (!partIndices.isEmpty()) {
+                matches.put(answer.getId(), new AnswerMatchDTO(answer.getId(), answer.getContent(), partIndices));
+            }
+        }
+        return new ArrayList<>(matches.values());
+    }
+
+    private List<Integer> allPartIndices(Answer answer) {
+        List<Integer> indices = new ArrayList<>();
+        try {
+            JsonNode parts = objectMapper.readTree(answer.getPartsJson());
+            for (int i = 0; i < parts.size(); i++) indices.add(i);
+        } catch (Exception e) {
+            logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
+        }
+        return indices;
+    }
+
+    private List<Integer> matchingPartIndices(Answer answer, String normalizedInput,
+                                              boolean ignorePunctuation, boolean ignoreSpaces,
+                                              boolean ignoreCase) {
+        List<Integer> indices = new ArrayList<>();
+        try {
+            JsonNode parts = objectMapper.readTree(answer.getPartsJson());
+            for (int i = 0; i < parts.size(); i++) {
+                StringBuilder required = new StringBuilder();
+                for (JsonNode segment : parts.get(i).path("segments")) {
+                    if ("required".equals(segment.path("kind").asText())) {
+                        required.append(segment.path("text").asText());
+                    }
+                }
+                if (required.length() > 0 && normalizedInput.equals(normalizeContent(required.toString(),
+                        ignorePunctuation, ignoreSpaces, ignoreCase))) {
+                    indices.add(i);
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
+        }
+        return indices;
     }
 
     /**
@@ -81,7 +154,7 @@ public class AnswerService {
         if (content == null || content.trim().isEmpty()) {
             return List.of();
         }
-        String normalizedContent = normalizeContent(content);
+        String normalizedContent = normalizeContent(content, true, true, true);
         return answerRepository.findByNormalizedContent(normalizedContent);
     }
 
@@ -113,10 +186,26 @@ public class AnswerService {
      * @param content 原始内容
      * @return 标准化后的内容
      */
-    private String normalizeContent(String content) {
+    private String normalizeContent(String content, boolean ignorePunctuation,
+                                    boolean ignoreSpaces, boolean ignoreCase) {
         if (content == null) {
             return "";
         }
-        return content.trim().toLowerCase();
+        String result = content.replace("\uFEFF", "");
+        if (ignorePunctuation) {
+            result = result.replaceAll("[\\p{P}\\p{S}]", "");
+        }
+        if (ignoreSpaces) {
+            result = result.codePoints()
+                    .filter(codePoint -> !Character.isWhitespace(codePoint)
+                            && !Character.isSpaceChar(codePoint))
+                    .collect(StringBuilder::new,
+                            StringBuilder::appendCodePoint,
+                            StringBuilder::append)
+                    .toString();
+        } else {
+            result = result.trim();
+        }
+        return ignoreCase ? result.toLowerCase(java.util.Locale.ROOT) : result;
     }
 }

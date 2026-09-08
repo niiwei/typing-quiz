@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 # 配置区域（火山引擎豆包模型REST API）
-API_KEY = "dd12cd7d-02e3-4812-addb-36f274402700"
+API_KEY = os.getenv("ARK_API_KEY", "")
 API_BASE = os.getenv("ARK_API_BASE", "https://ark.cn-beijing.volces.com/api/v3")
 MODEL = os.getenv("ARK_MODEL", "doubao-seed-1-8-251228")
 

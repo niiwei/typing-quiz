@@ -1,0 +1,64 @@
+以下为可审阅的 unified diff 摘要；完整文件以修改前后 SHA-256 和当前全局文件为准。
+
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -33,7 +33,7 @@
+ - 同一测验内保持相近的答案粒度与句式：分类用名词短语，步骤用动宾短语，判断标准用问题或简短结论。案例和限定条件放进备注。
+-- 默认使用简短标题、短答案、一句话释义或判断标准；不额外增加同义词，不分组，`timeLimit` 为 `null`。
++- 默认使用简短标题、最小充分答案、一句话释义或判断标准；正文需要完整可读，但把非核心措辞放入 v2 context，不额外增加同义词，不分组，`timeLimit` 为 `null`。
+@@ -40,7 +40,7 @@
+ ### 3. 展示完整预览并等待确认
+
+-- 生成 JSON 前，默认用“测验名—原文范围与学习目标—完整候选答案”的表格展示方案，并说明类型、目标学习者、难度、覆盖策略、答案条数、答案粒度、备注策略及分组。共同设置可统一说明，不必逐题重复。
++- 生成 JSON 前，默认用“测验名—原文范围与学习目标—完整候选答案”的表格展示方案，并说明类型、目标学习者、难度、覆盖策略、答案条数、答案粒度、备注策略及分组。候选答案必须同时展示完整正文、必答要点和解释，便于用户检查“记什么”和“最后看到什么”。共同设置可统一说明，不必逐题重复。
+@@ -50,7 +50,7 @@
+ ### 4. 生成导入 JSON
+
+-- 确认后，默认生成 UTF-8 编码的 `.json` 文件；遵守当前工作区的导出目录和命名约定，不覆盖原始材料。若没有存放约定，先按工作区规则确定再写入。用户明确只需代码块时遵从其要求。文件内容使用根数组，即使只有一个测验也使用数组格式。每个测验使用以下结构：
++- 确认后，默认生成 UTF-8 编码的 `.json` 文件；遵守当前工作区的导出目录和命名约定，不覆盖原始材料。若没有存放约定，先按工作区规则确定再写入。用户明确只需代码块时遵从其要求。文件内容使用根数组，即使只有一个测验也使用数组格式。旧版答案仍可只使用 `content` 和 `comment`；需要把正文中的非核心连接词变成免输入上下文，或需要拆成多个独立要点时，使用 v2：
+@@ -60,9 +60,20 @@
+       {
+--        "content": "用户需要输入的规范答案",
+--        "comment": "一句话释义或记忆提示"
+++        "formatVersion": 2,
+++        "content": "发布 llms.txt 文档索引",
+++        "comment": "发布站点的模型可读文档索引",
+++        "parts": [{"segments": [
+++          {"kind": "context", "text": "发布 "},
+++          {"kind": "required", "text": "llms.txt"},
+++          {"kind": "context", "text": " 文档索引"}
+++        ]}]
+       }
+@@ -74,7 +85,10 @@
+-- `answerList[].content` 是用户需要主动输入的规范答案，使用短而明确的中文词语或短语；不得为空，不要写成含糊的长段落。
++- `answerList[].content` 是完整展示正文，必须与 v2 `parts[].segments[].text` 按顺序拼接后的结果完全一致；不得为空。
++- v2 `parts` 是一次题目中的作答要点。每个 part 至少有一个 `required` segment；`context` segment 会展示但不要求输入。
++- v2 的正文标记可用 `{{免输入文字}}` 表示 context，用 `||` 把一个答案拆成多个独立作答要点。
+@@ -79,7 +93,7 @@
+-- 同一测验内的 `content` 去重；只保留材料支持且能独立回忆的条目。
++- v2 允许重复正文或重复 required 词；同一个关键词在多个答案中出现时保留每个有独立知识意义的条目，不做静默去重。旧版答案仍按原规则在同一测验内去重。
+
+--- a/scripts/validate_quiz_json.py
++++ b/scripts/validate_quiz_json.py
+@@ -34,6 +34,42 @@
+ def _normalise_answer(value: str) -> str:
+     return " ".join(value.split()).casefold()
+
++def _validate_v2_answer(answer: dict[str, Any], prefix: str) -> list[str]:
++    """Validate v2 parts and their exact reconstruction of content."""
++    errors: list[str] = []
++    if answer.get("formatVersion") != 2:
++        errors.append(f"{prefix}.formatVersion: must equal 2 when v2 fields are present")
++    # The full implementation checks non-empty parts, segment kinds/text,
++    # required-segment presence, and exact content reconstruction.
++    return errors
+@@ -119,7 +155,8 @@
+-        seen: dict[str, int] = {}
++        seen_legacy: dict[str, int] = {}
+@@
+-                if normalised in seen:
++                if not is_v2 and normalised in seen_legacy:
+                     errors.append(
+-                        f"{answer_prefix}.content: duplicates answerList[{seen[normalised]}]"
++                        f"{answer_prefix}.content: duplicates answerList[{seen_legacy[normalised]}]"
+                     )

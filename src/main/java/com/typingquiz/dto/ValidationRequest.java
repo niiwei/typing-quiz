@@ -7,6 +7,9 @@ public class ValidationRequest {
     
     private Long quizId;
     private String input;
+    private Boolean ignorePunctuation;
+    private Boolean ignoreSpaces;
+    private Boolean ignoreCase;
 
     public ValidationRequest() {
     }
@@ -30,5 +33,29 @@ public class ValidationRequest {
 
     public void setInput(String input) {
         this.input = input;
+    }
+
+    public Boolean getIgnorePunctuation() {
+        return ignorePunctuation;
+    }
+
+    public void setIgnorePunctuation(Boolean ignorePunctuation) {
+        this.ignorePunctuation = ignorePunctuation;
+    }
+
+    public Boolean getIgnoreSpaces() {
+        return ignoreSpaces;
+    }
+
+    public void setIgnoreSpaces(Boolean ignoreSpaces) {
+        this.ignoreSpaces = ignoreSpaces;
+    }
+
+    public Boolean getIgnoreCase() {
+        return ignoreCase;
+    }
+
+    public void setIgnoreCase(Boolean ignoreCase) {
+        this.ignoreCase = ignoreCase;
     }
 }

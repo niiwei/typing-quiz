@@ -3,6 +3,8 @@ package com.typingquiz.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typingquiz.dto.AnswerCreateDTO;
 import com.typingquiz.dto.AnswerDTO;
+import com.typingquiz.dto.AnswerPartDTO;
+import com.typingquiz.dto.AnswerSegmentDTO;
 import com.typingquiz.dto.FillBlankQuizDTO;
 import com.typingquiz.dto.QuizDTO;
 import com.typingquiz.dto.QuizResponseDTO;
@@ -116,9 +118,10 @@ public class QuizService {
                 for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
                     if (answerDTO.getContent() != null && !answerDTO.getContent().trim().isEmpty()) {
                         String content = answerDTO.getContent().trim();
-                        if (!addedAnswers.contains(content)) {
+                        boolean isV2Answer = Integer.valueOf(2).equals(answerDTO.getFormatVersion());
+                        if (isV2Answer || !addedAnswers.contains(content)) {
                             Answer answer = new Answer(content);
-                            answer.setComment(answerDTO.getComment());
+                            applyAnswerDTO(answer, answerDTO);
                             quiz.addAnswer(answer);
                             addedAnswers.add(content);
                             logger.info("添加答案: {}", content);
@@ -276,7 +279,7 @@ public class QuizService {
             dto.setAnswers(answers);
             
             List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
-                    .map(answer -> new AnswerCreateDTO(answer.getContent(), answer.getComment()))
+                    .map(this::toAnswerCreateDTO)
                     .collect(Collectors.toList());
             dto.setAnswerList(answerList);
         }
@@ -450,7 +453,7 @@ public class QuizService {
                 for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
                     if (answerDTO.getContent() != null && !answerDTO.getContent().trim().isEmpty()) {
                         Answer answer = new Answer(answerDTO.getContent());
-                        answer.setComment(answerDTO.getComment());
+                        applyAnswerDTO(answer, answerDTO);
                         quiz.addAnswer(answer);
                     }
                 }
@@ -520,7 +523,7 @@ public class QuizService {
             dto.setAnswers(answers);
             
             List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
-                    .map(answer -> new AnswerCreateDTO(answer.getContent(), answer.getComment()))
+                    .map(this::toAnswerCreateDTO)
                     .collect(Collectors.toList());
             dto.setAnswerList(answerList);
         }
@@ -543,9 +546,79 @@ public class QuizService {
      * 将Answer实体列表转换为AnswerDTO列表
      */
     public List<AnswerDTO> toAnswerDTOList(List<Answer> answers) {
-        return answers.stream()
-                .map(answer -> new AnswerDTO(answer.getId(), answer.getContent(), answer.getComment()))
-                .collect(Collectors.toList());
+        return answers.stream().map(answer -> {
+            AnswerDTO dto = new AnswerDTO(answer.getId(), answer.getContent(), answer.getComment());
+            dto.setFormatVersion(answer.getFormatVersion());
+            dto.setParts(readParts(answer));
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    private AnswerCreateDTO toAnswerCreateDTO(Answer answer) {
+        AnswerCreateDTO dto = new AnswerCreateDTO(answer.getContent(), answer.getComment());
+        dto.setFormatVersion(answer.getFormatVersion());
+        dto.setParts(readParts(answer));
+        return dto;
+    }
+
+    private List<AnswerPartDTO> readParts(Answer answer) {
+        if (!Integer.valueOf(2).equals(answer.getFormatVersion()) || answer.getPartsJson() == null) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(answer.getPartsJson(),
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, AnswerPartDTO.class));
+        } catch (Exception e) {
+            throw new IllegalStateException("答案要点结构损坏: " + answer.getId(), e);
+        }
+    }
+
+    private void applyAnswerDTO(Answer answer, AnswerCreateDTO dto) {
+        answer.setComment(dto.getComment());
+        if (dto.getFormatVersion() == null && dto.getParts() == null) {
+            return;
+        }
+        if (!Integer.valueOf(2).equals(dto.getFormatVersion()) || dto.getParts() == null
+                || dto.getParts().isEmpty()) {
+            throw new IllegalArgumentException("答案格式版本或要点结构无效");
+        }
+
+        StringBuilder fullContent = new StringBuilder();
+        boolean hasRequired = false;
+        for (AnswerPartDTO part : dto.getParts()) {
+            if (part == null || part.getSegments() == null || part.getSegments().isEmpty()) {
+                throw new IllegalArgumentException("答案要点不能为空");
+            }
+            boolean partHasRequired = false;
+            for (AnswerSegmentDTO segment : part.getSegments()) {
+                if (segment == null || segment.getText() == null || segment.getText().isEmpty()) {
+                    throw new IllegalArgumentException("答案片段不能为空");
+                }
+                if (!"required".equals(segment.getKind()) && !"context".equals(segment.getKind())) {
+                    throw new IllegalArgumentException("答案片段类型无效");
+                }
+                if ("required".equals(segment.getKind())) {
+                    partHasRequired = true;
+                    hasRequired = true;
+                }
+                fullContent.append(segment.getText());
+            }
+            if (!partHasRequired) {
+                throw new IllegalArgumentException("答案要点必须包含必答片段");
+            }
+        }
+        if (dto.getContent() == null || !fullContent.toString().equals(dto.getContent())) {
+            throw new IllegalArgumentException("答案正文与要点结构不一致");
+        }
+        if (!hasRequired) {
+            throw new IllegalArgumentException("答案必须包含必答片段");
+        }
+        try {
+            answer.setFormatVersion(2);
+            answer.setPartsJson(objectMapper.writeValueAsString(dto.getParts()));
+        } catch (Exception e) {
+            throw new IllegalArgumentException("答案要点结构无法保存", e);
+        }
     }
 
     public QuizDTO convertToDTO(Quiz quiz) {
@@ -565,7 +638,7 @@ public class QuizService {
         // 只保留answerList字段用于导出（包含注释信息）
         if (quiz.getAnswers() != null && !quiz.getAnswers().isEmpty()) {
             List<AnswerCreateDTO> answerList = quiz.getAnswers().stream()
-                    .map(a -> new AnswerCreateDTO(a.getContent(), a.getComment()))
+                    .map(this::toAnswerCreateDTO)
                     .collect(Collectors.toList());
             dto.setAnswerList(answerList);
         }

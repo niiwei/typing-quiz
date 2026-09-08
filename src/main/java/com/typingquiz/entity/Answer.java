@@ -42,6 +42,12 @@ public class Answer {
     @Column(columnDefinition = "TEXT")
     private String comment;
 
+    @Column(name = "format_version")
+    private Integer formatVersion;
+
+    @Column(name = "parts_json", columnDefinition = "TEXT")
+    private String partsJson;
+
     /**
      * 在持久化和更新之前自动设置标准化内容
      */
@@ -110,6 +116,22 @@ public class Answer {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public Integer getFormatVersion() {
+        return formatVersion;
+    }
+
+    public void setFormatVersion(Integer formatVersion) {
+        this.formatVersion = formatVersion;
+    }
+
+    public String getPartsJson() {
+        return partsJson;
+    }
+
+    public void setPartsJson(String partsJson) {
+        this.partsJson = partsJson;
     }
 
     @Override
