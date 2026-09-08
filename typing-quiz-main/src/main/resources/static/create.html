@@ -388,13 +388,16 @@
                     <div class="section-body">
                         <div class="editor-toolbar">
                             <button type="button" class="toolbar-btn" onclick="wrapSelectionWithHash('quiz-answers')">添加注释</button>
+                            <button type="button" class="toolbar-btn" onclick="wrapSelectionAsContext()">设为免输入</button>
+                            <button type="button" class="toolbar-btn" onclick="insertPartSeparator()">在此拆分</button>
                         </div>
                         <div class="answer-editor">
-                            <textarea id="quiz-answers" class="form-input" style="min-height: 200px; font-family: monospace;" placeholder="每行一个答案&#10;北京#首都#&#10;东京#首都#&#10;巴黎"></textarea>
+                            <textarea id="quiz-answers" class="form-input" style="min-height: 200px; font-family: monospace;" placeholder="每行一个答案&#10;{{发布 }}llms.txt{{ 文档索引}}#解释#" oninput="updateTypingPreview()"></textarea>
                         </div>
                         <p style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-muted);">
-                            使用 <code style="background: var(--hover); padding: 0.1rem 0.3rem;">#注释#</code> 格式添加答案注释
+                            使用 <code style="background: var(--hover); padding: 0.1rem 0.3rem;">{{文字}}</code> 标记免输入正文，使用 <code style="background: var(--hover); padding: 0.1rem 0.3rem;">||</code> 拆分要点，使用 <code style="background: var(--hover); padding: 0.1rem 0.3rem;">#注释#</code> 添加解释
                         </p>
+                        <div id="typing-preview" class="fill-preview" style="margin-top: 0.75rem;">输入后显示答案预览</div>
                     </div>
                 </div>
             </div>
@@ -507,10 +510,9 @@
                 }
                 if (quiz.quizType === 'TYPING' && quiz.answerList) {
                     // 将答案数组转换为文本格式
-                    const answersText = quiz.answerList.map(a => {
-                        return a.comment ? `${a.content}#${a.comment}#` : a.content;
-                    }).join('\n');
+                    const answersText = quiz.answerList.map(serializeTypingAnswerForEditor).join('\n');
                     document.getElementById('quiz-answers').value = answersText;
+                    updateTypingPreview();
                 } else if (quiz.quizType === 'FILL_BLANK' && quiz.fillBlankQuiz) {
                     // 根据 blanks 数组重建正确的 fullText 格式（修复已有错误数据）
                     const reconstructedText = reconstructFullTextFromBlanks(
@@ -716,22 +718,146 @@
             }
         }
 
-        // 解析打字题答案和注释（仅 #注释# 格式才识别为注释）
-        function parseTypingAnswerWithComment(line) {
-            let content = line.trim();
-            let comment = null;
-            
-            // 检查是否包含至少两个 #，且以 # 结尾
-            if (content.endsWith('#')) {
-                const parts = content.split('#');
-                // 格式应为 "内容#注释#"，分割后至少有 3 部分 (["内容", "注释", ""])
-                if (parts.length >= 3) {
-                    comment = parts[parts.length - 2].trim();
-                    content = parts.slice(0, parts.length - 2).join('#').trim();
+        function isEscapedAt(text, index) {
+            let slashCount = 0;
+            for (let i = index - 1; i >= 0 && text[i] === '\\'; i--) slashCount++;
+            return slashCount % 2 === 1;
+        }
+
+        function unescapeTypingText(text) {
+            return text.replace(/\\([\\#{}|])/g, '$1');
+        }
+
+        function splitTypingParts(text) {
+            const parts = [];
+            let start = 0;
+            for (let i = 0; i < text.length - 1; i++) {
+                if (text[i] === '|' && text[i + 1] === '|' && !isEscapedAt(text, i)) {
+                    parts.push(text.slice(start, i));
+                    start = i + 2;
+                    i++;
                 }
             }
-            
-            return { content: content, comment: comment };
+            parts.push(text.slice(start));
+            return parts;
+        }
+
+        function parseTypingPart(text, lineNumber) {
+            const segments = [];
+            let index = 0;
+            let required = '';
+            const flushRequired = () => {
+                if (required) {
+                    segments.push({ kind: 'required', text: unescapeTypingText(required) });
+                    required = '';
+                }
+            };
+            while (index < text.length) {
+                if (text[index] === '{' && text[index + 1] === '{' && !isEscapedAt(text, index)) {
+                    flushRequired();
+                    const end = text.indexOf('}}', index + 2);
+                    if (end < 0 || isEscapedAt(text, end)) {
+                        throw new Error(`第 ${lineNumber} 行存在未闭合的免输入标记`);
+                    }
+                    const context = unescapeTypingText(text.slice(index + 2, end));
+                    if (!context) throw new Error(`第 ${lineNumber} 行存在空的免输入片段`);
+                    segments.push({ kind: 'context', text: context });
+                    index = end + 2;
+                } else {
+                    required += text[index];
+                    index++;
+                }
+            }
+            flushRequired();
+            if (!segments.some(segment => segment.kind === 'required')) {
+                throw new Error(`第 ${lineNumber} 行必须包含需要输入的文字`);
+            }
+            return { segments };
+        }
+
+        function splitTypingComment(line) {
+            const text = line.trim();
+            if (!text.endsWith('#') || isEscapedAt(text, text.length - 1)) {
+                return { body: text, comment: null };
+            }
+            for (let i = text.length - 2; i >= 0; i--) {
+                if (text[i] === '#' && !isEscapedAt(text, i)) {
+                    return { body: text.slice(0, i).trim(), comment: unescapeTypingText(text.slice(i + 1, -1).trim()) };
+                }
+            }
+            return { body: text, comment: null };
+        }
+
+        // v2 语法：免输入正文、要点拆分和解释注释各自解析。
+        function parseTypingAnswerWithComment(line) {
+            const lineNumber = arguments[1] || 1;
+            const parsed = splitTypingComment(line);
+            if (!parsed.body) throw new Error(`第 ${lineNumber} 行答案不能为空`);
+            const parts = splitTypingParts(parsed.body).map(part => parseTypingPart(part, lineNumber));
+            const content = parts.flatMap(part => part.segments).map(segment => segment.text).join('');
+            return { formatVersion: 2, content, comment: parsed.comment, parts };
+        }
+
+        function escapeTypingText(text) {
+            return String(text).replace(/[\\#{}|]/g, '\\$&');
+        }
+
+        function serializeTypingAnswerForEditor(answer) {
+            if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
+                const body = answer.parts.map(part => part.segments.map(segment =>
+                    segment.kind === 'context' ? `{{${escapeTypingText(segment.text)}}}` : escapeTypingText(segment.text)
+                ).join('')).join('||');
+                return answer.comment ? `${body}#${escapeTypingText(answer.comment)}#` : body;
+            }
+            return answer.comment ? `${answer.content}#${answer.comment}#` : answer.content;
+        }
+
+        function wrapSelectionAsContext() {
+            const el = document.getElementById('quiz-answers');
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            if (start === end) return;
+            const selected = el.value.slice(start, end);
+            if (selected.includes('{{') || selected.includes('}}')) {
+                alert('选区已经包含免输入标记，不能嵌套');
+                return;
+            }
+            el.value = el.value.slice(0, start) + '{{' + selected + '}}' + el.value.slice(end);
+            el.focus();
+            el.setSelectionRange(start + 2, start + 2 + selected.length);
+            updateTypingPreview();
+        }
+
+        function insertPartSeparator() {
+            const el = document.getElementById('quiz-answers');
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            el.value = el.value.slice(0, start) + '||' + el.value.slice(end);
+            el.focus();
+            el.setSelectionRange(start + 2, start + 2);
+            updateTypingPreview();
+        }
+
+        function updateTypingPreview() {
+            const preview = document.getElementById('typing-preview');
+            const source = document.getElementById('quiz-answers');
+            if (!preview || !source || !source.value.trim()) {
+                if (preview) preview.textContent = '输入后显示答案预览';
+                return;
+            }
+            preview.replaceChildren();
+            source.value.split('\n').filter(line => line.trim()).forEach((line, index) => {
+                const row = document.createElement('div');
+                try {
+                    const answer = parseTypingAnswerWithComment(line, index + 1);
+                    const required = answer.parts.map(part => part.segments.filter(s => s.kind === 'required').map(s => s.text).join('')).join(' / ');
+                    row.textContent = `${answer.content}（必答：${required}）`;
+                } catch (error) {
+                    row.textContent = error.message;
+                    row.style.color = 'var(--error)';
+                }
+                preview.appendChild(row);
+            });
         }
 
         // 解析填空题文本，生成 blanks 数组
@@ -792,10 +918,13 @@
 
             if (type === 'TYPING') {
                 const answersText = document.getElementById('quiz-answers').value;
-                quizData.answerList = answersText
-                    .split('\n')
-                    .filter(line => line.trim())
-                    .map(line => parseTypingAnswerWithComment(line));
+                try {
+                    quizData.answerList = answersText.split('\n').filter(line => line.trim())
+                        .map((line, index) => parseTypingAnswerWithComment(line, index + 1));
+                } catch (error) {
+                    alert(error.message);
+                    return;
+                }
             } else {
                 const fullText = document.getElementById('fill-blank-full-text').value;
                 const blanks = parseFillBlankText(fullText);

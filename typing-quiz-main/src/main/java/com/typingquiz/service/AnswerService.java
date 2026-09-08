@@ -1,5 +1,7 @@
 package com.typingquiz.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typingquiz.dto.ValidationResponse;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
@@ -26,11 +28,14 @@ public class AnswerService {
 
     private final AnswerRepository answerRepository;
     private final QuizRepository quizRepository;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    public AnswerService(AnswerRepository answerRepository, QuizRepository quizRepository) {
+    public AnswerService(AnswerRepository answerRepository, QuizRepository quizRepository,
+                         ObjectMapper objectMapper) {
         this.answerRepository = answerRepository;
         this.quizRepository = quizRepository;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -64,8 +69,7 @@ public class AnswerService {
         // normalizedContent is kept for legacy search/indexing, but validation must use
         // the user's current settings rather than one persisted normalization policy.
         Optional<Answer> answerOpt = answerRepository.findByQuizId(quizId).stream()
-                .filter(answer -> normalizedInput.equals(normalizeContent(
-                        answer.getContent(), punctuation, spaces, caseInsensitive)))
+                .filter(answer -> matchesAnswer(answer, normalizedInput, punctuation, spaces, caseInsensitive))
                 .findFirst();
         
         logger.info("查询结果: {}", answerOpt.isPresent() ? "找到答案" : "未找到");
@@ -82,6 +86,36 @@ public class AnswerService {
         }
 
         return new ValidationResponse(false, null, null, false);
+    }
+
+    private boolean matchesAnswer(Answer answer, String normalizedInput,
+                                  boolean ignorePunctuation, boolean ignoreSpaces, boolean ignoreCase) {
+        if (normalizedInput.equals(normalizeContent(answer.getContent(), ignorePunctuation,
+                ignoreSpaces, ignoreCase))) {
+            return true;
+        }
+        if (!Integer.valueOf(2).equals(answer.getFormatVersion()) || answer.getPartsJson() == null) {
+            return false;
+        }
+        try {
+            JsonNode parts = objectMapper.readTree(answer.getPartsJson());
+            for (JsonNode part : parts) {
+                StringBuilder required = new StringBuilder();
+                for (JsonNode segment : part.path("segments")) {
+                    if ("required".equals(segment.path("kind").asText())) {
+                        required.append(segment.path("text").asText());
+                    }
+                }
+                if (required.length() > 0 && normalizedInput.equals(normalizeContent(required.toString(),
+                        ignorePunctuation, ignoreSpaces, ignoreCase))) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
+            return false;
+        }
     }
 
     /**

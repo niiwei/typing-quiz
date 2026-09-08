@@ -122,4 +122,37 @@ class QuizBaselineIntegrationTest {
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(symbols).get("valid").asBoolean()).isFalse();
     }
+
+    @Test
+    void persistsV2ContextAndAcceptsRequiredKeywordOrFullSentence() throws Exception {
+        String token = JwtUtil.generateToken(10L, "v2-user");
+        String request = "{\"title\":\"Context quiz\",\"quizType\":\"TYPING\",\"answerList\":[" +
+                "{\"content\":\"发布 llms.txt 文档索引\",\"comment\":\"AI 文档入口\"," +
+                "\"formatVersion\":2,\"parts\":[{\"segments\":[" +
+                "{\"kind\":\"context\",\"text\":\"发布 \"}," +
+                "{\"kind\":\"required\",\"text\":\"llms.txt\"}," +
+                "{\"kind\":\"context\",\"text\":\" 文档索引\"}]}]}],\"groups\":[]}";
+        String created = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(request))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long quizId = objectMapper.readTree(created).get("id").asLong();
+
+        String detail = mockMvc.perform(get("/api/quizzes/{id}", quizId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode answer = objectMapper.readTree(detail).get("answerList").get(0);
+        assertThat(answer.get("formatVersion").asInt()).isEqualTo(2);
+        assertThat(answer.get("parts").get(0).get("segments")).hasSize(3);
+
+        for (String input : new String[]{"llms.txt", "发布 llms.txt 文档索引"}) {
+            String validation = mockMvc.perform(post("/api/answers/validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
+        }
+    }
 }

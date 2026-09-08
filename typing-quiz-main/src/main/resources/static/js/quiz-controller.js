@@ -1065,8 +1065,17 @@ class QuizController {
         
         // 查找匹配的答案（应用设置后）
         for (const answer of this.answers) {
-            const normalizedAnswer = this.normalizeText(answer.content);
-            if (normalizedInput === normalizedAnswer) {
+            const candidates = [answer.content];
+            if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
+                answer.parts.forEach(part => {
+                    const required = (part.segments || [])
+                        .filter(segment => segment.kind === 'required')
+                        .map(segment => segment.text)
+                        .join('');
+                    if (required) candidates.push(required);
+                });
+            }
+            if (candidates.some(candidate => normalizedInput === this.normalizeText(candidate))) {
                 if (this.foundAnswers.has(answer.id)) {
                     UIRenderer.showFeedback('已回答', 'duplicate');
                     this.clearInput();
