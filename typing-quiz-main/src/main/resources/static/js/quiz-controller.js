@@ -61,8 +61,10 @@ class QuizController {
             result = result.replace(/[\p{P}\p{S}]/gu, '');
         }
         if (this.settings.ignoreSpaces) {
-            // 统一全半角空格为半角空格，并去除首尾空格
-            result = result.replace(/[\u3000\s]/g, ' ').trim();
+            // 输入法可能在中英文之间加入不同 Unicode 空白；匹配时全部忽略。
+            result = result.replace(/[\p{White_Space}\uFEFF]/gu, '');
+        } else {
+            result = result.trim();
         }
         if (this.settings.ignoreCase) {
             result = result.toLowerCase();
@@ -1082,7 +1084,10 @@ class QuizController {
                 headers: this.getAuthHeaders(),
                 body: JSON.stringify({
                     quizId: this.quizId,
-                    input: input
+                    input: input,
+                    ignorePunctuation: this.settings.ignorePunctuation,
+                    ignoreSpaces: this.settings.ignoreSpaces,
+                    ignoreCase: this.settings.ignoreCase
                 })
             });
             const result = await response.json();

@@ -66,4 +66,60 @@ class QuizBaselineIntegrationTest {
         assertThat(validationJson.get("valid").asBoolean()).isTrue();
         assertThat(validationJson.get("displayContent").asText()).isEqualTo("robots.txt");
     }
+
+    @Test
+    void appliesTheSameWhitespaceAndCaseSettingsToBackendFallback() throws Exception {
+        String token = JwtUtil.generateToken(8L, "settings-user");
+        String request = "{\"title\":\"Normalization quiz\",\"quizType\":\"TYPING\"," +
+                "\"answerList\":[{\"content\":\"Token数\",\"comment\":\"metadata\"}],\"groups\":[]}";
+        String created = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(request))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long quizId = objectMapper.readTree(created).get("id").asLong();
+
+        String enabled = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\"Token　数\",\"ignoreSpaces\":true," +
+                                "\"ignoreCase\":true,\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(enabled).get("valid").asBoolean()).isTrue();
+
+        String disabled = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\"Token　数\",\"ignoreSpaces\":false," +
+                                "\"ignoreCase\":true,\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(disabled).get("valid").asBoolean()).isFalse();
+    }
+
+    @Test
+    void doesNotTreatEmptyOrPunctuationOnlyInputAsAnAnswer() throws Exception {
+        String token = JwtUtil.generateToken(9L, "empty-user");
+        String request = "{\"title\":\"Symbols quiz\",\"quizType\":\"TYPING\"," +
+                "\"answerList\":[{\"content\":\"C++\"}],\"groups\":[]}";
+        String created = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(request))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long quizId = objectMapper.readTree(created).get("id").asLong();
+
+        String empty = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId + ",\"input\":\"   \"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(empty).get("valid").asBoolean()).isFalse();
+
+        String symbols = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId + ",\"input\":\"+++\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(symbols).get("valid").asBoolean()).isFalse();
+    }
 }

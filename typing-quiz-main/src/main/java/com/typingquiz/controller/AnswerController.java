@@ -40,7 +40,10 @@ public class AnswerController {
         try {
             ValidationResponse response = answerService.validateAnswer(
                 request.getQuizId(),
-                request.getInput()
+                request.getInput(),
+                request.getIgnorePunctuation(),
+                request.getIgnoreSpaces(),
+                request.getIgnoreCase()
             );
             return ResponseEntity.ok(response);
         } catch (Exception e) {
