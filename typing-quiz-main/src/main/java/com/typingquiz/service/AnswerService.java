@@ -3,6 +3,7 @@ package com.typingquiz.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typingquiz.dto.ValidationResponse;
+import com.typingquiz.dto.AnswerMatchDTO;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.entity.Quiz;
 import com.typingquiz.repository.AnswerRepository;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * 答案服务类
@@ -68,54 +71,78 @@ public class AnswerService {
 
         // normalizedContent is kept for legacy search/indexing, but validation must use
         // the user's current settings rather than one persisted normalization policy.
-        Optional<Answer> answerOpt = answerRepository.findByQuizId(quizId).stream()
-                .filter(answer -> matchesAnswer(answer, normalizedInput, punctuation, spaces, caseInsensitive))
-                .findFirst();
+        List<AnswerMatchDTO> matches = findMatches(quizId, normalizedInput, punctuation, spaces, caseInsensitive);
         
-        logger.info("查询结果: {}", answerOpt.isPresent() ? "找到答案" : "未找到");
+        logger.info("查询结果: {}", matches.isEmpty() ? "未找到" : "找到答案");
 
-        if (answerOpt.isPresent()) {
-            Answer answer = answerOpt.get();
-            logger.info("答案ID: {}, 内容: {}", answer.getId(), answer.getContent());
-            return new ValidationResponse(
-                true,
-                answer.getId(),
-                answer.getContent(),  // 返回原始大小写
-                false  // 前端负责跟踪已找到的答案
-            );
+        if (!matches.isEmpty()) {
+            AnswerMatchDTO first = matches.get(0);
+            ValidationResponse response = new ValidationResponse(true, first.getAnswerId(),
+                    first.getDisplayContent(), false);
+            response.setMatches(matches);
+            return response;
         }
 
         return new ValidationResponse(false, null, null, false);
     }
 
-    private boolean matchesAnswer(Answer answer, String normalizedInput,
-                                  boolean ignorePunctuation, boolean ignoreSpaces, boolean ignoreCase) {
-        if (normalizedInput.equals(normalizeContent(answer.getContent(), ignorePunctuation,
-                ignoreSpaces, ignoreCase))) {
-            return true;
+    private List<AnswerMatchDTO> findMatches(Long quizId, String normalizedInput,
+                                              boolean ignorePunctuation, boolean ignoreSpaces,
+                                              boolean ignoreCase) {
+        Map<Long, AnswerMatchDTO> matches = new LinkedHashMap<>();
+        for (Answer answer : answerRepository.findByQuizId(quizId)) {
+            List<Integer> partIndices = new ArrayList<>();
+            if (normalizedInput.equals(normalizeContent(answer.getContent(), ignorePunctuation,
+                    ignoreSpaces, ignoreCase))) {
+                if (Integer.valueOf(2).equals(answer.getFormatVersion()) && answer.getPartsJson() != null) {
+                    partIndices.addAll(allPartIndices(answer));
+                } else {
+                    partIndices.add(0);
+                }
+            } else if (Integer.valueOf(2).equals(answer.getFormatVersion()) && answer.getPartsJson() != null) {
+                partIndices.addAll(matchingPartIndices(answer, normalizedInput, ignorePunctuation,
+                        ignoreSpaces, ignoreCase));
+            }
+            if (!partIndices.isEmpty()) {
+                matches.put(answer.getId(), new AnswerMatchDTO(answer.getId(), answer.getContent(), partIndices));
+            }
         }
-        if (!Integer.valueOf(2).equals(answer.getFormatVersion()) || answer.getPartsJson() == null) {
-            return false;
-        }
+        return new ArrayList<>(matches.values());
+    }
+
+    private List<Integer> allPartIndices(Answer answer) {
+        List<Integer> indices = new ArrayList<>();
         try {
             JsonNode parts = objectMapper.readTree(answer.getPartsJson());
-            for (JsonNode part : parts) {
+            for (int i = 0; i < parts.size(); i++) indices.add(i);
+        } catch (Exception e) {
+            logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
+        }
+        return indices;
+    }
+
+    private List<Integer> matchingPartIndices(Answer answer, String normalizedInput,
+                                              boolean ignorePunctuation, boolean ignoreSpaces,
+                                              boolean ignoreCase) {
+        List<Integer> indices = new ArrayList<>();
+        try {
+            JsonNode parts = objectMapper.readTree(answer.getPartsJson());
+            for (int i = 0; i < parts.size(); i++) {
                 StringBuilder required = new StringBuilder();
-                for (JsonNode segment : part.path("segments")) {
+                for (JsonNode segment : parts.get(i).path("segments")) {
                     if ("required".equals(segment.path("kind").asText())) {
                         required.append(segment.path("text").asText());
                     }
                 }
                 if (required.length() > 0 && normalizedInput.equals(normalizeContent(required.toString(),
                         ignorePunctuation, ignoreSpaces, ignoreCase))) {
-                    return true;
+                    indices.add(i);
                 }
             }
-            return false;
         } catch (Exception e) {
             logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
-            return false;
         }
+        return indices;
     }
 
     /**

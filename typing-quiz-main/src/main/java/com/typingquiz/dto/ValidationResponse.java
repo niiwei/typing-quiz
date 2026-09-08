@@ -1,5 +1,8 @@
 package com.typingquiz.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * 验证答案响应对象
  */
@@ -9,6 +12,7 @@ public class ValidationResponse {
     private Long answerId;
     private String displayContent;
     private boolean alreadyFound;
+    private List<AnswerMatchDTO> matches = new ArrayList<>();
 
     public ValidationResponse() {
     }
@@ -50,5 +54,13 @@ public class ValidationResponse {
 
     public void setAlreadyFound(boolean alreadyFound) {
         this.alreadyFound = alreadyFound;
+    }
+
+    public List<AnswerMatchDTO> getMatches() {
+        return matches;
+    }
+
+    public void setMatches(List<AnswerMatchDTO> matches) {
+        this.matches = matches == null ? new ArrayList<>() : matches;
     }
 }
