@@ -381,8 +381,12 @@
                 
                 for (const answer of answers) {
                     if (!controller.foundAnswers.has(answer.id)) {
-                        // 标记为已找到
-                        controller.markAnswerFound(answer.id, answer.content);
+                        // 提示一整条答案；v2 答案同时补齐尚未完成的所有要点。
+                        const partCount = controller.getAnswerPartCount(answer);
+                        controller.applyAnswerMatches([{
+                            answerId: answer.id,
+                            partIndices: Array.from({ length: partCount }, (_, index) => index),
+                        }]);
                         revealed = true;
                         break;
                     }
