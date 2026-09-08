@@ -1,6 +1,6 @@
 # 04 — 分次回忆一条答案并同时点亮全部匹配
 
-Status: ready-for-agent
+Status: complete
 Execution: complete
 
 **What to build:** 明确拆分的答案支持逆序逐段完成，相同要点一次点亮，结算和复习保留未完成事实。
@@ -33,4 +33,4 @@ Execution: complete
 - 未答保持现有 `•` 卡片；部分命中只展示已答 part 和固定 `______` 占位；完整答案才进入顶部计数。
 - 结算按完整答案计算，部分答案仍进入遗漏列表和后续复习入口；下一次加载会清空本次片段状态。
 - H2 API 回归覆盖共享关键词、跨答案命中、重复 v2 答案保留；全套后端测试通过。
-- Playwright 真实页面回归覆盖空白、部分显示、共享关键词同时完成；4 tests passed。
+- Playwright 真实页面回归覆盖空白、部分显示、共享关键词同时完成；当前全套 6 tests passed。

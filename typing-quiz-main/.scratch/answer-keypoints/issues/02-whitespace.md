@@ -1,6 +1,6 @@
 # 02 — 让空格容错在实际作答中生效
 
-Status: ready-for-agent
+Status: complete
 Execution: complete
 
 **What to build:** 旧题和新题使用一致的空白、大小写、标点设置，输入法添加空格不再误判。

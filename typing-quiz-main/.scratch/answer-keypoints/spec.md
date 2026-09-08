@@ -1,6 +1,6 @@
 # 关键词作答规格
 
-Status: ready-for-agent
+Status: complete
 
 ## Problem Statement
 
