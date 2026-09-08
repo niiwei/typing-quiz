@@ -14,4 +14,13 @@ test('typing editor parses context, required text, parts, and comment separately
     { kind: 'required', text: 'llms.txt' },
     { kind: 'context', text: ' 文档索引' },
   ]);
+
+  const escaped = await page.evaluate(() =>
+    parseTypingAnswerWithComment('{{a\\}\\}b}}key', 2)
+  );
+  expect(escaped.content).toBe('a}}bkey');
+  expect(escaped.parts[0].segments).toEqual([
+    { kind: 'context', text: 'a}}b' },
+    { kind: 'required', text: 'key' },
+  ]);
 });

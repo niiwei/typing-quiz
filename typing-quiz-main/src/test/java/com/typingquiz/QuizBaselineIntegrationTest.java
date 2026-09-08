@@ -98,6 +98,24 @@ class QuizBaselineIntegrationTest {
                                 "\"ignoreCase\":true,\"ignorePunctuation\":false}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(disabled).get("valid").asBoolean()).isFalse();
+
+        String edgeSpacesEnabled = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\" Token数 \",\"ignoreSpaces\":true," +
+                                "\"ignoreCase\":true," +
+                                "\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(edgeSpacesEnabled).get("valid").asBoolean()).isTrue();
+
+        String edgeSpacesDisabled = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\" Token数 \",\"ignoreSpaces\":false," +
+                                "\"ignoreCase\":true," +
+                                "\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(edgeSpacesDisabled).get("valid").asBoolean()).isFalse();
     }
 
     @Test
@@ -124,6 +142,20 @@ class QuizBaselineIntegrationTest {
                         .content("{\"quizId\":" + quizId + ",\"input\":\"+++\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(symbols).get("valid").asBoolean()).isFalse();
+
+        String punctuationOnlyAnswer = "{\"title\":\"Punctuation answer\",\"quizType\":\"TYPING\"," +
+                "\"answerList\":[{\"content\":\"!!!\"}],\"groups\":[]}";
+        String punctuationQuiz = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(punctuationOnlyAnswer))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long punctuationQuizId = objectMapper.readTree(punctuationQuiz).get("id").asLong();
+        String punctuationOnlyInput = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + punctuationQuizId + ",\"input\":\"???\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(punctuationOnlyInput).get("valid").asBoolean()).isFalse();
     }
 
     @Test
@@ -214,6 +246,15 @@ class QuizBaselineIntegrationTest {
                     .andReturn().getResponse().getContentAsString();
             assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
         }
+        String requiredOnlyWithoutPunctuation = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\"降低成本提高效率\",\"ignorePunctuation\":false," +
+                                "\"ignoreSpaces\":true,\"ignoreCase\":true}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode requiredOnlyResult = objectMapper.readTree(requiredOnlyWithoutPunctuation);
+        assertThat(requiredOnlyResult.get("valid").asBoolean()).isTrue();
+        assertThat(requiredOnlyResult.get("matches").findValue("partIndices")).hasSize(2);
 
         String exported = mockMvc.perform(get("/api/import-export/quiz/{id}/export", quizId)
                         .header("Authorization", "Bearer " + token))

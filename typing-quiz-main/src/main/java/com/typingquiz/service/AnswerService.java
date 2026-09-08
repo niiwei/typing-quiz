@@ -68,6 +68,10 @@ public class AnswerService {
         boolean caseInsensitive = ignoreCase == null || ignoreCase;
         String normalizedInput = normalizeContent(input, punctuation, spaces, caseInsensitive);
         logger.info("标准化输入: {}", normalizedInput);
+        if (normalizedInput.isEmpty()) {
+            logger.info("输入在当前规范化设置下为空，返回无效");
+            return new ValidationResponse(false, null, null, false);
+        }
 
         // normalizedContent is kept for legacy search/indexing, but validation must use
         // the user's current settings rather than one persisted normalization policy.
@@ -100,8 +104,14 @@ public class AnswerService {
                     partIndices.add(0);
                 }
             } else if (Integer.valueOf(2).equals(answer.getFormatVersion()) && answer.getPartsJson() != null) {
-                partIndices.addAll(matchingPartIndices(answer, normalizedInput, ignorePunctuation,
-                        ignoreSpaces, ignoreCase));
+                String requiredContent = requiredContent(answer);
+                if (normalizedInput.equals(normalizeContent(requiredContent, ignorePunctuation,
+                        ignoreSpaces, ignoreCase))) {
+                    partIndices.addAll(allPartIndices(answer));
+                } else {
+                    partIndices.addAll(matchingPartIndices(answer, normalizedInput, ignorePunctuation,
+                            ignoreSpaces, ignoreCase));
+                }
             }
             if (!partIndices.isEmpty()) {
                 matches.put(answer.getId(), new AnswerMatchDTO(answer.getId(), answer.getContent(), partIndices));
@@ -143,6 +153,23 @@ public class AnswerService {
             logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
         }
         return indices;
+    }
+
+    private String requiredContent(Answer answer) {
+        StringBuilder required = new StringBuilder();
+        try {
+            JsonNode parts = objectMapper.readTree(answer.getPartsJson());
+            for (JsonNode part : parts) {
+                for (JsonNode segment : part.path("segments")) {
+                    if ("required".equals(segment.path("kind").asText())) {
+                        required.append(segment.path("text").asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("答案要点结构无法解析: answerId={}", answer.getId(), e);
+        }
+        return required.toString();
     }
 
     /**
@@ -191,20 +218,18 @@ public class AnswerService {
         if (content == null) {
             return "";
         }
-        String result = content.replace("\uFEFF", "");
+        String result = content;
         if (ignorePunctuation) {
             result = result.replaceAll("[\\p{P}\\p{S}]", "");
         }
         if (ignoreSpaces) {
-            result = result.codePoints()
+            result = result.replace("\uFEFF", "").codePoints()
                     .filter(codePoint -> !Character.isWhitespace(codePoint)
                             && !Character.isSpaceChar(codePoint))
                     .collect(StringBuilder::new,
                             StringBuilder::appendCodePoint,
                             StringBuilder::append)
                     .toString();
-        } else {
-            result = result.trim();
         }
         return ignoreCase ? result.toLowerCase(java.util.Locale.ROOT) : result;
     }

@@ -64,8 +64,6 @@ class QuizController {
         if (this.settings.ignoreSpaces) {
             // 输入法可能在中英文之间加入不同 Unicode 空白；匹配时全部忽略。
             result = result.replace(/[\p{White_Space}\uFEFF]/gu, '');
-        } else {
-            result = result.trim();
         }
         if (this.settings.ignoreCase) {
             result = result.toLowerCase();
@@ -863,7 +861,7 @@ class QuizController {
         if (this.quizType === 'FILL_BLANK') {
             this.handleFillBlankInput(input.trim());
         } else {
-            this.checkAnswer(input.trim());
+            this.checkAnswer(input);
         }
     }
 
@@ -1065,6 +1063,11 @@ class QuizController {
     async checkAnswer(input) {
         // 先在前端进行本地验证，应用用户设置
         const normalizedInput = this.normalizeText(input);
+        if (!normalizedInput) {
+            UIRenderer.showFeedback('当前设置会忽略全部输入，请关闭忽略标点', 'error');
+            this.clearInput();
+            return;
+        }
         const localMatches = [];
         for (const answer of this.answers) {
             const partCount = this.getAnswerPartCount(answer);
@@ -1072,12 +1075,24 @@ class QuizController {
             if (normalizedInput === this.normalizeText(answer.content)) {
                 partIndices = Array.from({ length: partCount }, (_, index) => index);
             } else if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
-                answer.parts.forEach((part, index) => {
-                    const required = (part.segments || [])
+                const requiredContent = answer.parts
+                    .flatMap(part => (part.segments || [])
                         .filter(segment => segment.kind === 'required')
-                        .map(segment => segment.text).join('');
-                    if (required && normalizedInput === this.normalizeText(required)) partIndices.push(index);
-                });
+                        .map(segment => segment.text))
+                    .join('');
+                const matchedWholeRequired = requiredContent
+                    && normalizedInput === this.normalizeText(requiredContent);
+                if (matchedWholeRequired) {
+                    partIndices = Array.from({ length: partCount }, (_, index) => index);
+                }
+                if (!matchedWholeRequired) {
+                    answer.parts.forEach((part, index) => {
+                        const required = (part.segments || [])
+                            .filter(segment => segment.kind === 'required')
+                            .map(segment => segment.text).join('');
+                        if (required && normalizedInput === this.normalizeText(required)) partIndices.push(index);
+                    });
+                }
             }
             if (partIndices.length > 0) localMatches.push({ answerId: answer.id, partIndices });
         }
