@@ -1,0 +1,22 @@
+{
+  "title": "常用成语释义",
+  "description": "高频使用的中文成语及含义",
+  "timeLimit": 300,
+  "answers": [],
+  "answerList": [
+    {"content": "画蛇添足", "comment": "做了多余的事反而坏事"},
+    {"content": "守株待兔", "comment": "死守狭隘经验不知变通"},
+    {"content": "刻舟求剑", "comment": "不懂事物是发展变化的"},
+    {"content": "亡羊补牢", "comment": "出了问题后及时补救"},
+    {"content": "掩耳盗铃", "comment": "自己欺骗自己"},
+    {"content": "买椟还珠", "comment": "取舍不当，舍本逐末"},
+    {"content": "滥竽充数", "comment": "没有真才实学而混在行家里面充数"},
+    {"content": "杯弓蛇影", "comment": "疑神疑鬼，自相惊扰"},
+    {"content": "叶公好龙", "comment": "表面上爱好某事物，实际并不真爱好"},
+    {"content": "卧薪尝胆", "comment": "刻苦自励，发愤图强"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

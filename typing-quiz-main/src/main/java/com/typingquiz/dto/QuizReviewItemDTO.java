@@ -1,0 +1,216 @@
+package com.typingquiz.dto;
+
+import com.typingquiz.entity.ReviewStatus;
+
+import java.time.LocalDateTime;
+
+/**
+ * 测验复习项DTO
+ * 用于分组展开后显示单个测验的学习状态
+ */
+public class QuizReviewItemDTO {
+    
+    private Long quizId;
+    private String quizTitle;
+    private String quizDescription;
+    
+    // 复习状态
+    private ReviewStatus status;
+    private String statusDisplay;
+    
+    // 学习阶段信息
+    private Integer learningStep;
+    private Integer totalLearningSteps;
+    
+    // 复习安排
+    private LocalDateTime nextReviewDate;
+    private Integer intervalDays;
+    private Integer easeFactor;
+    
+    // 统计
+    private Integer reviewCount;
+    private Integer lapseCount;
+    
+    // 是否被搁置
+    private boolean isBuried;
+    private LocalDateTime buriedUntil;
+    
+    // 是否到期
+    private boolean due;
+    
+    // 业务层标签（待学习/待复习/学习中/复习中）
+    private String label;
+    private String labelDisplay;
+    
+    // 细化标签（新测验/待学习/待复习/待重学/未到期/已暂停）
+    private String detailedLabel;
+    
+    // 用户ID（用于诊断）
+    private Long userId;
+
+    public QuizReviewItemDTO() {
+    }
+
+    public Long getQuizId() {
+        return quizId;
+    }
+
+    public void setQuizId(Long quizId) {
+        this.quizId = quizId;
+    }
+
+    public String getQuizTitle() {
+        return quizTitle;
+    }
+
+    public void setQuizTitle(String quizTitle) {
+        this.quizTitle = quizTitle;
+    }
+
+    public String getQuizDescription() {
+        return quizDescription;
+    }
+
+    public void setQuizDescription(String quizDescription) {
+        this.quizDescription = quizDescription;
+    }
+
+    public ReviewStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ReviewStatus status) {
+        this.status = status;
+        this.statusDisplay = status != null ? status.getDisplayName() : null;
+    }
+
+    public String getStatusDisplay() {
+        return statusDisplay;
+    }
+
+    public void setStatusDisplay(String statusDisplay) {
+        this.statusDisplay = statusDisplay;
+    }
+
+    public Integer getLearningStep() {
+        return learningStep;
+    }
+
+    public void setLearningStep(Integer learningStep) {
+        this.learningStep = learningStep;
+    }
+
+    public Integer getTotalLearningSteps() {
+        return totalLearningSteps;
+    }
+
+    public void setTotalLearningSteps(Integer totalLearningSteps) {
+        this.totalLearningSteps = totalLearningSteps;
+    }
+
+    public LocalDateTime getNextReviewDate() {
+        return nextReviewDate;
+    }
+
+    public void setNextReviewDate(LocalDateTime nextReviewDate) {
+        this.nextReviewDate = nextReviewDate;
+    }
+
+    public Integer getIntervalDays() {
+        return intervalDays;
+    }
+
+    public void setIntervalDays(Integer intervalDays) {
+        this.intervalDays = intervalDays;
+    }
+
+    public Integer getEaseFactor() {
+        return easeFactor;
+    }
+
+    public void setEaseFactor(Integer easeFactor) {
+        this.easeFactor = easeFactor;
+    }
+
+    public Integer getReviewCount() {
+        return reviewCount;
+    }
+
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = reviewCount;
+    }
+
+    public Integer getLapseCount() {
+        return lapseCount;
+    }
+
+    public void setLapseCount(Integer lapseCount) {
+        this.lapseCount = lapseCount;
+    }
+
+    public boolean isBuried() {
+        return isBuried;
+    }
+
+    public void setBuried(boolean buried) {
+        isBuried = buried;
+    }
+
+    public LocalDateTime getBuriedUntil() {
+        return buriedUntil;
+    }
+
+    public void setBuriedUntil(LocalDateTime buriedUntil) {
+        this.buriedUntil = buriedUntil;
+    }
+
+    public boolean isDue() {
+        return due;
+    }
+
+    public void setDue(boolean due) {
+        this.due = due;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String getLabelDisplay() {
+        return labelDisplay;
+    }
+
+    public void setLabelDisplay(String labelDisplay) {
+        this.labelDisplay = labelDisplay;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getDetailedLabel() {
+        return detailedLabel;
+    }
+
+    public void setDetailedLabel(String detailedLabel) {
+        this.detailedLabel = detailedLabel;
+    }
+
+    @Override
+    public String toString() {
+        return "QuizReviewItemDTO{" +
+                "quizId=" + quizId +
+                ", quizTitle='" + quizTitle + '\'' +
+                ", status=" + status +
+                ", nextReviewDate=" + nextReviewDate +
+                '}';
+    }
+}

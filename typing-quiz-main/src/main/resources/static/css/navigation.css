@@ -1,0 +1,79 @@
+/* 统一导航样式 - Minimalist Zen */
+.navbar {
+    padding: 1.5rem 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 1000;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.logo {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--accent);
+    flex: 0 0 auto;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--text-main);
+}
+
+.nav-links a.active {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 4px;
+}
+
+/* 移除旧的渐变和复杂样式 */
+.mode-switcher-badge {
+    display: inline-block;
+    min-width: 18px;
+    padding: 2px 4px;
+    background: var(--error);
+    color: white;
+    border-radius: 2px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    margin-left: 4px;
+    vertical-align: top;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .navbar-nav {
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

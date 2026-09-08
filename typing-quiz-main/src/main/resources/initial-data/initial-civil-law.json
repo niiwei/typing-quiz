@@ -1,0 +1,18 @@
+{
+  "title": "民法典核心原则",
+  "description": "《中华人民共和国民法典》基本原则",
+  "timeLimit": 180,
+  "answers": [],
+  "answerList": [
+    {"content": "平等原则", "comment": "民事主体法律地位一律平等"},
+    {"content": "自愿原则", "comment": "按照自己的意思设立变更终止民事法律关系"},
+    {"content": "公平原则", "comment": "合理确定各方权利义务"},
+    {"content": "诚信原则", "comment": "秉持诚实，恪守承诺（帝王条款）"},
+    {"content": "守法与公序良俗原则", "comment": "不得违反法律，不得违背公序良俗"},
+    {"content": "绿色原则", "comment": "节约资源、保护生态环境"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

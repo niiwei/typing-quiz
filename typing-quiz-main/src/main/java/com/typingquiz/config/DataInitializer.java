@@ -1,0 +1,96 @@
+package com.typingquiz.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.typingquiz.dto.QuizDTO;
+import com.typingquiz.entity.User;
+import com.typingquiz.repository.QuizRepository;
+import com.typingquiz.repository.UserRepository;
+import com.typingquiz.service.QuizService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
+import java.util.Optional;
+
+@Component
+public class DataInitializer implements CommandLineRunner {
+
+    private final QuizRepository quizRepository;
+    private final QuizService quizService;
+    private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    public DataInitializer(QuizRepository quizRepository, QuizService quizService, ObjectMapper objectMapper, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.quizRepository = quizRepository;
+        this.quizService = quizService;
+        this.objectMapper = objectMapper;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        // 创建或获取 template_user
+        User templateUser = createTemplateUser();
+        
+        // 检查 template_user 是否已有测验，有则跳过
+        if (quizRepository.countByUserId(templateUser.getId()) > 0) {
+            System.out.println("template_user 已有测验，跳过初始化");
+            return;
+        }
+
+        System.out.println("开始初始化示例数据...");
+
+        // 自动扫描 initial-data 目录下的所有 JSON 文件
+        loadAllQuizzesFromDirectory(templateUser.getId());
+
+        System.out.println("示例数据初始化完成!");
+    }
+
+    private User createTemplateUser() {
+        String templateUsername = "template_user";
+        Optional<User> existingUser = userRepository.findByUsername(templateUsername);
+        if (existingUser.isPresent()) {
+            return existingUser.get();
+        }
+        User user = new User();
+        user.setUsername(templateUsername);
+        user.setEmail(templateUsername + "@example.com");
+        user.setPassword(passwordEncoder.encode("a_very_secure_password_placeholder"));
+        return userRepository.save(user);
+    }
+
+    private void loadAllQuizzesFromDirectory(Long userId) {
+        try {
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource[] resources = resolver.getResources("classpath:initial-data/*.json");
+            
+            System.out.println("发现 " + resources.length + " 个官方测验文件");
+            
+            for (Resource resource : resources) {
+                loadQuizFromResource(resource, userId);
+            }
+        } catch (Exception e) {
+            System.err.println("扫描初始数据目录失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private void loadQuizFromResource(Resource resource, Long userId) {
+        try (InputStream inputStream = resource.getInputStream()) {
+            QuizDTO quizDTO = objectMapper.readValue(inputStream, QuizDTO.class);
+            quizService.createQuiz(quizDTO, userId);
+            System.out.println("成功加载并创建测验: " + quizDTO.getTitle());
+        } catch (Exception e) {
+            System.err.println("加载初始化数据失败: " + resource.getFilename());
+            e.printStackTrace();
+        }
+    }
+}

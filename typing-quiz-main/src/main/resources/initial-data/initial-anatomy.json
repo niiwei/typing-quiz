@@ -1,0 +1,22 @@
+{
+  "title": "人体解剖基础",
+  "description": "人体主要器官及其功能",
+  "timeLimit": 240,
+  "answers": [],
+  "answerList": [
+    {"content": "心脏", "comment": "血液循环的动力泵"},
+    {"content": "肺", "comment": "气体交换场所"},
+    {"content": "肝脏", "comment": "代谢与解毒中心"},
+    {"content": "肾脏", "comment": "过滤血液，产生尿液"},
+    {"content": "胃", "comment": "食物初步消化"},
+    {"content": "小肠", "comment": "营养吸收主要场所"},
+    {"content": "大脑", "comment": "神经中枢，控制全身"},
+    {"content": "胰腺", "comment": "分泌胰岛素和消化酶"},
+    {"content": "脾脏", "comment": "免疫器官，储存血液"},
+    {"content": "胆囊", "comment": "储存胆汁"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

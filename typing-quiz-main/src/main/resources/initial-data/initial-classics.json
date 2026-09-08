@@ -1,0 +1,20 @@
+{
+  "title": "四大名著速记",
+  "description": "中国古典四大名著相关知识",
+  "timeLimit": 180,
+  "answers": [],
+  "answerList": [
+    {"content": "《红楼梦》", "comment": "曹雪芹，贾宝玉林黛玉爱情故事"},
+    {"content": "《西游记》", "comment": "吴承恩，孙悟空唐僧取经故事"},
+    {"content": "《水浒传》", "comment": "施耐庵，梁山好汉108将"},
+    {"content": "《三国演义》", "comment": "罗贯中，魏蜀吴三国争霸"},
+    {"content": "金陵十二钗", "comment": "红楼梦中的十二位女性角色"},
+    {"content": "大闹天宫", "comment": "西游记中孙悟空的经典情节"},
+    {"content": "武松打虎", "comment": "水浒传中武松的经典情节"},
+    {"content": "桃园三结义", "comment": "三国演义中刘备关羽张飞结义"}
+  ],
+  "quizType": "TYPING",
+  "fillBlankQuiz": null,
+  "groups": [],
+  "answersWithComments": null
+}

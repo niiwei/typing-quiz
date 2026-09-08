@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲脑壳 MindPop - 宣传页合集</title>
+    <style>
+        /* 引入得意黑字体 */
+        @font-face {
+            font-family: 'SmileySans';
+            src: url('./SmileySans-Oblique-3.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SmileySans', -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #fffde7 100%);
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        /* 通用卡片样式 */
+        .promo-card {
+            width: 375px;
+            height: 500px;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08), 0 8px 25px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .promo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #81c784 0%, #a5d6a7 50%, #c8e6c9 100%);
+            z-index: 20;
+        }
+
+        /* 截图区域 - 基础样式 */
+        .screenshot-full {
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .screenshot-full img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 针对不同截图定制显示区域 */
+        /* 答题页：显示中间答题区域 */
+        .screenshot-quiz {
+            height: 360px;
+        }
+        .screenshot-quiz img {
+            object-position: center 30%;
+        }
+
+        /* 复习页：显示按钮和统计 */
+        .screenshot-review {
+            height: 380px;
+        }
+        .screenshot-review img {
+            object-position: center 20%;
+        }
+
+        /* 分组页：向左偏移，显示完整左侧内容，隐藏右侧按钮 */
+        .screenshot-group {
+            height: 380px;
+        }
+        .screenshot-group img {
+            object-position: left 5%;
+            transform: scale(1.1);
+            transform-origin: left top;
+        }
+
+        /* 统计页：显示数据卡片 */
+        .screenshot-stats {
+            height: 370px;
+        }
+        .screenshot-stats img {
+            object-position: center 25%;
+        }
+
+        /* 编辑页：显示编辑表单 */
+        .screenshot-edit {
+            height: 350px;
+        }
+        .screenshot-edit img {
+            object-position: top center;
+        }
+
+        /* 顶部小标签 */
+        .top-tag {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 15;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 6px 12px;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .top-tag-icon {
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .top-tag-icon svg {
+            width: 12px;
+            height: 12px;
+            fill: none;
+            stroke: #ffffff;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .top-tag-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        /* 底部文字区域 - 纯色背景 */
+        .text-section {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 24px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .feature-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #757575;
+            line-height: 1.9;
+            text-align: left;
+            margin-bottom: 12px;
+            padding: 0 12px;
+        }
+
+        .feature-text .line1 {
+            display: block;
+            text-align: left;
+            padding-left: 0;
+            color: #666666;
+        }
+
+        .feature-text .line2 {
+            display: block;
+            text-align: center;
+            padding-left: 20px;
+            color: #666666;
+        }
+
+        .feature-text .highlight {
+            float: right;
+            clear: both;
+            margin-top: 12px;
+            margin-right: 0;
+            padding: 4px 0 4px 16px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #2e7d32;
+            letter-spacing: 2px;
+            border-left: 3px solid #81c784;
+        }
+
+        .badge-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .algorithm-badge {
+            display: none;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 9px;
+            color: #9e9e9e;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.6;
+        }
+
+        .brand-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 品牌介绍页特殊样式 */
+        .brand-card {
+            background: linear-gradient(180deg, #f8fdf8 0%, #f0f9f0 100%);
+        }
+
+        .brand-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 30px;
+        }
+
+        .brand-logo {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%);
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(129, 199, 132, 0.35);
+        }
+
+        .brand-logo img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2e7d32;
+            margin-bottom: 6px;
+        }
+
+        .brand-slogan {
+            font-size: 12px;
+            color: #757575;
+            margin-bottom: 20px;
+        }
+
+        .brand-features {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .brand-feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .brand-feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #f1f8e9;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .brand-feature-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: #558b2f;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        .brand-feature-text {
+            font-size: 10px;
+            color: #558b2f;
+            font-weight: 500;
+        }
+
+        .brand-desc {
+            font-size: 12px;
+            color: #616161;
+            line-height: 1.8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- 宣传页1: 品牌介绍 -->
+    <div class="promo-card brand-card">
+        <div class="brand-content">
+            <div class="brand-logo">
+                <img src="./assets/img/brand/logo/主logo.svg" alt="敲脑壳 Logo">
+            </div>
+            <div class="brand-name">敲脑壳 MindPop</div>
+            <div class="brand-slogan">Anki 升级版 · 专治「一看就会，一考就废」</div>
+            <div class="brand-features">
+                <div class="brand-feature-item">
+                    <div class="brand-feature-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <span class="brand-feature-text">强制提取</span>
+                </div>
+                <div class="brand-feature-item">
+                    <div class="brand-feature-icon">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    </div>
+                    <span class="brand-feature-text">间隔重复</span>
+                </div>
+                <div class="brand-feature-item">
+                    <div class="brand-feature-icon">
+                        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    </div>
+                    <span class="brand-feature-text">清单记忆</span>
+                </div>
+            </div>
+            <div class="brand-desc">
+                Anki 记单词无敌，但简答题总漏点？<br>
+                敲脑壳逼你完整敲出答案，杜绝「幻觉记忆」
+            </div>
+            <div class="brand" style="margin-top: 20px;">
+                <span class="brand-icon">
+                    <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                </span>
+                <span>敲脑壳 MindPop</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 宣传页2: 强制主动输出 - 测验答题页 -->
+    <div class="promo-card">
+        <div class="screenshot-full screenshot-quiz">
+            <div class="top-tag">
+                <div class="top-tag-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                    </svg>
+                </div>
+                <span class="top-tag-title">核心交互</span>
+            </div>
+            <img src="./images/测验答题页.png" alt="测验答题页">
+        </div>
+        <div class="text-section">
+            <div class="feature-text">
+                <span class="line1"></span>敲对一个才给看下一个</span>
+                <span class="line2">不敲对不放行</span>
+                <span class="highlight">拒绝"看一眼答案"的侥幸心理</span>
+            </div>
+            <div class="badge-row">
+                <span class="brand">
+                    <span class="brand-icon">
+                        <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                    </span>
+                    <span>敲脑壳 MindPop</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 宣传页3: 科学间隔复习 - 间隔复习页 -->
+    <div class="promo-card">
+        <div class="screenshot-full screenshot-review">
+            <div class="top-tag">
+                <div class="top-tag-icon">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <span class="top-tag-title">复习系统</span>
+            </div>
+            <img src="./images/间隔复习页.png" alt="间隔复习页">
+        </div>
+        <div class="text-section">
+            <div class="feature-text">
+                <span class="line1">按遗忘曲线自动排复习</span>
+                <span class="line2">该背的时候精准提醒</span>
+                <span class="highlight">不多背，也不漏背</span>
+            </div>
+            <div class="badge-row">
+                <span class="brand">
+                    <span class="brand-icon">
+                        <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                    </span>
+                    <span>敲脑壳 MindPop</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 宣传页4: 分组复习 - 分组复习页 -->
+    <div class="promo-card">
+        <div class="screenshot-full screenshot-group">
+            <div class="top-tag">
+                <div class="top-tag-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                </div>
+                <span class="top-tag-title">分组管理</span>
+            </div>
+            <img src="./images/分组复习页.png" alt="分组复习页">
+        </div>
+        <div class="text-section">
+            <div class="feature-text">
+                <span class="line1">测验太多？按组归类</span>
+                <span class="line2">法考归法考，雅思归雅思</span>
+                <span class="highlight">想学哪组点哪组</span>
+            </div>
+            <div class="badge-row">
+                <span class="brand">
+                    <span class="brand-icon">
+                        <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                    </span>
+                    <span>敲脑壳 MindPop</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 宣传页5: 数据统计 - 复习统计页 -->
+    <div class="promo-card">
+        <div class="screenshot-full screenshot-stats">
+            <div class="top-tag">
+                <div class="top-tag-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                    </svg>
+                </div>
+                <span class="top-tag-title">学习统计</span>
+            </div>
+            <img src="./images/复习统计页.png" alt="复习统计页">
+        </div>
+        <div class="text-section">
+            <div class="feature-text">
+                <span class="line1">每天背了多少，还剩多少</span>
+                <span class="line2">图表一目了然</span>
+                <span class="highlight">看着进度，越背越来劲</span>
+            </div>
+            <div class="badge-row">
+                <span class="brand">
+                    <span class="brand-icon">
+                        <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                    </span>
+                    <span>敲脑壳 MindPop</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 宣传页6: 测验编辑 - 测验编辑页 -->
+    <div class="promo-card">
+        <div class="screenshot-full screenshot-edit">
+            <div class="top-tag">
+                <div class="top-tag-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </div>
+                <span class="top-tag-title">自主创建</span>
+            </div>
+            <img src="./images/测验编辑页.png" alt="测验编辑页">
+        </div>
+        <div class="text-section">
+            <div class="feature-text">
+                <span class="line1">自建专属题库，个性化定制</span>
+                <span class="line2">一键导入导出，高效整理</span>
+                <span class="highlight">想背什么自己造</span>
+            </div>
+            <div class="badge-row">
+                <span class="brand">
+                    <span class="brand-icon">
+                        <img src="./assets/img/brand/logo/主logo.svg" alt="logo">
+                    </span>
+                    <span>敲脑壳 MindPop</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

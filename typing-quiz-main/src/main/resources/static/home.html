@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲脑壳 MindPop - 首页</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <!-- Brand Logo & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/brand/favicon/apple-touch-icon.png">
+    <style>
+        body.home-page {
+            background-color: var(--bg);
+        }
+        .home-hero {
+            text-align: center;
+            padding: 4rem 0 3rem;
+        }
+
+        .home-hero h1 {
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .home-hero .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .home-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+        .stat-box {
+            text-align: center;
+            min-width: 140px;
+            padding: 2rem 1.5rem;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+        .stat-num {
+            font-size: 3.5rem;
+            font-weight: 200;
+            display: block;
+            line-height: 1;
+            color: var(--text-main);
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            margin-top: 1rem;
+            display: block;
+        }
+        .home-section {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+
+        /* 分组复习卡片样式 */
+        .review-group-card {
+            border: 1px solid var(--border);
+            margin-bottom: 1rem;
+            background: var(--bg);
+            transition: all 0.2s ease;
+        }
+        .review-group-card:hover {
+            border-color: var(--accent);
+        }
+        .review-group-card.expanded {
+            border-color: var(--accent);
+        }
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .group-header:hover {
+            background: var(--hover);
+        }
+        .group-title-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .group-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .group-stats {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .stat-tag {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .stat-tag.new {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .stat-tag.learning {
+            background: #fde68a;
+            color: #92400e;
+        }
+        .stat-tag.review {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .stat-tag.relearning {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .group-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .expand-icon {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        .group-content {
+            border-top: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        /* 测验项样式 */
+        .quiz-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .quiz-item:last-child {
+            border-bottom: none;
+        }
+        .quiz-item:hover {
+            background: var(--hover);
+        }
+        .quiz-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        .quiz-title-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .quiz-title {
+            font-size: 0.8rem;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+        .quiz-status {
+            font-size: 0.55rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 2px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .quiz-status.status-new {
+            background: #fcd34d;
+            color: #78350f;
+        }
+        .quiz-status.status-learning {
+            background: #fde68a;
+            color: #92400e;
+        }
+        .quiz-status.status-review {
+            background: #93c5fd;
+            color: #1e3a8a;
+        }
+        .quiz-status.status-relearning {
+            background: #fca5a5;
+            color: #7f1d1d;
+        }
+        .quiz-status.status-scheduled {
+            background: transparent;
+            color: var(--text-muted);
+        }
+        .quiz-status.status-suspended {
+            background: var(--border);
+            color: var(--text-muted);
+        }
+        .quiz-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .quiz-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .quiz-actions .btn-small {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.7rem;
+        }
+        .btn-secondary {
+            border-color: var(--border);
+            color: var(--text-muted);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body class="home-page">
+    <nav class="navbar">
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
+        <div class="nav-links">
+            <a href="home.html" class="active">首页</a>
+            <a href="quizzes.html">测验</a>
+            <a href="create.html">创建</a>
+            <a href="stats.html">看板</a>
+            <a href="manage.html">管理</a>
+            <a href="settings.html">设置</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
+        </div>
+    </nav>
+
+    <div id="home-container" class="fade-in">
+        <section class="home-hero">
+            <h1>敲脑壳</h1>
+            <p class="subtitle">MindPop · 硬核记忆工具</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted); max-width: 500px; margin: 1.5rem auto 3rem; line-height: 1.6;">
+                专为复杂、长清单知识设计的「Anki 升级版」提取练习工具。<br>
+                强制主动输出，科学间隔复习，彻底杜绝自我欺骗。
+            </p>
+            
+            <div class="home-stats">
+                <div class="stat-box">
+                    <span class="stat-num" id="new-count" style="color: var(--warning);">0</span>
+                    <span class="stat-label">待学习</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="review-count" style="color: var(--warning);">0</span>
+                    <span class="stat-label">待复习</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="learning-count" style="color: var(--text-muted);">0</span>
+                    <span class="stat-label">未到期</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-num" id="suspended-count" style="color: var(--text-muted);">0</span>
+                    <span class="stat-label">已暂停</span>
+                </div>
+            </div>
+            
+            <div style="margin-top: 4rem; display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn" id="start-review-btn" onclick="startDailyReview()">开始复习流</button>
+                <button class="btn btn-secondary" onclick="startQuickTutorial()">快速上手</button>
+            </div>
+        </section>
+
+        <section class="home-section" id="group-review-section">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                <div>
+                    <h2 style="font-size: 0.9rem; color: var(--text-main); letter-spacing: 0.1em; font-weight: 600; margin-bottom: 0.25rem;">分组复习</h2>
+                    <span style="font-size: 0.65rem; color: var(--text-muted);">点击分组展开查看测验</span>
+                </div>
+            </div>
+
+            <!-- 筛选器 -->
+            <div class="filter-bar" style="margin-bottom: 1.5rem;">
+                <div class="filter-row">
+                    <span class="filter-label">状态</span>
+                    <div id="status-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <span class="filter-item active" data-status="all" onclick="filterByStatus('all', this)">全部</span>
+                        <span class="filter-item" data-status="NEW" onclick="filterByStatus('NEW', this)">新测验</span>
+                        <span class="filter-item" data-status="PENDING_LEARN" onclick="filterByStatus('PENDING_LEARN', this)">待学习</span>
+                        <span class="filter-item" data-status="PENDING_RELEARN" onclick="filterByStatus('PENDING_RELEARN', this)">待重学</span>
+                        <span class="filter-item" data-status="PENDING_REVIEW" onclick="filterByStatus('PENDING_REVIEW', this)">待复习</span>
+                        <span class="filter-item" data-status="SCHEDULED" onclick="filterByStatus('SCHEDULED', this)">未到期</span>
+                        <span class="filter-item" data-status="SUSPENDED" onclick="filterByStatus('SUSPENDED', this)">已暂停</span>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <span class="filter-label">分组</span>
+                    <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <span class="filter-item active" data-group="all" onclick="filterByGroup('all', this)">全部</span>
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button class="btn btn-small" onclick="showBuriedQuizzes()">查看搁置</button>
+                </div>
+            </div>
+
+            <!-- 分组列表 -->
+            <div id="review-groups-container">
+                <div class="loading" style="text-align: center; padding: 3rem; font-size: 0.8rem; color: var(--text-muted);">加载分组复习数据...</div>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
+    <script src="js/review-api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 清除旧的复习列表，确保重新进入时使用新列表
+            Object.keys(sessionStorage).forEach(key => {
+                if (key === 'reviewQuizList' || key.startsWith('groupQuizList_')) {
+                    sessionStorage.removeItem(key);
+                }
+            });
+
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userSection = document.getElementById('userSection');
+            if (userSection) userSection.style.display = 'block';
+
+            await loadHomeSummary();
+            await loadGroupReviewData();
+        });
+
+        async function loadHomeSummary() {
+            try {
+                const summary = await ReviewAPI.getTodaySummary();
+                // 待学习 = 新测验(NEW) + 学习中已到期(PENDING_LEARN)
+                document.getElementById('new-count').textContent = (summary.newCards || 0) + (summary.pendingLearnCount || 0);
+                // 待复习 = 复习中已到期(PENDING_REVIEW) + 重学中已到期(PENDING_RELEARN)
+                document.getElementById('review-count').textContent = (summary.pendingReviewCount || 0) + (summary.pendingRelearnCount || 0);
+                document.getElementById('learning-count').textContent = summary.scheduledCount || 0;
+                document.getElementById('suspended-count').textContent = summary.suspendedCount || 0;
+
+                const startBtn = document.getElementById('start-review-btn');
+                const totalDue = (summary.newCards || 0) + (summary.pendingLearnCount || 0) + 
+                                 (summary.pendingReviewCount || 0) + (summary.pendingRelearnCount || 0);
+                
+                if (totalDue === 0) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = '今日已完成';
+                    startBtn.style.opacity = '0.5';
+                } else {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '开始复习流';
+                    startBtn.style.opacity = '1';
+                }
+            } catch (error) {
+                console.error('加载统计失败:', error);
+            }
+        }
+
+        // 分组复习数据
+        let allGroupData = [];
+        let allGroups = [];
+        let allQuizzes = [];
+        let activeStatus = 'all';
+        let activeGroup = 'all';
+        let expandedGroups = new Map();
+
+        async function loadGroupReviewData() {
+            try {
+                // 同时加载分组复习数据、分组信息和测验数据
+                const [groupSummary, groupsRes, quizzesRes] = await Promise.all([
+                    ReviewAPI.getGroupSummary(),
+                    fetch('/api/groups', { headers: Auth.getAuthHeaders() }),
+                    fetch('/api/quizzes', { headers: Auth.getAuthHeaders() })
+                ]);
+                
+                allGroupData = groupSummary || [];
+                
+                if (groupsRes.ok) {
+                    allGroups = await groupsRes.json();
+                }
+                
+                if (quizzesRes.ok) {
+                    allQuizzes = await quizzesRes.json();
+                }
+                
+                renderGroupFilters();
+                renderGroupReviewList();
+            } catch (error) {
+                console.error('加载分组复习数据失败:', error);
+                document.getElementById('review-groups-container').innerHTML = 
+                    '<div style="text-align: center; padding: 2rem; color: var(--error);">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderGroupFilters() {
+            const container = document.getElementById('group-filters');
+            // 将"默认分组"排在最前
+            const sortedGroups = [...allGroups].sort((a, b) => {
+                if (a.name === '默认分组') return -1;
+                if (b.name === '默认分组') return 1;
+                return 0;
+            });
+            
+            sortedGroups.forEach(group => {
+                const span = document.createElement('span');
+                span.className = 'filter-item';
+                span.dataset.group = group.id;
+                span.textContent = group.name;
+                span.onclick = () => filterByGroup(group.id, span);
+                container.appendChild(span);
+            });
+        }
+
+        function filterByStatus(status, el) {
+            activeStatus = status;
+            document.querySelectorAll('#status-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            expandedGroups.clear();
+            renderGroupReviewList();
+            
+            // 如果不是"全部"，自动展开所有符合条件的分组
+            if (status !== 'all') {
+                setTimeout(() => {
+                    const visibleGroups = document.querySelectorAll('.review-group-card');
+                    visibleGroups.forEach(group => {
+                        const groupId = group.dataset.groupId;
+                        if (groupId) {
+                            toggleGroup(groupId);
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        function filterByGroup(groupId, el) {
+            activeGroup = groupId;
+            document.querySelectorAll('#group-filters .filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            expandedGroups.clear();
+            renderGroupReviewList();
+            
+            // 如果不是"全部"，自动展开选中的分组
+            if (groupId !== 'all') {
+                setTimeout(() => {
+                    toggleGroup(groupId);
+                }, 100);
+            }
+        }
+
+        function renderGroupReviewList() {
+            const container = document.getElementById('review-groups-container');
+            
+            let filteredGroups = [...allGroupData];
+            
+            // 处理分组筛选
+            if (activeGroup !== 'all') {
+                filteredGroups = filteredGroups.filter(g => g.groupId === activeGroup);
+            }
+            
+            if (activeStatus !== 'all') {
+                filteredGroups = filteredGroups.filter(g => {
+                    if (activeStatus === 'NEW') return g.newQuizCount > 0;
+                    if (activeStatus === 'PENDING_LEARN') return g.pendingLearnCount > 0;
+                    if (activeStatus === 'PENDING_RELEARN') return g.pendingRelearnCount > 0;
+                    if (activeStatus === 'PENDING_REVIEW') return g.pendingReviewCount > 0;
+                    if (activeStatus === 'SCHEDULED') return g.scheduledCount > 0;
+                    if (activeStatus === 'SUSPENDED') return g.suspendedCount > 0;
+                    return true;
+                });
+            }
+
+            if (filteredGroups.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">暂无匹配的分组或测验</div>';
+                return;
+            }
+
+            container.innerHTML = filteredGroups.map(groupData => {
+                const stats = {
+                    newQuizCount: groupData.newQuizCount || 0,
+                    pendingLearnCount: groupData.pendingLearnCount || 0,
+                    pendingReviewCount: groupData.pendingReviewCount || 0,
+                    pendingRelearnCount: groupData.pendingRelearnCount || 0
+                };
+                return `
+                    <div class="review-group-card" data-group-id="${groupData.groupId}">
+                        <div class="group-header" onclick="toggleGroup('${groupData.groupId}')">
+                            <div class="group-title-section">
+                                <span class="group-name">${groupData.groupName}</span>
+                                <div class="group-stats">
+                                    ${stats.newQuizCount > 0 ? `<span class="stat-tag new">新 ${stats.newQuizCount}</span>` : ''}
+                                    ${stats.pendingLearnCount > 0 ? `<span class="stat-tag learning">学 ${stats.pendingLearnCount}</span>` : ''}
+                                    ${stats.pendingRelearnCount > 0 ? `<span class="stat-tag relearning">重 ${stats.pendingRelearnCount}</span>` : ''}
+                                    ${stats.pendingReviewCount > 0 ? `<span class="stat-tag review">复 ${stats.pendingReviewCount}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="group-actions">
+                                <button class="btn btn-small" onclick="event.stopPropagation(); startGroupReview('${groupData.groupId}')">分组复习</button>
+                                <span class="expand-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="group-content" id="group-content-${groupData.groupId}" style="display: none;">
+                            <div class="loading" style="text-align: center; padding: 1rem; font-size: 0.7rem; color: var(--text-muted);">加载中...</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleGroup(groupId) {
+            const content = document.getElementById(`group-content-${groupId}`);
+            const card = document.querySelector(`[data-group-id="${groupId}"]`);
+            const icon = card.querySelector('.expand-icon');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+                card.classList.add('expanded');
+                
+                if (!expandedGroups.has(groupId)) {
+                    await loadGroupItems(groupId);
+                } else {
+                    renderGroupItems(groupId, expandedGroups.get(groupId));
+                }
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+                card.classList.remove('expanded');
+            }
+        }
+
+        async function loadGroupItems(groupId) {
+            const content = document.getElementById(`group-content-${groupId}`);
+            try {
+                const items = await ReviewAPI.getGroupReviewItems(groupId);
+                let filteredItems = items;
+                if (activeStatus !== 'all') {
+                    // 使用 detailedLabel 或 label 进行匹配
+                    filteredItems = items.filter(item => {
+                        const label = item.detailedLabel || item.label;
+                        return label === activeStatus;
+                    });
+                }
+                expandedGroups.set(groupId, filteredItems);
+                renderGroupItems(groupId, filteredItems);
+            } catch (error) {
+                console.error('加载分组测验失败:', error);
+                content.innerHTML = '<div style="text-align: center; padding: 1rem; color: var(--error); font-size: 0.75rem;">加载失败</div>';
+            }
+        }
+
+        function renderGroupItems(groupId, items) {
+            const content = document.getElementById(`group-content-${groupId}`);
+            if (items.length === 0) {
+                content.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">该分组下暂无待复习测验</div>';
+                return;
+            }
+            content.innerHTML = items.map(item => {
+                const intervalDisplay = calculateRemainingTime(item.nextReviewDate);
+                console.log(`[DEBUG] Quiz: ${item.quizTitle}, nextReviewDate: ${item.nextReviewDate}, display: ${intervalDisplay}`);
+                return `
+                <div class="quiz-item">
+                    <div class="quiz-info">
+                        <div class="quiz-title-section">
+                            <span class="quiz-title">${item.quizTitle}</span>
+                            <span class="quiz-status ${getStatusClass(item.detailedLabel || item.label)}">${getStatusText(item.detailedLabel || item.label)}</span>
+                        </div>
+                        <span class="quiz-meta">间隔: <span class="debug-interval">${intervalDisplay}</span> • 已复习 ${item.reviewCount || 0} 次 • 简易度: ${(item.easeFactor / 1000).toFixed(1)}</span>
+                    </div>
+                    <div class="quiz-actions">
+                        <button class="btn btn-small" onclick="startQuiz(${item.quizId}, '${groupId}')">开始</button>
+                        <button class="btn btn-small btn-secondary" onclick="buryQuiz(${item.quizId})">搁置</button>
+                        <button class="btn btn-small btn-secondary" onclick="resetQuiz(${item.quizId})">重置</button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // 计算剩余时间（用于学习阶段倒计时）
+        function calculateRemainingTime(nextReviewDate) {
+            if (!nextReviewDate) {
+                return '<10分钟';
+            }
+            
+            const now = new Date();
+            const target = new Date(nextReviewDate);
+            const diff = target - now;  // 毫秒差
+            
+            if (diff <= 0) {
+                // 已到期，显示已过期时间
+                const seconds = Math.abs(Math.floor(diff / 1000));
+                if (seconds < 60) {
+                    return `${seconds}秒前`;
+                }
+                const minutes = Math.floor(seconds / 60);
+                if (minutes < 60) {
+                    return `${minutes}分钟前`;
+                }
+                return '已到期';
+            }
+            
+            const seconds = Math.ceil(diff / 1000);
+            const minutes = Math.ceil(diff / 60000);  // 转为分钟，向上取整
+            const hours = Math.ceil(diff / 3600000);   // 转为小时，向上取整
+            
+            if (seconds < 60) {
+                return `${seconds}秒后`;
+            } else if (minutes < 60) {
+                return `${minutes}分钟后`;
+            } else if (hours < 24) {
+                return `${hours}小时后`;
+            } else {
+                const days = Math.ceil(diff / 86400000);
+                return `${days}天后`;
+            }
+        }
+
+        function getStatusClass(detailedLabel) {
+            const map = {
+                'NEW': 'status-new',
+                'PENDING_LEARN': 'status-learning',
+                'PENDING_RELEARN': 'status-relearning',
+                'PENDING_REVIEW': 'status-review',
+                'SCHEDULED': 'status-scheduled',
+                'SUSPENDED': 'status-suspended'
+            };
+            return map[detailedLabel] || 'status-default';
+        }
+
+        function getStatusText(detailedLabel) {
+            const map = {
+                'NEW': '新测验',
+                'PENDING_LEARN': '待学习',
+                'PENDING_RELEARN': '待重学',
+                'PENDING_REVIEW': '待复习',
+                'SCHEDULED': '未到期',
+                'SUSPENDED': '已暂停'
+            };
+            return map[detailedLabel] || detailedLabel;
+        }
+
+        async function startQuiz(quizId, groupId) {
+            try {
+                const groupParam = groupId ? `&groupId=${groupId}` : '';
+                
+                // 根据模式获取完整列表并存入 sessionStorage
+                let items = [];
+                if (groupId) {
+                    items = await ReviewAPI.getGroupReviewItems(groupId);
+                } else {
+                    items = await ReviewAPI.getDueItems();
+                }
+
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+                
+                const quizIds = dueItems.map(i => i.quizId);
+                const storageKey = groupId ? `groupQuizList_${groupId}` : 'reviewQuizList';
+                sessionStorage.setItem(storageKey, JSON.stringify(quizIds));
+                
+                window.location.href = `index.html?id=${quizId}${groupParam}&mode=review`;
+            } catch (error) {
+                console.error('保存复习列表失败:', error);
+                const groupParam = groupId ? `&groupId=${groupId}` : '';
+                window.location.href = `index.html?id=${quizId}${groupParam}&mode=review`;
+            }
+        }
+
+        async function startGroupReview(groupId) {
+            try {
+                const items = await ReviewAPI.getGroupReviewItems(groupId);
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+
+                if (dueItems.length === 0) {
+                    alert('该分组暂无待复习测验');
+                    return;
+                }
+                const quizIds = dueItems.map(i => i.quizId);
+                sessionStorage.setItem(`groupQuizList_${groupId}`, JSON.stringify(quizIds));
+                const groupParam = `&groupId=${groupId}`;
+                window.location.href = `index.html?id=${quizIds[0]}&mode=review${groupParam}`;
+            } catch (error) {
+                alert('获取分组测验列表失败');
+            }
+        }
+
+        async function buryQuiz(quizId) {
+            if (!confirm('确定要搁置这个测验吗？')) return;
+            try {
+                await ReviewAPI.buryQuiz(quizId);
+                await loadGroupReviewData();
+            } catch (error) {
+                alert('搁置失败');
+            }
+        }
+
+        async function resetQuiz(quizId) {
+            if (!confirm('确定要重置这个测验的复习状态吗？')) return;
+            try {
+                await ReviewAPI.resetQuiz(quizId);
+                await loadGroupReviewData();
+            } catch (error) {
+                alert('重置失败');
+            }
+        }
+
+        async function showBuriedQuizzes() {
+            try {
+                const buried = await ReviewAPI.getBuriedQuizzes();
+                if (buried.length === 0) {
+                    alert('暂无搁置的测验');
+                    return;
+                }
+                const titles = buried.map(b => b.quizTitle).join('\n');
+                alert(`已搁置的测验（共${buried.length}个）:\n${titles}`);
+            } catch (error) {
+                console.error('获取搁置列表失败:', error);
+            }
+        }
+
+        async function startQuickTutorial() {
+            try {
+                // 获取所有测验列表
+                const response = await fetch('/api/quizzes', { headers: Auth.getAuthHeaders() });
+                if (!response.ok) {
+                    alert('获取测验列表失败');
+                    return;
+                }
+                const quizzes = await response.json();
+                
+                // 查找"四大名著速记"测验
+                const targetQuiz = quizzes.find(q => q.title === '四大名著速记');
+                if (!targetQuiz) {
+                    alert('未找到"四大名著速记"测验');
+                    return;
+                }
+                
+                // 直接跳转到测验页面
+                window.location.href = `index.html?id=${targetQuiz.id}&mode=practice`;
+            } catch (error) {
+                console.error('快速上手失败:', error);
+                alert('启动快速上手失败，请刷新重试');
+            }
+        }
+
+        async function startDailyReview() {
+            try {
+                const items = await ReviewAPI.getDueItems();
+                // 只包含待学习/待复习的测验
+                const dueItems = items.filter(item => {
+                    const label = item.detailedLabel || item.label;
+                    // 统一准入口径：NEW、PENDING_LEARN、PENDING_RELEARN、PENDING_REVIEW 都是需要复习的
+                    return label === 'NEW' || label === 'PENDING_LEARN' || label === 'PENDING_RELEARN' || label === 'PENDING_REVIEW';
+                });
+
+                if (dueItems.length === 0) {
+                    alert('今日无待复习测验');
+                    return;
+                }
+                const quizIds = dueItems.map(item => item.quizId);
+                sessionStorage.setItem('reviewQuizList', JSON.stringify(quizIds));
+                window.location.href = `index.html?id=${quizIds[0]}&mode=review`;
+            } catch (error) {
+                alert('获取复习列表失败');
+            }
+        }
+    </script>
+
+    <!-- 新用户引导弹窗 -->
+    <div id="onboarding-modal" class="onboarding-modal" style="display: none;">
+        <div class="onboarding-overlay"></div>
+        <div class="onboarding-container">
+            <div class="onboarding-content">
+                <!-- 关闭按钮 -->
+                <button class="onboarding-close" onclick="closeOnboarding()">×</button>
+                
+                <!-- 进度指示器 -->
+                <div class="onboarding-progress">
+                    <div class="progress-dot active" data-page="1"></div>
+                    <div class="progress-dot" data-page="2"></div>
+                    <div class="progress-dot" data-page="3"></div>
+                    <div class="progress-dot" data-page="4"></div>
+                    <div class="progress-dot" data-page="5"></div>
+                    <div class="progress-dot" data-page="6"></div>
+                    <div class="progress-dot" data-page="7"></div>
+                    <div class="progress-dot" data-page="8"></div>
+                </div>
+
+                <!-- 第1页：欢迎 -->
+                <div class="onboarding-page active" data-page="1">
+                    <div class="onboarding-logo">
+                        <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳" style="height: 60px; width: auto;">
+                    </div>
+                    <h2 class="onboarding-title">欢迎来到敲脑壳</h2>
+                    <p class="onboarding-desc">
+                        MindPop 是一款专为复杂、长清单知识设计的硬核记忆工具
+                    </p>
+                    <div class="onboarding-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">⚡</span>
+                            <span><strong>强制主动输出</strong> - 单框连击交互，敲对关键词答案才会跳出，强制大脑硬核提取</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🧠</span>
+                            <span><strong>科学间隔复习</strong> - 内置 SM-2 算法，遵循遗忘曲线，自动规划每日复习任务</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📋</span>
+                            <span><strong>结构化记忆适配</strong> - 完美处理"一对多"复杂场景，朝代、条款、名词无一遗漏</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">✨</span>
+                            <span><strong>极简极致体验</strong> - 无序答题、JSON导入导出，为硬核学习者打造丝滑工作流</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第2页：寻找测验 -->
+                <div class="onboarding-page" data-page="2">
+                    <div class="onboarding-icon">🎯</div>
+                    <h2 class="onboarding-title">开启你的第一次测验</h2>
+                    <p class="onboarding-desc">了解如何在系统中快速查找和定位你的测验</p>
+                    <div class="video-container">
+                        <video id="video-page-2" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/寻找测验.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第3页：提示功能 -->
+                <div class="onboarding-page" data-page="3">
+                    <div class="onboarding-icon">💡</div>
+                    <h2 class="onboarding-title">遇到卡点？点击提示</h2>
+                    <p class="onboarding-desc">学习遇到困难时，智能提示帮你突破瓶颈</p>
+                    <div class="video-container">
+                        <video id="video-page-3" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/提示.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第4页：答题完成 -->
+                <div class="onboarding-page" data-page="4">
+                    <div class="onboarding-icon">✅</div>
+                    <h2 class="onboarding-title">查看测验结果</h2>
+                    <p class="onboarding-desc">完成后回顾结果，了解你的掌握程度</p>
+                    <div class="video-container">
+                        <video id="video-page-4" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/答题完成.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第5页：复习推送 -->
+                <div class="onboarding-page" data-page="5">
+                    <div class="onboarding-icon">🔄</div>
+                    <h2 class="onboarding-title">无痛背书，每日推送</h2>
+                    <p class="onboarding-desc">内置艾宾浩斯遗忘曲线算法，自动安排最佳复习时间</p>
+                    <div class="video-container">
+                        <video id="video-page-5" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/复习推送.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第6页：创建测验 -->
+                <div class="onboarding-page" data-page="6">
+                    <div class="onboarding-icon">📝</div>
+                    <h2 class="onboarding-title">1分钟定制记忆测验</h2>
+                    <p class="onboarding-desc">快速创建打字题或填空题，打造专属学习内容</p>
+                    <div class="video-container">
+                        <video id="video-page-6" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/创建测验.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第7页：测验分组 -->
+                <div class="onboarding-page" data-page="7">
+                    <div class="onboarding-icon">📂</div>
+                    <h2 class="onboarding-title">自定义分组，科学管理</h2>
+                    <p class="onboarding-desc">通过分组功能组织测验，让知识体系清晰有序</p>
+                    <div class="video-container">
+                        <video id="video-page-7" controls autoplay loop muted playsinline poster="assets/img/brand/logo/主logo.svg">
+                            <source src="videos/测验分组.mp4" type="video/mp4">
+                            <p>您的浏览器不支持视频播放。</p>
+                        </video>
+                    </div>
+                </div>
+
+                <!-- 第8页：开始 -->
+                <div class="onboarding-page" data-page="8">
+                    <div class="onboarding-icon">🚀</div>
+                    <h2 class="onboarding-title">准备好了吗？</h2>
+                    <p class="onboarding-desc">
+                        记忆不是重复阅读，而是主动提取。<br>
+                        准备好开始你的高效学习之旅了吗？
+                    </p>
+                    <div class="onboarding-final-actions">
+                        <button class="btn btn-primary" onclick="closeOnboarding()">开始使用</button>
+                        <label class="skip-future-label">
+                            <input type="checkbox" id="skip-future-checkbox">
+                            <span>下次不再显示此引导</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 导航按钮 -->
+                <div class="onboarding-nav">
+                    <button class="btn btn-nav btn-prev" onclick="prevPage()" style="visibility: hidden;">上一页</button>
+                    <button class="btn btn-nav btn-next" onclick="nextPage()">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 引导弹窗样式 */
+        .onboarding-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .onboarding-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+        }
+
+        .onboarding-container {
+            position: relative;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .onboarding-content {
+            position: relative;
+            padding: 2.5rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .onboarding-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .onboarding-close:hover {
+            background: var(--hover);
+            color: var(--text-main);
+        }
+
+        /* 进度指示器 */
+        .onboarding-progress {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .progress-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: all 0.3s;
+        }
+
+        .progress-dot.active {
+            background: var(--accent);
+            transform: scale(1.2);
+        }
+
+        /* 页面内容 */
+        .onboarding-page {
+            display: none;
+            animation: pageFadeIn 0.4s ease-out;
+        }
+
+        .onboarding-page.active {
+            display: block;
+        }
+
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .onboarding-icon {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .onboarding-title {
+            font-size: 1.5rem;
+            font-weight: 300;
+            text-align: center;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .onboarding-desc {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Logo样式 */
+        .onboarding-logo {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .onboarding-logo img {
+            height: 60px;
+            width: auto;
+        }
+
+        /* 功能详情列表 */
+        .feature-detail-list {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .feature-detail-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-detail-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-check {
+            color: var(--success);
+            font-size: 1rem;
+        }
+
+        .feature-detail-header h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .feature-detail-item p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        /* 功能列表 */
+        .onboarding-features {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            font-size: 0.85rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            line-height: 1.5;
+        }
+
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        /* 功能卡片网格 */
+        .onboarding-features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .feature-card {
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent);
+            background: var(--hover);
+        }
+
+        .feature-card-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .feature-card p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* 视频区域 - 适配竖屏视频 */
+        .video-container {
+            margin: 1.5rem auto;
+            border: 1px solid var(--border);
+            background: var(--hover);
+            max-width: 480px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: contain;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .video-placeholder {
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .video-placeholder p {
+            font-size: 1rem;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .video-placeholder span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* 快速提示 */
+        .quick-tips {
+            background: var(--hover);
+            border-left: 3px solid var(--accent);
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .quick-tips h4 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--text-main);
+        }
+
+        .quick-tips ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quick-tips li {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 0.35rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+
+        .quick-tips li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        /* 最终页面操作 */
+        .onboarding-final-actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .onboarding-final-actions .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+            padding: 1rem 3rem;
+            font-size: 0.85rem;
+        }
+
+        .onboarding-final-actions .btn-primary:hover {
+            background: var(--text-muted);
+        }
+
+        .skip-future-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .skip-future-label input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+        }
+
+        /* 导航按钮 */
+        .onboarding-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-nav {
+            padding: 0.6rem 1.5rem;
+            font-size: 0.7rem;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 600px) {
+            .onboarding-content {
+                padding: 1.5rem;
+            }
+
+            .onboarding-features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .onboarding-title {
+                font-size: 1.25rem;
+            }
+
+            .onboarding-nav {
+                flex-direction: row;
+                gap: 1rem;
+            }
+        }
+    </style>
+
+    <script>
+        // 引导弹窗状态
+        let currentPage = 1;
+        const totalPages = 8;
+
+        // 检查是否需要显示引导（首次访问或用户未选择跳过）
+        function shouldShowOnboarding() {
+            const skipOnboarding = localStorage.getItem('skipOnboarding');
+            const hasVisited = localStorage.getItem('hasVisitedBefore');
+            
+            // 如果用户明确选择跳过，或者已经访问过但旧版本没有skip标志
+            if (skipOnboarding === 'true') {
+                return false;
+            }
+            
+            // 首次访问显示引导
+            return true;
+        }
+
+        // 显示引导弹窗
+        function showOnboarding() {
+            if (!shouldShowOnboarding()) return;
+            
+            const modal = document.getElementById('onboarding-modal');
+            modal.style.display = 'flex';
+            
+            // 标记已访问
+            localStorage.setItem('hasVisitedBefore', 'true');
+        }
+
+        // 关闭引导弹窗
+        function closeOnboarding() {
+            const modal = document.getElementById('onboarding-modal');
+            const skipCheckbox = document.getElementById('skip-future-checkbox');
+            
+            // 如果用户选择不再显示
+            if (skipCheckbox && skipCheckbox.checked) {
+                localStorage.setItem('skipOnboarding', 'true');
+            }
+            
+            modal.style.display = 'none';
+            
+            // 暂停所有视频播放（第2-7页有视频）
+            for (let i = 2; i <= 7; i++) {
+                const video = document.getElementById(`video-page-${i}`);
+                if (video && !video.paused) {
+                    video.pause();
+                }
+            }
+        }
+
+        // 切换到指定页面
+        function goToPage(page) {
+            if (page < 1 || page > totalPages) return;
+            
+            // 隐藏当前页面
+            document.querySelector(`.onboarding-page[data-page="${currentPage}"]`).classList.remove('active');
+            document.querySelector(`.progress-dot[data-page="${currentPage}"]`).classList.remove('active');
+            
+            // 显示新页面
+            currentPage = page;
+            document.querySelector(`.onboarding-page[data-page="${currentPage}"]`).classList.add('active');
+            document.querySelector(`.progress-dot[data-page="${currentPage}"]`).classList.add('active');
+            
+            // 更新导航按钮
+            updateNavButtons();
+        }
+
+        // 下一页
+        function nextPage() {
+            if (currentPage < totalPages) {
+                goToPage(currentPage + 1);
+            }
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 1) {
+                goToPage(currentPage - 1);
+            }
+        }
+
+        // 更新导航按钮状态
+        function updateNavButtons() {
+            const prevBtn = document.querySelector('.btn-prev');
+            const nextBtn = document.querySelector('.btn-next');
+            
+            // 上一页按钮
+            if (currentPage === 1) {
+                prevBtn.style.visibility = 'hidden';
+            } else {
+                prevBtn.style.visibility = 'visible';
+            }
+            
+            // 下一页按钮（最后一页显示"完成"）
+            if (currentPage === totalPages) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'inline-block';
+                nextBtn.textContent = '下一页';
+            }
+        }
+
+        // 键盘导航支持
+        document.addEventListener('keydown', (e) => {
+            const modal = document.getElementById('onboarding-modal');
+            if (modal.style.display === 'none') return;
+            
+            if (e.key === 'ArrowRight' && currentPage < totalPages) {
+                nextPage();
+            } else if (e.key === 'ArrowLeft' && currentPage > 1) {
+                prevPage();
+            } else if (e.key === 'Escape') {
+                closeOnboarding();
+            }
+        });
+
+        // 页面加载完成后显示引导
+        document.addEventListener('DOMContentLoaded', () => {
+            // 延迟一点显示，确保页面完全加载
+            setTimeout(showOnboarding, 500);
+        });
+    </script>
+</body>
+</html>

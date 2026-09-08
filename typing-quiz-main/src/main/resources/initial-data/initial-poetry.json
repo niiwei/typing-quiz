@@ -1,0 +1,41 @@
+{
+  "title": "古诗词填空",
+  "description": "根据提示填写古诗词中的缺失部分",
+  "timeLimit": 300,
+  "answers": [],
+  "answerList": [],
+  "quizType": "FILL_BLANK",
+  "fillBlankQuiz": {
+    "fullText": "床前[明月光##这是注释，你在作答时不用输入它，但作答正确后能看到它##]，疑是[地上霜]。举头[望明月]，[低头]思故乡。",
+    "displayText": "床前___，疑是___。举头___，___思故乡。",
+    "blanks": [
+      {
+        "startIndex": 2,
+        "endIndex": 37,
+        "correctAnswer": "明月光",
+        "comment": "这是注释，你在作答时不用输入它，但作答正确后能看到它"
+      },
+      {
+        "startIndex": 40,
+        "endIndex": 45,
+        "correctAnswer": "地上霜",
+        "comment": null
+      },
+      {
+        "startIndex": 48,
+        "endIndex": 53,
+        "correctAnswer": "望明月",
+        "comment": null
+      },
+      {
+        "startIndex": 54,
+        "endIndex": 58,
+        "correctAnswer": "低头",
+        "comment": null
+      }
+    ],
+    "blanksCount": 4
+  },
+  "groups": [],
+  "answersWithComments": null
+}

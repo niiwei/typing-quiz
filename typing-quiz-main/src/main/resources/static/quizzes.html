@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲脑壳 MindPop - 测验列表</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/navigation.css">
+    <!-- Brand Logo & Favicon -->
+    <link rel="icon" type="image/svg+xml" href="assets/img/brand/logo/主logo.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/img/brand/favicon/apple-touch-icon.png">
+    <style>
+        body {
+            background-color: var(--bg);
+        }
+        .active-mode {
+            background: var(--accent) !important;
+            color: var(--bg) !important;
+        }
+        /* 页面标题区 - 与创建页、管理页保持一致 */
+        .page-header {
+            text-align: center;
+            padding: 2rem 0 3rem;
+        }
+        .page-header h1 {
+            font-weight: 300;
+            font-size: 2rem;
+            letter-spacing: 0.05em;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+        .page-header .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+    <nav class="navbar">
+        <a href="home.html" class="logo">
+            <img src="assets/img/brand/logo/主logo.svg" alt="敲脑壳 MindPop" style="height: 32px; width: auto;">
+        </a>
+        <div class="nav-links">
+            <a href="home.html">首页</a>
+            <a href="quizzes.html" class="active">测验</a>
+            <a href="create.html">创建</a>
+            <a href="stats.html">看板</a>
+            <a href="manage.html">管理</a>
+            <a href="settings.html">设置</a>
+            <a href="#" onclick="Auth.logout()" style="color: var(--error); margin-left: 2rem;">退出</a>
+        </div>
+    </nav>
+
+    <div id="quiz-container">
+        <div class="page-header">
+            <h1>所有测验</h1>
+        </div>
+
+        <!-- 模式切换: 单个 vs 分组 -->
+        <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem;">
+            <button class="btn btn-small active-mode" id="single-mode-btn" onclick="switchMode('single')">单个测验</button>
+            <button class="btn btn-small" id="group-mode-btn" onclick="switchMode('group')">分组测验</button>
+        </div>
+
+        <!-- 极简筛选器 -->
+        <div class="filter-bar" id="filter-bar">
+            <div class="filter-row">
+                <span class="filter-label">分类</span>
+                <div id="type-filters" style="display: flex; gap: 1.5rem;">
+                    <span class="filter-item active" onclick="filterByType('all', this)">全部</span>
+                    <span class="filter-item" onclick="filterByType('TYPING', this)">打字</span>
+                    <span class="filter-item" onclick="filterByType('FILL_BLANK', this)">填空</span>
+                </div>
+            </div>
+            <div class="filter-row" id="group-filter-row">
+                <span class="filter-label">分组</span>
+                <div id="group-filters" style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <span class="filter-item active" onclick="filterByGroup('all', this)">全部</span>
+                    <!-- 动态填充 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-list" id="quiz-list">
+            <div class="loading" style="text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-muted);">数据加载中...</div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/track.js"></script>
+    <script>
+        let currentMode = 'single';
+        let allQuizzes = [];
+        let allGroups = [];
+        let activeType = 'all';
+        let activeGroup = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadData();
+        });
+
+        async function loadData() {
+            try {
+                const [quizzesRes, groupsRes] = await Promise.all([
+                    fetch('/api/quizzes', { headers: Auth.getAuthHeaders() }),
+                    fetch('/api/groups', { headers: Auth.getAuthHeaders() })
+                ]);
+
+                allQuizzes = await quizzesRes.json();
+                allGroups = await groupsRes.json();
+
+                renderGroupFilters();
+                renderContent();
+            } catch (error) {
+                console.error('加载失败:', error);
+                document.getElementById('quiz-list').innerHTML = '<div style="text-align: center; color: var(--error);">加载失败，请刷新重试</div>';
+            }
+        }
+
+        function renderGroupFilters() {
+            const container = document.getElementById('group-filters');
+            // 将"默认分组"排在最前
+            const sortedGroups = [...allGroups].sort((a, b) => {
+                if (a.name === '默认分组') return -1;
+                if (b.name === '默认分组') return 1;
+                return 0;
+            });
+            
+            sortedGroups.forEach(group => {
+                const span = document.createElement('span');
+                span.className = 'filter-item';
+                span.textContent = group.name;
+                span.onclick = () => filterByGroup(group.id, span);
+                container.appendChild(span);
+            });
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('single-mode-btn').classList.toggle('active-mode', mode === 'single');
+            document.getElementById('group-mode-btn').classList.toggle('active-mode', mode === 'group');
+            
+            const filterBar = document.getElementById('filter-bar');
+            filterBar.style.display = mode === 'single' ? 'flex' : 'none';
+            
+            renderContent();
+        }
+
+        function filterByType(type, el) {
+            activeType = type;
+            updateActiveFilter(el, 'type-filters');
+            renderContent();
+        }
+
+        function filterByGroup(groupId, el) {
+            activeGroup = groupId;
+            updateActiveFilter(el, 'group-filters');
+            renderContent();
+        }
+
+        function updateActiveFilter(el, containerId) {
+            document.getElementById(containerId).querySelectorAll('.filter-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function renderContent() {
+            const container = document.getElementById('quiz-list');
+            container.innerHTML = '';
+
+            if (currentMode === 'single') {
+                let filtered = allQuizzes;
+                if (activeType !== 'all') {
+                    filtered = filtered.filter(q => q.quizType === activeType);
+                }
+                if (activeGroup !== 'all') {
+                    const group = allGroups.find(g => g.id === activeGroup);
+                    if (group && group.quizIds) {
+                        const quizIdSet = new Set(group.quizIds.map(id => parseInt(id)));
+                        filtered = filtered.filter(q => quizIdSet.has(q.id));
+                    } else {
+                        filtered = [];
+                    }
+                }
+                renderSingleList(container, filtered);
+            } else {
+                renderGroupList(container);
+            }
+        }
+
+        function renderSingleList(container, quizzes) {
+            if (quizzes.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">暂无匹配测验</div>';
+                return;
+            }
+            quizzes.forEach(quiz => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.onclick = () => window.location.href = `index.html?id=${quiz.id}`;
+                item.innerHTML = `
+                    <div class="list-info">
+                        <span class="title">${quiz.title}</span>
+                        <span class="sub">${quiz.totalAnswers} 项 • ${quiz.timeLimit ? quiz.timeLimit + 's' : '无限制'}</span>
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">&#8594;</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderGroupList(container) {
+            if (allGroups.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">暂无测验分组</div>';
+                return;
+            }
+            
+            // 渲染普通分组
+            allGroups.forEach(group => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.onclick = () => window.location.href = `index.html?groupId=${group.id}`;
+                item.innerHTML = `
+                    <div class="list-info">
+                        <span class="title">${group.name}</span>
+                        <span class="sub">${group.quizIds ? group.quizIds.length : 0} 个测验 • ${group.description || '无描述'}</span>
+                    </div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">&#8594;</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>

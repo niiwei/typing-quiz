@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>敲脑壳 MindPop - 注册</title>
+    <style>
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .register-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .register-card {
+            text-align: center;
+        }
+
+        .logo {
+            margin-bottom: 3rem;
+        }
+
+        .logo h1 {
+            font-weight: 200;
+            font-size: 2.5rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .logo p {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-top: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .form-input {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            background: transparent;
+        }
+
+        .form-input:focus {
+            border-bottom-color: var(--accent);
+        }
+
+        .password-strength {
+            height: 2px;
+            background: var(--border);
+            margin-top: 0.5rem;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            width: 0;
+            transition: all 0.3s ease;
+        }
+
+        .strength-weak { background: var(--error); width: 33%; }
+        .strength-medium { background: var(--warning); width: 66%; }
+        .strength-strong { background: var(--success); width: 100%; }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .divider {
+            margin: 2rem 0;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+
+        .divider span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg);
+            padding: 0 1rem;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .login-link {
+            font-size: 0.75rem;
+        }
+
+        .login-link a {
+            color: var(--text-main);
+            text-decoration: none;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.2s;
+        }
+
+        .login-link a:hover {
+            border-bottom-color: var(--accent);
+        }
+
+        .error-message {
+            font-size: 0.7rem;
+            color: var(--error);
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container fade-in">
+        <div class="register-card">
+            <div class="logo">
+                <h1>敲脑壳 MindPop</h1>
+                <p>开启你的硬核记忆之旅</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">用户名</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="设置用户名" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">邮箱</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="输入邮箱地址" required autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">密码</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="设置密码" required autocomplete="new-password">
+                    <div class="password-strength">
+                        <div id="strengthBar" class="password-strength-bar"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">确认密码</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="再次输入密码" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn submit-btn">注册</button>
+            </form>
+
+            <div class="divider"><span>已有账户？</span></div>
+
+            <div class="login-link">
+                <a href="login.html">登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/register.js"></script>
+</body>
+</html>
