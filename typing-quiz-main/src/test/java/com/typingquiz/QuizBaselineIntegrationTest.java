@@ -155,4 +155,33 @@ class QuizBaselineIntegrationTest {
             assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
         }
     }
+
+    @Test
+    void returnsEveryMatchingAnswerAndPartForSharedKeyword() throws Exception {
+        String token = JwtUtil.generateToken(11L, "parts-user");
+        String request = "{\"title\":\"Parts quiz\",\"quizType\":\"TYPING\",\"answerList\":[" +
+                "{\"content\":\"降低成本、提高效率\",\"formatVersion\":2,\"parts\":[" +
+                "{\"segments\":[{\"kind\":\"required\",\"text\":\"降低成本\"},{\"kind\":\"context\",\"text\":\"、\"}]}," +
+                "{\"segments\":[{\"kind\":\"required\",\"text\":\"提高效率\"}]}]}," +
+                "{\"content\":\"提高效率\",\"formatVersion\":2,\"parts\":[" +
+                "{\"segments\":[{\"kind\":\"required\",\"text\":\"提高效率\"}]}]}," +
+                "{\"content\":\"提高效率\",\"comment\":\"重复要点仍保留\",\"formatVersion\":2,\"parts\":[" +
+                "{\"segments\":[{\"kind\":\"required\",\"text\":\"提高效率\"}]}]}],\"groups\":[]}";
+        String created = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(request))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long quizId = objectMapper.readTree(created).get("id").asLong();
+
+        String validation = mockMvc.perform(post("/api/answers/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId + ",\"input\":\"提高效率\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode matches = objectMapper.readTree(validation).get("matches");
+        assertThat(matches).hasSize(3);
+        assertThat(matches.get(0).get("partIndices").get(0).asInt()).isEqualTo(1);
+        assertThat(matches.get(1).get("partIndices").get(0).asInt()).isEqualTo(0);
+    }
 }

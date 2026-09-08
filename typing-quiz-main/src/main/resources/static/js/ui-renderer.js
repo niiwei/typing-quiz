@@ -9,7 +9,7 @@ class UIRenderer {
      * @param {Set} foundAnswers - 已找到的答案ID集合
      * @param {boolean} showCommentPreview - 是否显示注释预览
      */
-    static renderAnswersGrid(answers, foundAnswers, showCommentPreview = false) {
+    static renderAnswersGrid(answers, foundAnswers, showCommentPreview = false, foundParts = new Map()) {
         const grid = document.getElementById('answers-grid');
         grid.innerHTML = '';
 
@@ -20,20 +20,45 @@ class UIRenderer {
             item.dataset.content = answer.content;
             item.dataset.comment = answer.comment || '';
             
-            if (foundAnswers.has(answer.id)) {
-                item.classList.add('found');
-                let displayText = answer.content;
-                // 根据设置决定是否显示注释
-                if (showCommentPreview && answer.comment) {
-                    displayText = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}#</span>`;
-                }
-                item.innerHTML = displayText;
-            } else {
-                item.textContent = '•'; // 使用新版占位符
-            }
-            
+            this.renderAnswerItem(item, answer, foundAnswers, foundParts, showCommentPreview);
             grid.appendChild(item);
         });
+    }
+
+    static renderAnswerItem(item, answer, foundAnswers, foundParts, showCommentPreview = false, revealAll = false) {
+        item.replaceChildren();
+        item.classList.remove('found', 'missed');
+        const complete = foundAnswers.has(answer.id);
+        const matched = foundParts.get(answer.id) || new Set();
+        const hasPartial = answer.formatVersion === 2 && matched.size > 0 && !complete;
+        if (!complete && !hasPartial && !revealAll) {
+            item.textContent = '•';
+            return;
+        }
+        if (!complete && revealAll) item.classList.add('missed');
+        else if (complete) item.classList.add('found');
+
+        if (answer.formatVersion === 2 && Array.isArray(answer.parts) && !complete && !revealAll) {
+            answer.parts.forEach((part, index) => {
+                const span = document.createElement('span');
+                span.className = matched.has(index) ? 'answer-content' : 'answer-part-placeholder';
+                span.textContent = matched.has(index)
+                    ? (part.segments || []).map(segment => segment.text).join('')
+                    : '______';
+                item.appendChild(span);
+            });
+        } else {
+            const content = document.createElement('span');
+            content.className = 'answer-content';
+            content.textContent = answer.content;
+            item.appendChild(content);
+        }
+        if ((complete || revealAll) && showCommentPreview && answer.comment) {
+            const comment = document.createElement('span');
+            comment.className = 'answer-comment';
+            comment.textContent = `#${answer.comment}#`;
+            item.appendChild(comment);
+        }
     }
 
     /**
@@ -41,20 +66,10 @@ class UIRenderer {
      * @param {number} answerId - 答案ID
      * @param {boolean} showCommentPreview - 是否显示注释预览
      */
-    static highlightAnswer(answerId, showCommentPreview = false) {
-        const item = document.getElementById(`answer-${answerId}`);
+    static highlightAnswer(answer, foundAnswers, foundParts, showCommentPreview = false) {
+        const item = document.getElementById(`answer-${answer.id}`);
         if (item) {
-            const content = item.dataset.content;
-            const comment = item.dataset.comment;
-            
-            item.classList.add('found');
-            
-            // 构建显示内容，根据设置决定是否显示注释
-            if (showCommentPreview && comment) {
-                item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}#</span>`;
-            } else {
-                item.textContent = content;
-            }
+            this.renderAnswerItem(item, answer, foundAnswers, foundParts, showCommentPreview);
         }
     }
 
@@ -78,18 +93,11 @@ class UIRenderer {
     /**
      * 显示所有答案(放弃时使用)
      */
-    static showAllAnswers(answers, foundAnswers) {
+    static showAllAnswers(answers, foundAnswers, foundParts = new Map(), showCommentPreview = true) {
         answers.forEach(answer => {
             const item = document.getElementById(`answer-${answer.id}`);
             if (item && !foundAnswers.has(answer.id)) {
-                item.classList.add('missed'); // 使用新版红色样式
-                
-                // 构建显示内容
-                if (answer.comment) {
-                    item.innerHTML = `<span class="answer-content">${answer.content}</span><span class="answer-comment">#${answer.comment}#</span>`;
-                } else {
-                    item.textContent = answer.content;
-                }
+                this.renderAnswerItem(item, answer, foundAnswers, foundParts, showCommentPreview, true);
             }
         });
     }
@@ -97,7 +105,7 @@ class UIRenderer {
     /**
      * 显示最终结果 - 内嵌式布局（保留题目区域）
      */
-    static showResults(stats, missedAnswers) {
+    static showResults(stats, missedAnswers, answers = [], foundAnswers = new Set(), foundParts = new Map(), showCommentPreview = true) {
         // 1. 隐藏输入区域和进度条
         const inputSection = document.getElementById('input-section');
         if (inputSection) inputSection.style.display = 'none';
@@ -115,19 +123,10 @@ class UIRenderer {
             const answersGrid = document.getElementById('answers-grid');
             if (answersGrid) {
                 answersGrid.style.display = 'grid';
-                // 标记所有未答出的答案为红色
-                const allItems = answersGrid.querySelectorAll('.answer-item');
-                allItems.forEach(item => {
-                    if (!item.classList.contains('found')) {
-                        item.classList.add('missed');
-                        // 显示答案内容
-                        const content = item.dataset.content;
-                        const comment = item.dataset.comment;
-                        if (comment) {
-                            item.innerHTML = `<span class="answer-content">${content}</span><span class="answer-comment">#${comment}#</span>`;
-                        } else {
-                            item.textContent = content;
-                        }
+                answers.forEach(answer => {
+                    const item = document.getElementById(`answer-${answer.id}`);
+                    if (item && !foundAnswers.has(answer.id)) {
+                        this.renderAnswerItem(item, answer, foundAnswers, foundParts, showCommentPreview, true);
                     }
                 });
             }
@@ -171,11 +170,16 @@ class UIRenderer {
                 item.className = 'missed-item';
                 
                 // 构建内容：答案 + 注释
-                let contentHtml = `<span class="missed-content">${answer.content}</span>`;
+                const contentHtml = document.createElement('span');
+                contentHtml.className = 'missed-content';
+                contentHtml.textContent = answer.content;
+                item.appendChild(contentHtml);
                 if (answer.comment) {
-                    contentHtml += `<span class="missed-comment">#${answer.comment}#</span>`;
+                    const comment = document.createElement('span');
+                    comment.className = 'missed-comment';
+                    comment.textContent = `#${answer.comment}#`;
+                    item.appendChild(comment);
                 }
-                item.innerHTML = contentHtml;
                 missedContainer.appendChild(item);
             });
         } else {

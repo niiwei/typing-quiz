@@ -118,7 +118,8 @@ public class QuizService {
                 for (AnswerCreateDTO answerDTO : quizDTO.getAnswerList()) {
                     if (answerDTO.getContent() != null && !answerDTO.getContent().trim().isEmpty()) {
                         String content = answerDTO.getContent().trim();
-                        if (!addedAnswers.contains(content)) {
+                        boolean isV2Answer = Integer.valueOf(2).equals(answerDTO.getFormatVersion());
+                        if (isV2Answer || !addedAnswers.contains(content)) {
                             Answer answer = new Answer(content);
                             applyAnswerDTO(answer, answerDTO);
                             quiz.addAnswer(answer);

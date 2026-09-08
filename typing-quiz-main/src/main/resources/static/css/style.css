@@ -280,6 +280,13 @@ input[type="submit"]:hover {
     font-weight: 600;
 }
 
+.answer-item .answer-part-placeholder {
+    display: block;
+    min-width: 4rem;
+    color: var(--border);
+    letter-spacing: 0.08rem;
+}
+
 .answer-item .answer-comment {
     display: block;
     color: var(--text-muted);

@@ -8,6 +8,7 @@ class QuizController {
         this.quiz = null;
         this.answers = [];
         this.foundAnswers = new Set();
+        this.foundParts = new Map(); // answerId -> Set(partIndex)
         this.timer = null;
         this.isQuizActive = false;
         this.apiBase = '/api';
@@ -555,6 +556,7 @@ class QuizController {
      */
     resetQuizUI() {
         this.foundAnswers.clear();
+        this.foundParts.clear();
         this.filledBlanks.clear();
         
         // 重置输入框
@@ -623,6 +625,7 @@ class QuizController {
         if (this.timer) this.timer.stop();
         this.quizId = quizId;
         this.foundAnswers.clear();
+        this.foundParts.clear();
         this.filledBlanks.clear();
 
         const quizResponse = await fetch(`${this.apiBase}/quizzes/${this.quizId}`, {
@@ -671,7 +674,7 @@ class QuizController {
         } else {
             if (answersGrid) {
                 answersGrid.style.display = 'grid';
-                UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers, this.settings.showCommentPreview);
+                UIRenderer.renderAnswersGrid(this.answers, this.foundAnswers, this.settings.showCommentPreview, this.foundParts);
             }
             if (fillBlankSection) fillBlankSection.style.display = 'none';
             UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
@@ -915,10 +918,10 @@ class QuizController {
 
         if (isGiveUp) {
             if (this.quizType === 'FILL_BLANK') this.renderFillBlankQuizForGiveUp(new Set(this.filledBlanks.keys()));
-            else UIRenderer.showAllAnswers(this.answers, this.foundAnswers);
+            else UIRenderer.showAllAnswers(this.answers, this.foundAnswers, this.foundParts, this.settings.showCommentPreview);
         }
 
-        UIRenderer.showResults(stats, missedAnswers);
+        UIRenderer.showResults(stats, missedAnswers, this.answers, this.foundAnswers, this.foundParts, this.settings.showCommentPreview);
         if (this.isReviewMode && typeof showRatingPanel === 'function') {
             showRatingPanel();
         }
@@ -1062,28 +1065,25 @@ class QuizController {
     async checkAnswer(input) {
         // 先在前端进行本地验证，应用用户设置
         const normalizedInput = this.normalizeText(input);
-        
-        // 查找匹配的答案（应用设置后）
+        const localMatches = [];
         for (const answer of this.answers) {
-            const candidates = [answer.content];
-            if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
-                answer.parts.forEach(part => {
+            const partCount = this.getAnswerPartCount(answer);
+            let partIndices = [];
+            if (normalizedInput === this.normalizeText(answer.content)) {
+                partIndices = Array.from({ length: partCount }, (_, index) => index);
+            } else if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
+                answer.parts.forEach((part, index) => {
                     const required = (part.segments || [])
                         .filter(segment => segment.kind === 'required')
-                        .map(segment => segment.text)
-                        .join('');
-                    if (required) candidates.push(required);
+                        .map(segment => segment.text).join('');
+                    if (required && normalizedInput === this.normalizeText(required)) partIndices.push(index);
                 });
             }
-            if (candidates.some(candidate => normalizedInput === this.normalizeText(candidate))) {
-                if (this.foundAnswers.has(answer.id)) {
-                    UIRenderer.showFeedback('已回答', 'duplicate');
-                    this.clearInput();
-                } else {
-                    this.markAnswerFound(answer.id, answer.content);
-                }
-                return;
-            }
+            if (partIndices.length > 0) localMatches.push({ answerId: answer.id, partIndices });
+        }
+        if (localMatches.length > 0) {
+            this.applyAnswerMatches(localMatches);
+            return;
         }
         
         // 如果前端验证未通过，尝试后端验证（保持原有逻辑）
@@ -1101,23 +1101,50 @@ class QuizController {
             });
             const result = await response.json();
             if (result.valid) {
-                if (this.foundAnswers.has(result.answerId)) {
-                    UIRenderer.showFeedback('已回答', 'duplicate');
-                    this.clearInput();
-                } else {
-                    this.markAnswerFound(result.answerId, result.displayContent);
-                }
+                const matches = Array.isArray(result.matches) && result.matches.length > 0
+                    ? result.matches
+                    : [{ answerId: result.answerId, partIndices: [0] }];
+                this.applyAnswerMatches(matches);
             }
         } catch (error) {
             console.error('验证答案失败:', error);
         }
     }
 
-    markAnswerFound(answerId, displayContent) {
-        this.foundAnswers.add(answerId);
-        UIRenderer.highlightAnswer(answerId, this.settings.showCommentPreview);
+    getAnswerPartCount(answer) {
+        return answer.formatVersion === 2 && Array.isArray(answer.parts) && answer.parts.length > 0
+            ? answer.parts.length : 1;
+    }
+
+    applyAnswerMatches(matches) {
+        let newlyMatched = 0;
+        let newlyCompleted = 0;
+        const affectedAnswers = new Set();
+        for (const match of matches) {
+            const answer = this.answers.find(item => item.id === match.answerId);
+            if (!answer) continue;
+            const partIndices = Array.isArray(match.partIndices) ? match.partIndices : [0];
+            const found = this.foundParts.get(answer.id) || new Set();
+            for (const partIndex of partIndices) {
+                if (!found.has(partIndex)) {
+                    found.add(partIndex);
+                    newlyMatched++;
+                }
+            }
+            this.foundParts.set(answer.id, found);
+            if (found.size >= this.getAnswerPartCount(answer) && !this.foundAnswers.has(answer.id)) {
+                this.foundAnswers.add(answer.id);
+                newlyCompleted++;
+            }
+            affectedAnswers.add(answer.id);
+        }
+        for (const answerId of affectedAnswers) {
+            const answer = this.answers.find(item => item.id === answerId);
+            if (answer) UIRenderer.highlightAnswer(answer, this.foundAnswers, this.foundParts, this.settings.showCommentPreview);
+        }
         UIRenderer.updateScore(this.foundAnswers.size, this.answers.length);
-        UIRenderer.showFeedback('正确!', 'success');
+        if (newlyMatched === 0) UIRenderer.showFeedback('已回答', 'duplicate');
+        else UIRenderer.showFeedback(newlyCompleted > 0 ? '正确!' : '答对一个要点', 'success');
         this.clearInput();
         this.renderGroupProgress();
         if (this.foundAnswers.size === this.answers.length) {
