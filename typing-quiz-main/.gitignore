@@ -38,6 +38,8 @@ data/
 node_modules/
 npm-debug.log
 yarn-error.log
+test-results/
+playwright-report/
 
 # Build tools (large files)
 tools/
