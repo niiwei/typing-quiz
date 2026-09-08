@@ -13,11 +13,13 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.io.InputStream;
 import java.util.Optional;
 
 @Component
+@ConditionalOnProperty(name = "mindpop.data-initializer.enabled", havingValue = "true", matchIfMissing = true)
 public class DataInitializer implements CommandLineRunner {
 
     private final QuizRepository quizRepository;
