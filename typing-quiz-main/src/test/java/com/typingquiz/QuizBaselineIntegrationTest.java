@@ -11,6 +11,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import com.typingquiz.util.JwtUtil;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -183,5 +186,67 @@ class QuizBaselineIntegrationTest {
         assertThat(matches).hasSize(3);
         assertThat(matches.get(0).get("partIndices").get(0).asInt()).isEqualTo(1);
         assertThat(matches.get(1).get("partIndices").get(0).asInt()).isEqualTo(0);
+    }
+
+    /** 验证 skill v2 样例的导入、作答、导出和再次导入链路。 */
+    @Test
+    void importsAnswersFromSkillSampleAnswersExportsAndReimports() throws Exception {
+        String token = JwtUtil.generateToken(12L, "skill-sample-user");
+        String sample = Files.readString(Path.of(".scratch/answer-keypoints/skill-valid-sample.json"));
+
+        String imported = mockMvc.perform(post("/api/import-export/quizzes/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(sample))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode importResult = objectMapper.readTree(imported);
+        assertThat(importResult.get("successCount").asInt()).isEqualTo(1);
+        assertThat(importResult.get("failureCount").asInt()).isZero();
+        long quizId = importResult.get("successes").get(0).get("id").asLong();
+
+        for (String input : new String[]{
+                "llms.txt", "提高效率", "降低成本", "降低成本、提高效率", "降低成本提高效率"}) {
+            String validation = mockMvc.perform(post("/api/answers/validate")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
+        }
+
+        String exported = mockMvc.perform(get("/api/import-export/quiz/{id}/export", quizId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode exportedQuiz = objectMapper.readTree(exported);
+        assertThat(exportedQuiz.get("answerList")).hasSize(8);
+        assertThat(exportedQuiz.get("answerList").get(6).get("parts")).hasSize(2);
+
+        String reimported = mockMvc.perform(post("/api/import-export/quiz/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(exported))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(reimported).contains("测验导入成功");
+        long reimportedQuizId = Long.parseLong(reimported.substring(reimported.lastIndexOf(':') + 1).trim());
+        String reimportedDetail = mockMvc.perform(get("/api/quizzes/{id}", reimportedQuizId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(reimportedDetail).get("answerList").get(6).get("parts"))
+                .hasSize(2);
+
+        String invalidSample = Files.readString(Path.of(".scratch/answer-keypoints/skill-invalid-sample.json"));
+        String rejected = mockMvc.perform(post("/api/import-export/quizzes/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(invalidSample))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        JsonNode rejectionResult = objectMapper.readTree(rejected);
+        assertThat(rejectionResult.get("successCount").asInt()).isZero();
+        assertThat(rejectionResult.get("failureCount").asInt()).isEqualTo(1);
     }
 }

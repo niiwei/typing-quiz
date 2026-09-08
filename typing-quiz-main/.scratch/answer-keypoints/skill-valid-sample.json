@@ -1,0 +1,85 @@
+[
+  {
+    "title": "网站 AI 可读性清单",
+    "description": "根据用户提供的六项整理示例，回忆让网站更适合 AI 访问和引用时需要保留的关键动作与元数据。",
+    "timeLimit": null,
+    "quizType": "TYPING",
+    "answerList": [
+      {
+        "formatVersion": 2,
+        "content": "检查 robots.txt",
+        "comment": "确认爬虫访问规则。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "检查 "},
+          {"kind": "required", "text": "robots.txt"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "发布 llms.txt 文档索引",
+        "comment": "提供面向语言模型的文档入口。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "发布 "},
+          {"kind": "required", "text": "llms.txt"},
+          {"kind": "context", "text": " 文档索引"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "编写 skill.md 能力说明",
+        "comment": "用能力说明描述可执行的 skill。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "编写 "},
+          {"kind": "required", "text": "skill.md"},
+          {"kind": "context", "text": " 能力说明"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "提供可直接访问的 Markdown 版本",
+        "comment": "让正文可以直接被读取。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "提供可直接访问的 "},
+          {"kind": "required", "text": "Markdown"},
+          {"kind": "context", "text": " 版本"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "暴露 Token 数元数据",
+        "comment": "暴露 Token 数量等元数据。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "暴露 "},
+          {"kind": "required", "text": "Token 数"},
+          {"kind": "context", "text": "元数据"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "提供 Copy for AI 按钮",
+        "comment": "提供便于复制给 AI 的入口。",
+        "parts": [{"segments": [
+          {"kind": "context", "text": "提供 "},
+          {"kind": "required", "text": "Copy for AI"},
+          {"kind": "context", "text": " 按钮"}
+        ]}]
+      },
+      {
+        "formatVersion": 2,
+        "content": "降低成本、提高效率",
+        "comment": "两个可独立回忆的目标。",
+        "parts": [
+          {"segments": [{"kind": "required", "text": "降低成本"}, {"kind": "context", "text": "、"}]},
+          {"segments": [{"kind": "required", "text": "提高效率"}]}
+        ]
+      },
+      {
+        "formatVersion": 2,
+        "content": "提高效率",
+        "comment": "单独出现时仍保留这个独立要点。",
+        "parts": [{"segments": [{"kind": "required", "text": "提高效率"}]}]
+      }
+    ],
+    "groups": []
+  }
+]

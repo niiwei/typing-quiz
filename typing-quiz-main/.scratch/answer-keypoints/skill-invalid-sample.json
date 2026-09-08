@@ -1,0 +1,17 @@
+[
+  {
+    "title": "无效 v2 样例",
+    "description": "用于验证 v2 的正文拼接和必答要点约束。",
+    "timeLimit": null,
+    "quizType": "TYPING",
+    "answerList": [
+      {
+        "formatVersion": 2,
+        "content": "降低成本、提高效率",
+        "comment": "缺少 required。",
+        "parts": [{"segments": [{"kind": "context", "text": "降低成本、提高效率"}]}]
+      }
+    ],
+    "groups": []
+  }
+]
