@@ -4,12 +4,15 @@ import com.typingquiz.dto.ValidationRequest;
 import com.typingquiz.dto.ValidationResponse;
 import com.typingquiz.entity.Answer;
 import com.typingquiz.service.AnswerService;
+import com.typingquiz.service.QuizService;
+import com.typingquiz.config.ApiAuthenticationFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import javax.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
@@ -25,10 +28,12 @@ public class AnswerController {
     private static final Logger logger = LoggerFactory.getLogger(AnswerController.class);
 
     private final AnswerService answerService;
+    private final QuizService quizService;
 
     @Autowired
-    public AnswerController(AnswerService answerService) {
+    public AnswerController(AnswerService answerService, QuizService quizService) {
         this.answerService = answerService;
+        this.quizService = quizService;
     }
 
     /**
@@ -36,8 +41,10 @@ public class AnswerController {
      * POST /api/answers/validate
      */
     @PostMapping("/validate")
-    public ResponseEntity<ValidationResponse> validateAnswer(@RequestBody ValidationRequest request) {
+    public ResponseEntity<ValidationResponse> validateAnswer(@RequestBody ValidationRequest request, HttpServletRequest httpRequest) {
         try {
+            Long userId = (Long) httpRequest.getAttribute(ApiAuthenticationFilter.USER_ID_ATTRIBUTE);
+            quizService.getQuizById(request.getQuizId(), userId);
             ValidationResponse response = answerService.validateAnswer(
                 request.getQuizId(),
                 request.getInput(),
@@ -61,8 +68,9 @@ public class AnswerController {
      * GET /api/answers/search?content=xxx
      */
     @GetMapping("/search")
-    public ResponseEntity<List<Answer>> searchAnswers(@RequestParam String content) {
-        List<Answer> answers = answerService.findAnswersByContent(content);
+    public ResponseEntity<List<Answer>> searchAnswers(@RequestParam String content, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute(ApiAuthenticationFilter.USER_ID_ATTRIBUTE);
+        List<Answer> answers = answerService.findAnswersByContent(content, userId);
         return ResponseEntity.ok(answers);
     }
 }

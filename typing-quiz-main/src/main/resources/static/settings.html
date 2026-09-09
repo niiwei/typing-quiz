@@ -102,6 +102,10 @@
             gap: 1rem;
             margin-top: 3rem;
         }
+
+        .token-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+        .token-meta { flex: 1; font-size: .85rem; }
+        .token-meta small { display: block; color: var(--text-muted); margin-top: .25rem; }
     </style>
 </head>
 <body>
@@ -172,6 +176,16 @@
                     <div class="setting-desc">大写字母和小写字母视为相同（如 ABC = abc）</div>
                 </div>
                 <div class="setting-toggle" id="toggle-ignore-case" onclick="toggleSetting('ignoreCase')"></div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2 class="section-title">Agent 访问令牌</h2>
+            <p class="setting-desc">用于本机 MCP 连接。令牌正文只在创建时显示一次，请立即复制保存。</p>
+            <div id="pat-list" style="margin-top: 1rem;"></div>
+            <div style="display:flex; gap:.5rem; margin-top:1rem;">
+                <input id="pat-name" type="text" placeholder="令牌名称，例如 Codex" maxlength="100" style="flex:1; padding:.6rem;">
+                <button class="btn btn-primary" onclick="createPat()">创建令牌</button>
             </div>
         </div>
 
@@ -250,6 +264,34 @@
             }
         }
 
+        async function loadPats() {
+            const response = await fetch('/api/personal-access-tokens', { headers: Auth.getAuthHeaders() });
+            if (!response.ok) return;
+            const tokens = await response.json();
+            const list = document.getElementById('pat-list');
+            list.innerHTML = tokens.length ? tokens.map(token => `<div class="token-row"><div class="token-meta"><strong>${escapeHtml(token.name)}</strong><small>创建于 ${token.createdAt || '-'} · 最近使用 ${token.lastUsedAt || '尚未使用'}${token.revokedAt ? ' · 已撤销' : ''}</small></div>${token.revokedAt ? '' : `<button class="btn btn-secondary" onclick="revokePat(${token.id})">撤销</button>`}</div>`).join('') : '<div class="setting-desc">暂无令牌</div>';
+        }
+
+        async function createPat() {
+            const name = document.getElementById('pat-name').value.trim();
+            if (!name) return alert('请输入令牌名称');
+            const response = await fetch('/api/personal-access-tokens', { method: 'POST', headers: Auth.getAuthHeaders(), body: JSON.stringify({ name }) });
+            const data = await response.json();
+            if (!response.ok) return alert(data.message || '创建失败');
+            document.getElementById('pat-name').value = '';
+            prompt('请立即复制令牌（之后不会再次显示）', data.token);
+            loadPats();
+        }
+
+        async function revokePat(id) {
+            if (!confirm('确认撤销此令牌？')) return;
+            const response = await fetch('/api/personal-access-tokens/' + id, { method: 'DELETE', headers: Auth.getAuthHeaders() });
+            if (!response.ok) { const data = await response.json().catch(() => ({})); return alert(data.message || '撤销失败'); }
+            loadPats();
+        }
+
+        function escapeHtml(value) { return String(value).replace(/[&<>\"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;' }[ch])); }
+
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', () => {
             if (!Auth.isLoggedIn()) {
@@ -257,6 +299,7 @@
                 return;
             }
             loadSettings();
+            loadPats();
         });
     </script>
 </body>

@@ -185,6 +185,14 @@ public class AnswerService {
         return answerRepository.findByNormalizedContent(normalizedContent);
     }
 
+    public List<Answer> findAnswersByContent(String content, Long userId) {
+        if (content == null || content.trim().isEmpty() || userId == null) {
+            return List.of();
+        }
+        String normalizedContent = normalizeContent(content, true, true, true);
+        return answerRepository.findByNormalizedContentAndUserId(normalizedContent, userId);
+    }
+
     /**
      * 添加答案到测验
      * @param quizId 测验ID

@@ -61,6 +61,7 @@ class QuizBaselineIntegrationTest {
                 .isEqualTo("网站抓取规则");
 
         String validation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"robots.txt\"}"))
                 .andExpect(status().isOk())
@@ -84,6 +85,7 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String enabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\"Token　数\",\"ignoreSpaces\":true," +
@@ -92,6 +94,7 @@ class QuizBaselineIntegrationTest {
         assertThat(objectMapper.readTree(enabled).get("valid").asBoolean()).isTrue();
 
         String disabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\"Token　数\",\"ignoreSpaces\":false," +
@@ -100,6 +103,7 @@ class QuizBaselineIntegrationTest {
         assertThat(objectMapper.readTree(disabled).get("valid").asBoolean()).isFalse();
 
         String edgeSpacesEnabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\" Token数 \",\"ignoreSpaces\":true," +
@@ -109,6 +113,7 @@ class QuizBaselineIntegrationTest {
         assertThat(objectMapper.readTree(edgeSpacesEnabled).get("valid").asBoolean()).isTrue();
 
         String edgeSpacesDisabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\" Token数 \",\"ignoreSpaces\":false," +
@@ -132,12 +137,14 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String empty = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"   \"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(empty).get("valid").asBoolean()).isFalse();
 
         String symbols = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"+++\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -152,6 +159,7 @@ class QuizBaselineIntegrationTest {
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long punctuationQuizId = objectMapper.readTree(punctuationQuiz).get("id").asLong();
         String punctuationOnlyInput = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + punctuationQuizId + ",\"input\":\"???\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -184,6 +192,7 @@ class QuizBaselineIntegrationTest {
 
         for (String input : new String[]{"llms.txt", "发布 llms.txt 文档索引"}) {
             String validation = mockMvc.perform(post("/api/answers/validate")
+                            .header("Authorization", "Bearer " + token)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -211,6 +220,7 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String validation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"提高效率\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -240,6 +250,7 @@ class QuizBaselineIntegrationTest {
         for (String input : new String[]{
                 "llms.txt", "提高效率", "降低成本", "降低成本、提高效率", "降低成本提高效率"}) {
             String validation = mockMvc.perform(post("/api/answers/validate")
+                            .header("Authorization", "Bearer " + token)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
                     .andExpect(status().isOk())
@@ -247,6 +258,7 @@ class QuizBaselineIntegrationTest {
             assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
         }
         String requiredOnlyWithoutPunctuation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\"降低成本提高效率\",\"ignorePunctuation\":false," +

@@ -95,7 +95,7 @@ public class ImportExportController {
             QuizGroup group = quizGroupService.getGroupById(groupId);
             // 验证用户身份
             if (!userId.equals(group.getUserId())) {
-                return ResponseEntity.status(403).build();
+                return ResponseEntity.notFound().build();
             }
             List<Quiz> quizzes = group.getQuizzes();
             List<QuizDTO> dtos = quizzes.stream()

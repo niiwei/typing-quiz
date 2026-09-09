@@ -10,12 +10,16 @@ import java.util.List;
  * 表示一个测验分组,用于组织和管理测验
  */
 @Entity
-@Table(name = "quiz_group")
+@Table(name = "quiz_group", uniqueConstraints = @UniqueConstraint(name = "uk_quiz_group_user_name", columnNames = {"user_id", "name"}))
 public class QuizGroup {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(nullable = false)
+    private Long version = 0L;
 
     @Column(nullable = false)
     private String name;
@@ -92,6 +96,14 @@ public class QuizGroup {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getName() {

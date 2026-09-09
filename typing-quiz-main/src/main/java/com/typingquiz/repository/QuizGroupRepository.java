@@ -34,6 +34,10 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
      */
     List<QuizGroup> findByNameAndUserId(String name, Long userId);
 
+    List<QuizGroup> findByNameIgnoreCaseAndUserId(String name, Long userId);
+
+    boolean existsByUserIdAndNameIgnoreCase(Long userId, String name);
+
     /**
      * 根据用户ID查询所有分组
      */

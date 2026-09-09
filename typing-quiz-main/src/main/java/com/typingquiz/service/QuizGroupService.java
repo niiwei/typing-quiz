@@ -33,13 +33,14 @@ public class QuizGroupService {
      * 创建分组
      */
     public QuizGroup createGroup(QuizGroupDTO dto, Long userId) {
+        if (userId == null) throw new IllegalArgumentException("需要登录后才能创建分组");
         if (dto.getName() == null || dto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("分组名称不能为空");
         }
 
         // 如果 userId 为 null，使用默认值 0
-        Long effectiveUserId = userId != null ? userId : 0L;
-        QuizGroup group = new QuizGroup(dto.getName(), dto.getDescription(), effectiveUserId);
+        Long effectiveUserId = userId;
+        QuizGroup group = new QuizGroup(dto.getName().trim(), dto.getDescription(), effectiveUserId);
         if (dto.getDisplayOrder() != null) {
             group.setDisplayOrder(dto.getDisplayOrder());
         }
@@ -47,7 +48,9 @@ public class QuizGroupService {
         // 添加关联的测验
         if (dto.getQuizIds() != null) {
             for (Long quizId : dto.getQuizIds()) {
-                quizRepository.findById(quizId).ifPresent(group::addQuiz);
+                quizRepository.findById(quizId)
+                        .filter(quiz -> effectiveUserId.equals(quiz.getUserId()))
+                        .ifPresent(group::addQuiz);
             }
         }
 
@@ -91,15 +94,16 @@ public class QuizGroupService {
      * 更新分组（带用户验证）
      */
     public QuizGroup updateGroup(Long id, QuizGroupDTO dto, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能修改分组");
         QuizGroup group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + id));
         // 验证用户身份
-        if (userId != null && !userId.equals(group.getUserId())) {
+        if (!userId.equals(group.getUserId())) {
             throw new RuntimeException("无权修改此分组");
         }
 
         if (dto.getName() != null && !dto.getName().trim().isEmpty()) {
-            group.setName(dto.getName());
+            group.setName(dto.getName().trim());
         }
         if (dto.getDescription() != null) {
             group.setDescription(dto.getDescription());
@@ -112,7 +116,9 @@ public class QuizGroupService {
         if (dto.getQuizIds() != null) {
             group.getQuizzes().clear();
             for (Long quizId : dto.getQuizIds()) {
-                quizRepository.findById(quizId).ifPresent(group::addQuiz);
+                quizRepository.findById(quizId)
+                        .filter(quiz -> userId != null && userId.equals(quiz.getUserId()))
+                        .ifPresent(group::addQuiz);
             }
         }
 
@@ -123,10 +129,11 @@ public class QuizGroupService {
      * 删除分组（带用户验证）
      */
     public void deleteGroup(Long id, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能删除分组");
         QuizGroup group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + id));
         // 验证用户身份
-        if (userId != null && !userId.equals(group.getUserId())) {
+        if (!userId.equals(group.getUserId())) {
             throw new RuntimeException("无权删除此分组");
         }
         groupRepository.deleteById(id);
@@ -136,14 +143,18 @@ public class QuizGroupService {
      * 向分组添加测验（带用户验证）
      */
     public QuizGroup addQuizToGroup(Long groupId, Long quizId, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能操作分组");
         QuizGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + groupId));
         // 验证用户身份
-        if (userId != null && !userId.equals(group.getUserId())) {
+        if (!userId.equals(group.getUserId())) {
             throw new RuntimeException("无权操作此分组");
         }
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + quizId));
+        if (userId == null || !userId.equals(quiz.getUserId())) {
+            throw new RuntimeException("无权操作此测验");
+        }
         group.addQuiz(quiz);
         return groupRepository.save(group);
     }
@@ -152,14 +163,18 @@ public class QuizGroupService {
      * 从分组移除测验（带用户验证）
      */
     public QuizGroup removeQuizFromGroup(Long groupId, Long quizId, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能操作分组");
         QuizGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + groupId));
         // 验证用户身份
-        if (userId != null && !userId.equals(group.getUserId())) {
+        if (!userId.equals(group.getUserId())) {
             throw new RuntimeException("无权操作此分组");
         }
         Quiz quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + quizId));
+        if (userId == null || !userId.equals(quiz.getUserId())) {
+            throw new RuntimeException("无权操作此测验");
+        }
         group.removeQuiz(quiz);
         return groupRepository.save(group);
     }
@@ -170,6 +185,7 @@ public class QuizGroupService {
     public QuizGroupDTO toDTO(QuizGroup group) {
         QuizGroupDTO dto = new QuizGroupDTO();
         dto.setId(group.getId());
+        dto.setVersion(group.getVersion());
         dto.setName(group.getName());
         dto.setDescription(group.getDescription());
         dto.setDisplayOrder(group.getDisplayOrder());

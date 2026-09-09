@@ -12,6 +12,7 @@
 
 - 根目录仅存放仓库规则和 Git 配置；源码及项目文档位于 `typing-quiz-main/`。
 - 工程 `src/` 存放运行代码及资源，保留既有目录结构。
+- 工程 `mcp-server/` 存放独立的 TypeScript stdio MCP 适配器；源码和测试在其 `src/`、`tests/`，构建输出在 `dist/` 且不纳入 Git，依赖安装目录不纳入 Git。
 - 工程 `docs/agents/` 存放工程技能配置；`CONTEXT.md` 存放领域术语；`docs/adr/` 存放编号决策记录。
 - 工程 `.scratch/<feature>/` 存放可版本管理的需求和任务文档，功能名使用英文 kebab-case；临时输出不得混入。
 - 需求为 `spec.md`，任务为 `issues/NN-slug.md`；完成后保留记录，不自动删除历史。

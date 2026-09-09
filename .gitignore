@@ -3,3 +3,4 @@
 # Local originals contain API credentials; track sanitized examples instead.
 /typing-quiz-main/src/main/resources/application.properties
 /typing-quiz-main/wechat_notes_to_quiz/wechat_notes_to_quiz.py
+/typing-quiz-main/mcp-server/dist/
