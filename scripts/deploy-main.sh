@@ -38,6 +38,7 @@ fi
 
 build_dir="$(mktemp -d /tmp/mindpop-release.XXXXXX)"
 static_pid=""
+browser_port="${MINDPOP_BROWSER_PORT:-18080}"
 cleanup() {
     if [[ -n "$static_pid" ]]; then
         kill "$static_pid" 2>/dev/null || true
@@ -57,9 +58,9 @@ docker run --rm \
 
 (cd "$build_dir/mcp-server" && npm ci && npm test)
 (cd "$build_dir" && npm ci)
-python3 -m http.server 8080 --directory "$build_dir/src/main/resources/static" >/dev/null 2>&1 &
+python3 -m http.server "$browser_port" --directory "$build_dir/src/main/resources/static" >/dev/null 2>&1 &
 static_pid=$!
-(cd "$build_dir" && npm run test:browser -- --workers=1)
+(cd "$build_dir" && MINDPOP_BROWSER_BASE_URL="http://127.0.0.1:$browser_port" npm run test:browser -- --workers=1)
 kill "$static_pid"
 static_pid=""
 
