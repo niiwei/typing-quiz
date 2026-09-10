@@ -27,6 +27,7 @@ jobs:
               run: npm ci && npm test
             - name: Browser tests
               run: |
+                  npx playwright install --with-deps chromium
                   python3 -m http.server 8080 --directory src/main/resources/static >/tmp/mindpop-static.log 2>&1 &
                   static_pid=$!
                   trap 'kill "$static_pid"' EXIT
