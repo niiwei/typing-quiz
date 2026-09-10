@@ -99,7 +99,7 @@ install -m 0644 "$release_jar" "$current_jar"
 printf '%s\n' "$commit" > "$remote_dir/DEPLOYED_COMMIT"
 systemctl restart mindpop
 
-for attempt in {1..20}; do
+for attempt in {1..60}; do
     if systemctl is-active --quiet mindpop && curl --fail --silent --show-error http://127.0.0.1:8080/index.html >/dev/null; then
         exit 0
     fi

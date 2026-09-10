@@ -23,13 +23,13 @@ public class AiService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiService.class);
 
-    @Value("${llm.api_key}")
+    @Value("${llm.api_key:}")
     private String apiKey;
 
-    @Value("${llm.api_base}")
+    @Value("${llm.api_base:https://api.minimaxi.com/v1}")
     private String apiBase;
 
-    @Value("${llm.model}")
+    @Value("${llm.model:MiniMax-M2.7}")
     private String model;
 
     private final RestTemplate restTemplate;
