@@ -89,7 +89,7 @@ public class AgentApiController {
         Quiz quiz = ownedQuiz(id, userId);
         QuizResponseDTO dto = quizService.toResponseDTO(quiz);
         Map<String, Object> result = objectMapper.convertValue(dto, Map.class);
-        result.put("groups", groupRepository.findByQuizzesId(id).stream().filter(g -> userId.equals(g.getUserId())).map(QuizGroup::getName).collect(Collectors.toList()));
+        result.put("groups", groupRepository.findByQuizzesIdAndUserId(id, userId).stream().map(QuizGroup::getName).collect(Collectors.toList()));
         result.put("writable", quiz.getQuizType() == QuizType.TYPING);
         return ResponseEntity.ok(result);
     }
@@ -121,6 +121,7 @@ public class AgentApiController {
             if (body.has("description")) merged.setDescription(body.get("description").isNull() ? null : body.get("description").asText());
             if (body.has("timeLimit")) merged.setTimeLimit(body.get("timeLimit").isNull() ? null : body.get("timeLimit").asInt());
             if (body.has("answerList")) merged.setAnswerList(objectMapper.convertValue(body.get("answerList"), objectMapper.getTypeFactory().constructCollectionType(List.class, com.typingquiz.dto.AnswerCreateDTO.class)));
+            else merged.setAnswerList(null);
             Quiz updated = quizService.updateQuiz(id, merged, userId);
             entityManager.flush();
             return getQuiz(updated.getId(), request);
@@ -233,14 +234,14 @@ public class AgentApiController {
     }
 
     @PostMapping("/groups/{groupId}/quizzes/{quizId}")
-    public ResponseEntity<?> addQuiz(@PathVariable Long groupId, @PathVariable Long quizId, HttpServletRequest request) { QuizGroup group = ownedGroup(groupId, userId(request)); ownedQuiz(quizId, userId(request)); group.addQuiz(quizRepository.findById(quizId).get()); return ResponseEntity.ok(groupMap(groupRepository.save(group))); }
+    public ResponseEntity<?> addQuiz(@PathVariable Long groupId, @PathVariable Long quizId, HttpServletRequest request) { Long userId = userId(request); QuizGroup group = ownedGroup(groupId, userId); Quiz quiz = ownedQuiz(quizId, userId); group.addQuiz(quiz); return ResponseEntity.ok(groupMap(groupRepository.save(group))); }
 
     @DeleteMapping("/groups/{groupId}/quizzes/{quizId}")
     public ResponseEntity<?> removeQuiz(@PathVariable Long groupId, @PathVariable Long quizId, HttpServletRequest request) { Long userId = userId(request); QuizGroup group = ownedGroup(groupId, userId); ownedQuiz(quizId, userId); group.getQuizzes().removeIf(q -> q.getId().equals(quizId)); return ResponseEntity.ok(groupMap(groupRepository.save(group))); }
 
     private Long userId(HttpServletRequest request) { return (Long) request.getAttribute(ApiAuthenticationFilter.USER_ID_ATTRIBUTE); }
-    private Quiz ownedQuiz(Long id, Long userId) { return quizRepository.findById(id).filter(q -> userId.equals(q.getUserId())).orElseThrow(() -> new NoSuchElementException("测验不存在")); }
-    private QuizGroup ownedGroup(Long id, Long userId) { return groupRepository.findByIdWithQuizzes(id).filter(g -> userId.equals(g.getUserId())).orElseThrow(() -> new NoSuchElementException("分组不存在")); }
+    private Quiz ownedQuiz(Long id, Long userId) { return quizRepository.findByIdAndUserId(id, userId).orElseThrow(() -> new NoSuchElementException("测验不存在")); }
+    private QuizGroup ownedGroup(Long id, Long userId) { return groupRepository.findByIdAndUserIdWithQuizzes(id, userId).orElseThrow(() -> new NoSuchElementException("分组不存在")); }
     private Map<String, Object> quizSummary(Quiz quiz) { Map<String, Object> m = new LinkedHashMap<>(); m.put("id", quiz.getId()); m.put("version", quiz.getVersion()); m.put("title", quiz.getTitle()); m.put("description", quiz.getDescription()); m.put("quizType", quiz.getQuizType()); m.put("createdAt", quiz.getCreatedAt()); m.put("writable", quiz.getQuizType() == QuizType.TYPING); m.put("totalAnswers", quiz.getAnswers() == null ? 0 : quiz.getAnswers().size()); return m; }
     private Map<String, Object> groupMap(QuizGroup group) { Map<String, Object> m = new LinkedHashMap<>(); m.put("id", group.getId()); m.put("version", group.getVersion()); m.put("name", group.getName()); m.put("description", group.getDescription()); m.put("displayOrder", group.getDisplayOrder()); m.put("quizIds", group.getQuizzes().stream().map(Quiz::getId).collect(Collectors.toList())); return m; }
     private ResponseEntity<Map<String, Object>> conflict(Quiz quiz) { return error(HttpStatus.CONFLICT, "VERSION_CONFLICT", "题库版本已变化", quizSummary(quiz)); }

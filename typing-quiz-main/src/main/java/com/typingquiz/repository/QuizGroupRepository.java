@@ -14,6 +14,8 @@ import java.util.List;
 @Repository
 public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
 
+    java.util.Optional<QuizGroup> findByIdAndUserId(Long id, Long userId);
+
     /**
      * 根据名称查询分组
      */
@@ -52,6 +54,12 @@ public interface QuizGroupRepository extends JpaRepository<QuizGroup, Long> {
      * 根据测验ID查询包含该测验的所有分组
      */
     List<QuizGroup> findByQuizzesId(Long quizId);
+
+    @Query("SELECT g FROM QuizGroup g JOIN g.quizzes q WHERE q.id = :quizId AND g.userId = :userId")
+    List<QuizGroup> findByQuizzesIdAndUserId(@Param("quizId") Long quizId, @Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT g FROM QuizGroup g LEFT JOIN FETCH g.quizzes WHERE g.id = :groupId AND g.userId = :userId")
+    java.util.Optional<QuizGroup> findByIdAndUserIdWithQuizzes(@Param("groupId") Long groupId, @Param("userId") Long userId);
 
     /**
      * 根据用户ID查询所有分组（带测验关联，避免N+1）

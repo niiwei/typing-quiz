@@ -37,10 +37,14 @@ public class QuizGroupService {
         if (dto.getName() == null || dto.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("分组名称不能为空");
         }
+        String normalizedName = dto.getName().trim();
+        if (groupRepository.existsByUserIdAndNameIgnoreCase(userId, normalizedName)) {
+            throw new IllegalArgumentException("分组名称已存在");
+        }
 
         // 如果 userId 为 null，使用默认值 0
         Long effectiveUserId = userId;
-        QuizGroup group = new QuizGroup(dto.getName().trim(), dto.getDescription(), effectiveUserId);
+        QuizGroup group = new QuizGroup(normalizedName, dto.getDescription(), effectiveUserId);
         if (dto.getDisplayOrder() != null) {
             group.setDisplayOrder(dto.getDisplayOrder());
         }
@@ -95,15 +99,16 @@ public class QuizGroupService {
      */
     public QuizGroup updateGroup(Long id, QuizGroupDTO dto, Long userId) {
         if (userId == null) throw new RuntimeException("需要登录后才能修改分组");
-        QuizGroup group = groupRepository.findById(id)
+        QuizGroup group = groupRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + id));
-        // 验证用户身份
-        if (!userId.equals(group.getUserId())) {
-            throw new RuntimeException("无权修改此分组");
-        }
 
         if (dto.getName() != null && !dto.getName().trim().isEmpty()) {
-            group.setName(dto.getName().trim());
+            String normalizedName = dto.getName().trim();
+            if (groupRepository.findByNameIgnoreCaseAndUserId(normalizedName, userId).stream()
+                    .anyMatch(item -> !item.getId().equals(id))) {
+                throw new IllegalArgumentException("分组名称已存在");
+            }
+            group.setName(normalizedName);
         }
         if (dto.getDescription() != null) {
             group.setDescription(dto.getDescription());
@@ -130,12 +135,8 @@ public class QuizGroupService {
      */
     public void deleteGroup(Long id, Long userId) {
         if (userId == null) throw new RuntimeException("需要登录后才能删除分组");
-        QuizGroup group = groupRepository.findById(id)
+        QuizGroup group = groupRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + id));
-        // 验证用户身份
-        if (!userId.equals(group.getUserId())) {
-            throw new RuntimeException("无权删除此分组");
-        }
         groupRepository.deleteById(id);
     }
 
@@ -144,17 +145,10 @@ public class QuizGroupService {
      */
     public QuizGroup addQuizToGroup(Long groupId, Long quizId, Long userId) {
         if (userId == null) throw new RuntimeException("需要登录后才能操作分组");
-        QuizGroup group = groupRepository.findById(groupId)
+        QuizGroup group = groupRepository.findByIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + groupId));
-        // 验证用户身份
-        if (!userId.equals(group.getUserId())) {
-            throw new RuntimeException("无权操作此分组");
-        }
-        Quiz quiz = quizRepository.findById(quizId)
+        Quiz quiz = quizRepository.findByIdAndUserId(quizId, userId)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + quizId));
-        if (userId == null || !userId.equals(quiz.getUserId())) {
-            throw new RuntimeException("无权操作此测验");
-        }
         group.addQuiz(quiz);
         return groupRepository.save(group);
     }
@@ -164,17 +158,10 @@ public class QuizGroupService {
      */
     public QuizGroup removeQuizFromGroup(Long groupId, Long quizId, Long userId) {
         if (userId == null) throw new RuntimeException("需要登录后才能操作分组");
-        QuizGroup group = groupRepository.findById(groupId)
+        QuizGroup group = groupRepository.findByIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("分组不存在: ID=" + groupId));
-        // 验证用户身份
-        if (!userId.equals(group.getUserId())) {
-            throw new RuntimeException("无权操作此分组");
-        }
-        Quiz quiz = quizRepository.findById(quizId)
+        Quiz quiz = quizRepository.findByIdAndUserId(quizId, userId)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + quizId));
-        if (userId == null || !userId.equals(quiz.getUserId())) {
-            throw new RuntimeException("无权操作此测验");
-        }
         group.removeQuiz(quiz);
         return groupRepository.save(group);
     }

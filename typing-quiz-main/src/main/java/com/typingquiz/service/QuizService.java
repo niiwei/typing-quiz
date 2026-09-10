@@ -195,17 +195,12 @@ public class QuizService {
      * 为测验创建复习状态（初始状态：NEW）
      */
     private void createReviewStatusForQuiz(Long quizId, Long userId) {
-        try {
-            // 检查是否已存在（避免重复创建）
-            if (!quizReviewStatusRepository.existsByQuizIdAndUserId(quizId, userId)) {
-                QuizReviewStatus status = new QuizReviewStatus(quizId, userId);
-                status.setStatus(ReviewStatus.NEW);
-                quizReviewStatusRepository.save(status);
-                logger.info("已为测验 {} 创建复习状态", quizId);
-            }
-        } catch (Exception e) {
-            logger.warn("创建测验 {} 的复习状态失败: {}", quizId, e.getMessage());
-            // 不影响主流程，继续执行
+        // 检查是否已存在（避免重复创建）
+        if (!quizReviewStatusRepository.existsByQuizIdAndUserId(quizId, userId)) {
+            QuizReviewStatus status = new QuizReviewStatus(quizId, userId);
+            status.setStatus(ReviewStatus.NEW);
+            quizReviewStatusRepository.save(status);
+            logger.info("已为测验 {} 创建复习状态", quizId);
         }
     }
 

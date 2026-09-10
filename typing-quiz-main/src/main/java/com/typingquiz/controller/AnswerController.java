@@ -54,6 +54,11 @@ public class AnswerController {
             );
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            if (e instanceof RuntimeException && e.getMessage() != null
+                    && (e.getMessage().contains("测验不存在") || e.getMessage().contains("无权访问"))) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ValidationResponse(false, null, null, false));
+            }
             logger.error("验证答案失败: quizId={}, input={}",
                     request != null ? request.getQuizId() : null,
                     request != null ? request.getInput() : null,

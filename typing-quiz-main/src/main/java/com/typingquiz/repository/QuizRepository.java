@@ -48,6 +48,8 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
      */
     List<Quiz> findByUserId(Long userId);
 
+    Optional<Quiz> findByIdAndUserId(Long id, Long userId);
+
     /**
      * 根据用户ID查询测验及其答案
      */
