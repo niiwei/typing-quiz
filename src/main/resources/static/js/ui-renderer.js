@@ -41,16 +41,23 @@ class UIRenderer {
         if (answer.formatVersion === 2 && Array.isArray(answer.parts) && !complete && !revealAll) {
             answer.parts.forEach((part, index) => {
                 const span = document.createElement('span');
-                span.className = matched.has(index) ? 'answer-content' : 'answer-part-placeholder';
-                span.textContent = matched.has(index)
-                    ? (part.segments || []).map(segment => segment.text).join('')
-                    : '______';
+                if (matched.has(index)) {
+                    span.className = 'answer-content';
+                    this.renderAnswerSegments(span, part.segments);
+                } else {
+                    span.className = 'answer-part-placeholder';
+                    span.textContent = '______';
+                }
                 item.appendChild(span);
             });
         } else {
             const content = document.createElement('span');
             content.className = 'answer-content';
-            content.textContent = answer.content;
+            if (answer.formatVersion === 2 && Array.isArray(answer.parts)) {
+                answer.parts.forEach(part => this.renderAnswerSegments(content, part.segments));
+            } else {
+                content.textContent = answer.content;
+            }
             item.appendChild(content);
         }
         if ((complete || revealAll) && showCommentPreview && answer.comment) {
@@ -59,6 +66,15 @@ class UIRenderer {
             comment.textContent = `#${answer.comment}#`;
             item.appendChild(comment);
         }
+    }
+
+    static renderAnswerSegments(container, segments = []) {
+        segments.forEach(segment => {
+            const span = document.createElement('span');
+            span.className = segment.kind === 'required' ? 'answer-required' : 'answer-context';
+            span.textContent = segment.text;
+            container.appendChild(span);
+        });
     }
 
     /**
