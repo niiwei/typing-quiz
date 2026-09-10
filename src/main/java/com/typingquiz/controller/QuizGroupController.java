@@ -20,6 +20,11 @@ public class QuizGroupController {
 
     private final QuizGroupService groupService;
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Void> notFoundForPrivateResource(RuntimeException e) {
+        return ResponseEntity.notFound().build();
+    }
+
     @Autowired
     public QuizGroupController(QuizGroupService groupService) {
         this.groupService = groupService;

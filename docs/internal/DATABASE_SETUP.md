@@ -41,8 +41,9 @@
 
 ## 云服务器部署路径
 
-- 项目目录：`/app/typing-quiz`
-- 常用进入方式：`cd /app/typing-quiz`
+- 应用目录：`/opt/mindpop`
+- 运行配置：`/etc/mindpop/mindpop.env`
+- systemd 服务：`mindpop.service`
 
 ### 应用配置（application.properties）
 ```properties

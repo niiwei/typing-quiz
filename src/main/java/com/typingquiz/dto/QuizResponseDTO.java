@@ -11,6 +11,7 @@ import java.util.List;
 public class QuizResponseDTO {
     
     private Long id;
+    private Long version;
     private String title;
     private String description;
     private Integer timeLimit;
@@ -30,6 +31,14 @@ public class QuizResponseDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getTitle() {

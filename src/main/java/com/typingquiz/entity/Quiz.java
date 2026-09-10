@@ -17,6 +17,10 @@ public class Quiz {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(nullable = false)
+    private Long version = 0L;
+
     @Column(nullable = false)
     private String title;
 
@@ -92,6 +96,14 @@ public class Quiz {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getTitle() {

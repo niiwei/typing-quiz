@@ -106,6 +106,7 @@
 | user_id | BIGINT | FK | 创建者ID |
 | quiz_type | VARCHAR(20) | NOT NULL, DEFAULT 'TYPING' | 测验类型 |
 | created_at | DATETIME | NOT NULL | 创建时间 |
+| version | BIGINT | NOT NULL | Agent API 乐观锁版本 |
 
 **索引：**
 - `idx_user_id` - 用户ID索引（用于账户隔离查询）
@@ -144,6 +145,7 @@
 | description | TEXT | | 分组描述 |
 | user_id | BIGINT | FK, NOT NULL | 所有者ID |
 | display_order | INT | DEFAULT 0 | 显示顺序 |
+| version | BIGINT | NOT NULL | Agent API 乐观锁版本 |
 
 **索引：**
 - `idx_user_id` - 用户ID索引
@@ -210,6 +212,14 @@
 
 **外键：**
 - `fk_fbq_quiz` → `quiz(id)` ON DELETE CASCADE
+
+### 3.8 personal_access_token
+
+保存 PAT 的哈希、名称、用户、创建时间、最近使用时间和撤销时间。完整令牌不落库；同一用户可拥有多个令牌。
+
+### 3.9 agent_import_request
+
+保存 `user_id`、调用方 UUID `request_id`、请求内容哈希和首次响应。`(user_id, request_id)` 唯一，用于重放同一导入结果并拒绝同 ID 不同内容。
 
 ## 4. 索引设计原则
 

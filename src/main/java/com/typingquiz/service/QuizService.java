@@ -68,6 +68,7 @@ public class QuizService {
      * 创建测验并保存答案
      */
     public Quiz createQuiz(QuizDTO quizDTO, Long userId) {
+        if (userId == null) throw new IllegalArgumentException("需要登录后才能创建测验");
         logger.info("开始创建测验: title={}, userId={}", quizDTO.getTitle(), userId);
         // 验证输入
         if (quizDTO.getTitle() == null || quizDTO.getTitle().trim().isEmpty()) {
@@ -152,11 +153,12 @@ public class QuizService {
             for (String groupName : quizDTO.getGroups()) {
                 if (groupName == null || groupName.trim().isEmpty()) continue;
 
-                List<QuizGroup> existingGroups = quizGroupRepository.findByNameAndUserId(groupName.trim(), userId);
+                String normalizedGroupName = groupName.trim();
+                List<QuizGroup> existingGroups = quizGroupRepository.findByNameIgnoreCaseAndUserId(normalizedGroupName, userId);
                 QuizGroup group;
                 if (existingGroups.isEmpty()) {
                     // 创建新分组
-                    group = new QuizGroup(groupName.trim(), "");
+                    group = new QuizGroup(normalizedGroupName, "");
                     group.setUserId(userId);
                     group = quizGroupRepository.save(group);
                 } else {
@@ -193,17 +195,12 @@ public class QuizService {
      * 为测验创建复习状态（初始状态：NEW）
      */
     private void createReviewStatusForQuiz(Long quizId, Long userId) {
-        try {
-            // 检查是否已存在（避免重复创建）
-            if (!quizReviewStatusRepository.existsByQuizIdAndUserId(quizId, userId)) {
-                QuizReviewStatus status = new QuizReviewStatus(quizId, userId);
-                status.setStatus(ReviewStatus.NEW);
-                quizReviewStatusRepository.save(status);
-                logger.info("已为测验 {} 创建复习状态", quizId);
-            }
-        } catch (Exception e) {
-            logger.warn("创建测验 {} 的复习状态失败: {}", quizId, e.getMessage());
-            // 不影响主流程，继续执行
+        // 检查是否已存在（避免重复创建）
+        if (!quizReviewStatusRepository.existsByQuizIdAndUserId(quizId, userId)) {
+            QuizReviewStatus status = new QuizReviewStatus(quizId, userId);
+            status.setStatus(ReviewStatus.NEW);
+            quizReviewStatusRepository.save(status);
+            logger.info("已为测验 {} 创建复习状态", quizId);
         }
     }
 
@@ -212,10 +209,10 @@ public class QuizService {
      */
     @Transactional(readOnly = true)
     public Quiz getQuizById(Long id, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能访问测验");
         logger.info("[QuizService.getQuizById] 查找测验 ID={}, userId={}", id, userId);
         
-        // 使用基础的 findById
-        Optional<Quiz> quizOpt = quizRepository.findById(id);
+        Optional<Quiz> quizOpt = quizRepository.findByIdAndUserId(id, userId);
         
         if (!quizOpt.isPresent()) {
             logger.warn("[QuizService.getQuizById] 数据库基础查询找不到测验 ID={}", id);
@@ -224,13 +221,6 @@ public class QuizService {
         
         Quiz quiz = quizOpt.get();
         logger.info("[QuizService.getQuizById] 找到测验: title={}, quizUserId={}", quiz.getTitle(), quiz.getUserId());
-        
-        // 验证用户身份
-        if (userId != null && quiz.getUserId() != null && !userId.equals(quiz.getUserId())) {
-            logger.error("[QuizService.getQuizById] 用户越权访问: userId={}, quizUserId={}, quizId={}", 
-                userId, quiz.getUserId(), id);
-            throw new RuntimeException("无权访问此测验");
-        }
         
         return quiz;
     }
@@ -264,6 +254,7 @@ public class QuizService {
         // 在事务内手动构建DTO，避免调用可能触发事务回滚的其他服务方法
         QuizResponseDTO dto = new QuizResponseDTO();
         dto.setId(quiz.getId());
+        dto.setVersion(quiz.getVersion());
         dto.setTitle(quiz.getTitle());
         dto.setDescription(quiz.getDescription());
         dto.setTimeLimit(quiz.getTimeLimit());
@@ -406,6 +397,7 @@ public class QuizService {
      * 更新测验（带用户验证）
      */
     public Quiz updateQuiz(Long id, QuizDTO quizDTO, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能修改测验");
         Quiz quiz = quizRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
         // 验证用户身份
@@ -477,6 +469,7 @@ public class QuizService {
      * 删除测验（带用户验证）
      */
     public void deleteQuiz(Long id, Long userId) {
+        if (userId == null) throw new RuntimeException("需要登录后才能删除测验");
         Quiz quiz = quizRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("测验不存在: ID=" + id));
         // 验证用户身份
@@ -508,6 +501,7 @@ public class QuizService {
     public QuizResponseDTO toResponseDTO(Quiz quiz) {
         QuizResponseDTO dto = new QuizResponseDTO();
         dto.setId(quiz.getId());
+        dto.setVersion(quiz.getVersion());
         dto.setTitle(quiz.getTitle());
         dto.setDescription(quiz.getDescription());
         dto.setTimeLimit(quiz.getTimeLimit());

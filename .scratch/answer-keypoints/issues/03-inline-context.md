@@ -1,6 +1,6 @@
 # 03 — 创建并练习包含免输入正文的答案
 
-Status: ready-for-agent
+Status: complete
 Execution: complete
 
 **What to build:** 编辑者标记非核心文字，保存后关键词与完整句子都可答对，注释仍独立展示。
@@ -30,6 +30,7 @@ Execution: complete
 - 新增 v2 `formatVersion`、`parts` 和 `segments` DTO，答案实体用可空 `format_version` / `parts_json` 保存；旧答案保持 legacy 语义。
 - 创建编辑器支持 `{{文字}}`、`||` 和末尾 `#注释#`，提供“设为免输入”“在此拆分”和安全文本预览；非法标记、空要点、正文不一致由保存路径拒绝。
 - 打字题前端及后端均接受完整正文和各要点的必答文字；context 只展示，不参加匹配；HTML 按文本渲染。
-- H2 真实 API 回归覆盖保存、读取、v2 结构及关键词/完整句子匹配；当前类 4 tests 通过。
-- Playwright 真实页面编辑器解析回归、页面 smoke、空格归一化共 3 passed。
+- H2 真实 API 回归覆盖保存、读取、v2 结构及关键词/完整句子匹配；当前类 6 tests 通过。
+- Playwright 真实页面编辑器解析回归、旧题 legacy 保护、页面 smoke、空格归一化、逐段作答和安全文本渲染共 7 passed。
 - 迁移脚本的新增列使用 INFORMATION_SCHEMA 守卫，可重复运行；未执行线上迁移。
+- 兼容修正：编辑旧版打字题默认保持 legacy 模式，只有点击 v2 标记按钮后才升级解析，字面量 `{{...}}` 不会被自动重解释。

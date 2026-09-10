@@ -36,6 +36,7 @@ data/
 
 # Node (for frontend)
 node_modules/
+mcp-server/dist/
 npm-debug.log
 yarn-error.log
 test-results/
@@ -51,6 +52,7 @@ tools/
 .env
 .env.local
 .env.production
+.env.deploy
 application-local.properties
 application-prod.properties
 

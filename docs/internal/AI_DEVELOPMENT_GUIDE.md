@@ -109,40 +109,13 @@ git push
 
 ### 云端部署
 
-#### 自动部署（推荐）
-
-已配置 SSH 免密登录，可从 Windows 自动部署：
-
-```powershell
-ssh -i ~/.ssh/your_deploy_key root@your_server_ip "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
-```
-
-**配置说明：**
-- SSH 密钥位置：`~/.ssh/your_deploy_key`
-- 服务器地址：`your_server_ip`
-- 首次配置需执行：将公钥添加到服务器的 `~/.ssh/authorized_keys`
-
-#### 手动部署
+生产环境使用 systemd 运行 JAR。功能分支完成审查后合并到 `main`，等待 GitHub CI 通过，再从本地最新 `main` 执行：
 
 ```bash
-# 1. SSH 登录服务器
-ssh root@your_server_ip
-
-# 2. 进入项目目录
-cd /app/typing-quiz
-
-# 3. 拉取最新代码
-git pull
-
-# 4. 构建 Docker 镜像（后端 Java 代码变更时必须）
-docker build -t typing-quiz-app .
-
-# 5. 删除旧容器
-docker rm -f typing-quiz-app
-
-# 6. 运行新容器
-docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app
+./scripts/deploy-main.sh
 ```
+
+脚本会核对 `origin/main`、从干净提交构建、备份旧 JAR、重启服务并验证公网。配置与回滚方式见根目录 `DEPLOY.md`。
 
 **注意：**
 - 仅修改前端文件（HTML/JS/CSS）时，无需 `docker build`，刷新浏览器即可生效

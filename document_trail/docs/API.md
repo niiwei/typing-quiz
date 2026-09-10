@@ -358,6 +358,26 @@ Authorization: Bearer <token>
 
 ---
 
+## Agent API v1
+
+Agent API 使用 PAT，入口为 `/api/agent/v1`。网页 JWT 不能调用该路径，PAT 也不能调用网页 API。完整请求结构、MCP 配置和错误语义见 [`docs/AGENT_API.md`](../../docs/AGENT_API.md)。
+
+| 方法 | 路径 | 用途 |
+|---|---|---|
+| GET | `/api/agent/v1/quizzes` | 查询题库与分页 |
+| GET/POST | `/api/agent/v1/quizzes/{id}`、`/quizzes` | 读取或创建 TYPING 题库 |
+| PATCH | `/api/agent/v1/quizzes/{id}` | 按 `version` 部分更新 |
+| POST | `/api/agent/v1/imports` | 使用 UUID `requestId` 原子幂等导入 |
+| GET/POST | `/api/agent/v1/groups/{id}`、`/groups` | 读取或创建分组 |
+| PATCH | `/api/agent/v1/groups/{id}` | 按 `version` 部分更新分组 |
+| POST/DELETE | `/api/agent/v1/groups/{groupId}/quizzes/{quizId}` | 添加或解除关联 |
+| POST | `.../{id}/delete-preview` | 获取五分钟删除确认令牌 |
+| DELETE | `/api/agent/v1/quizzes/{id}`、`/groups/{id}` | 携带确认令牌删除 |
+
+PAT 管理接口位于 `/api/personal-access-tokens`，只接受网页 JWT；创建响应是唯一一次返回完整令牌的响应。
+
+---
+
 ## 错误响应
 
 ### 401 Unauthorized

@@ -59,6 +59,7 @@ Controller (REST API) → Service (业务逻辑) → Repository (数据访问) �
 | createdAt | LocalDateTime | 创建时间 |
 | answers | List<Answer> | 关联答案（一对多）|
 | groups | List<QuizGroup> | 关联分组（多对多）|
+| version | Long | Agent API 乐观锁版本 |
 
 ### Answer (答案)
 
@@ -91,6 +92,7 @@ Controller (REST API) → Service (业务逻辑) → Repository (数据访问) �
 | userId | Long | 所有者ID |
 | displayOrder | Integer | 显示顺序 |
 | quizzes | List<Quiz> | 关联测验 |
+| version | Long | Agent API 乐观锁版本 |
 
 ## 5. 安全设计
 
@@ -99,6 +101,12 @@ Controller (REST API) → Service (业务逻辑) → Repository (数据访问) �
 - Token 有效期: 24小时
 - 签名算法: HS256
 - 前端请求需携带: `Authorization: Bearer <token>`
+
+### Agent PAT
+
+- 浏览器个人数据 API 使用 JWT，`/api/agent/v1/**` 只接受 PAT。
+- PAT 创建时只显示一次明文，数据库只保存哈希，并记录最近使用与撤销时间。
+- Agent API 访问其他用户资源时返回 `404`，所有资源查询在数据库条件中包含 `userId`。
 
 ### 账户数据隔离
 
@@ -124,6 +132,8 @@ users (1) ────< (N) quiz (1) ────< (N) answer
 - `quiz_group_quiz` - 分组-测验关联表
 - `quiz_review_status` - 复习状态表
 - `fill_blank_quiz` - 填空题表
+- `personal_access_token` - Agent PAT 哈希与生命周期
+- `agent_import_request` - `(user_id, request_id)` 幂等导入记录
 
 ## 7. 关键设计决策
 
@@ -136,6 +146,8 @@ users (1) ────< (N) quiz (1) ────< (N) answer
 | BCrypt 密码加密 | 防彩虹表攻击 |
 | 标准化答案匹配 | normalizedContent 实现大小写不敏感 |
 | 级联删除 | 测验删除时自动删除关联答案 |
+| Agent 边界 | stdio MCP → HTTPS Agent API → Service/Repository |
+| 并发与删除 | 乐观锁版本 + 五分钟签名确认令牌 |
 
 ## 8. 配置管理
 

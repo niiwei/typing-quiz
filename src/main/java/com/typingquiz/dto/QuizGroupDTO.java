@@ -9,6 +9,7 @@ import java.util.List;
 public class QuizGroupDTO {
 
     private Long id;
+    private Long version;
     private String name;
     private String description;
     private Integer displayOrder;
@@ -32,6 +33,14 @@ public class QuizGroupDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public String getName() {

@@ -1,6 +1,6 @@
 # 工程路径约定
 
-本文件中的 repo 指 `typing-quiz-main/` 工程目录，Git 根目录在其上一层。`.scratch/` 纳入 Git；不调用远程 issue API。
+本文件中的 repo 指 Git 与工程共同根目录。`.scratch/` 纳入 Git；不调用远程 issue API。
 
 # Issue tracker: Local Markdown
 

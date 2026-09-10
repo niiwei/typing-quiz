@@ -13,3 +13,17 @@ test('front-end normalization ignores all configured whitespace', async ({ page 
   });
   expect(result).toBe('token数');
 });
+
+test('front-end normalization preserves edge whitespace when disabled', async ({ page }) => {
+  await page.goto('/index.html');
+  const result = await page.evaluate(() => {
+    const controller = new QuizController(null);
+    controller.settings = {
+      ignorePunctuation: false,
+      ignoreSpaces: false,
+      ignoreCase: true,
+    };
+    return controller.normalizeText(' Token数 ');
+  });
+  expect(result).toBe(' token数 ');
+});

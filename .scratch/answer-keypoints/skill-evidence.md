@@ -27,3 +27,5 @@ python3 /Users/yangxiaowen/.codex/skills/mindpop-quiz-builder/scripts/validate_q
 ```
 
 样例包含六个原始示例、`降低成本、提高效率` 的双 part，以及重复的 `提高效率` v2 条目；没有同义词扩展。产品验收由 `QuizBaselineIntegrationTest.importsAnswersFromSkillSampleAnswersExportsAndReimports` 完成：样例导入 1 个测验、8 个答案，正序、逆序、整句候选均命中，导出和再次读取保留双 part；无效样例被拒绝。
+
+后续边界回归：Java 集成测试仍为 6/6；Playwright 页面回归为 7/7，覆盖旧版字面量保护、转义闭合标记、标点关闭时的必答词拼接、边缘空白保留、共享要点同时完成和安全文本渲染。

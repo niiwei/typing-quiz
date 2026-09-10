@@ -51,7 +51,7 @@
 
 ## 🌐 在线体验
 
-**访问地址：** http://47.102.147.127:8080
+**访问地址：** https://mindpop.top
 
 **试用账户：**
 - 用户名：`test8`
@@ -109,9 +109,10 @@ set MYSQL_HOST=your_mysql_host     # Windows
 - **设计**: 空·息·恒·信极简理念
 
 ### 部署
-- **容器化**: Docker
-- **服务器**: 阿里云 ECS
-- **CI/CD**: Git + SSH 自动部署
+- **验证**: GitHub Actions（Java 11 + Node.js 20）
+- **构建**: Docker Maven 构建环境
+- **运行**: 阿里云 ECS + systemd + Nginx
+- **发布**: `main` 提交与服务器版本一一对应
 
 ---
 
@@ -119,6 +120,8 @@ set MYSQL_HOST=your_mysql_host     # Windows
 
 ```
 typing-quiz/
+├── mcp-server/                     # 本地 stdio MCP 适配器
+├── scripts/deploy-main.sh          # 从 main 构建、备份、部署与冒烟验证
 ├── src/main/java/com/typingquiz/
 │   ├── entity/        # 实体类 (Quiz, Answer, User, QuizGroup...)
 │   ├── repository/    # 数据访问层 (Spring Data JPA)
@@ -138,6 +141,8 @@ typing-quiz/
 - [数据库设计](document_trail/docs/DB_SCHEMA.md)
 - [更新日志](document_trail/CHANGELOG.md)
 - [开发指南](docs/internal/AI_DEVELOPMENT_GUIDE.md)
+- [Agent API 与 MCP 接入](docs/AGENT_API.md)
+- [发布与部署](DEPLOY.md)
 
 ---
 

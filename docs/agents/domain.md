@@ -1,6 +1,6 @@
 # 本项目布局
 
-采用 single-context；以下 repo root 指 `typing-quiz-main/`。使用工程 `CONTEXT.md` 和 `docs/adr/`；不采用 multi-context。ADR 按 `NNNN-slug.md` 编号，永久保留，变更通过新决策替代。
+采用 single-context；以下 repo root 指 Git 与工程共同根目录。使用工程 `CONTEXT.md` 和 `docs/adr/`；不采用 multi-context。ADR 按 `NNNN-slug.md` 编号，永久保留，变更通过新决策替代。
 
 # Domain Docs
 

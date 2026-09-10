@@ -30,6 +30,10 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
      */
     List<Answer> findByNormalizedContent(String normalizedContent);
 
+    @Query("SELECT a FROM Answer a WHERE a.normalizedContent = :normalizedContent AND a.quiz.userId = :userId")
+    List<Answer> findByNormalizedContentAndUserId(@Param("normalizedContent") String normalizedContent,
+                                                   @Param("userId") Long userId);
+
     /**
      * 根据内容关键字查询答案(忽略大小写)
      * @param keyword 内容关键字

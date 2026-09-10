@@ -61,6 +61,7 @@ class QuizBaselineIntegrationTest {
                 .isEqualTo("网站抓取规则");
 
         String validation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"robots.txt\"}"))
                 .andExpect(status().isOk())
@@ -84,6 +85,7 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String enabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\"Token　数\",\"ignoreSpaces\":true," +
@@ -92,12 +94,33 @@ class QuizBaselineIntegrationTest {
         assertThat(objectMapper.readTree(enabled).get("valid").asBoolean()).isTrue();
 
         String disabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId +
                                 ",\"input\":\"Token　数\",\"ignoreSpaces\":false," +
                                 "\"ignoreCase\":true,\"ignorePunctuation\":false}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(disabled).get("valid").asBoolean()).isFalse();
+
+        String edgeSpacesEnabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\" Token数 \",\"ignoreSpaces\":true," +
+                                "\"ignoreCase\":true," +
+                                "\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(edgeSpacesEnabled).get("valid").asBoolean()).isTrue();
+
+        String edgeSpacesDisabled = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\" Token数 \",\"ignoreSpaces\":false," +
+                                "\"ignoreCase\":true," +
+                                "\"ignorePunctuation\":false}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(edgeSpacesDisabled).get("valid").asBoolean()).isFalse();
     }
 
     @Test
@@ -114,16 +137,33 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String empty = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"   \"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(empty).get("valid").asBoolean()).isFalse();
 
         String symbols = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"+++\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(objectMapper.readTree(symbols).get("valid").asBoolean()).isFalse();
+
+        String punctuationOnlyAnswer = "{\"title\":\"Punctuation answer\",\"quizType\":\"TYPING\"," +
+                "\"answerList\":[{\"content\":\"!!!\"}],\"groups\":[]}";
+        String punctuationQuiz = mockMvc.perform(post("/api/quizzes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(punctuationOnlyAnswer))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long punctuationQuizId = objectMapper.readTree(punctuationQuiz).get("id").asLong();
+        String punctuationOnlyInput = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + punctuationQuizId + ",\"input\":\"???\"}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(objectMapper.readTree(punctuationOnlyInput).get("valid").asBoolean()).isFalse();
     }
 
     @Test
@@ -152,6 +192,7 @@ class QuizBaselineIntegrationTest {
 
         for (String input : new String[]{"llms.txt", "发布 llms.txt 文档索引"}) {
             String validation = mockMvc.perform(post("/api/answers/validate")
+                            .header("Authorization", "Bearer " + token)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -179,6 +220,7 @@ class QuizBaselineIntegrationTest {
         long quizId = objectMapper.readTree(created).get("id").asLong();
 
         String validation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quizId\":" + quizId + ",\"input\":\"提高效率\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -208,12 +250,23 @@ class QuizBaselineIntegrationTest {
         for (String input : new String[]{
                 "llms.txt", "提高效率", "降低成本", "降低成本、提高效率", "降低成本提高效率"}) {
             String validation = mockMvc.perform(post("/api/answers/validate")
+                            .header("Authorization", "Bearer " + token)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"quizId\":" + quizId + ",\"input\":\"" + input + "\"}"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
             assertThat(objectMapper.readTree(validation).get("valid").asBoolean()).isTrue();
         }
+        String requiredOnlyWithoutPunctuation = mockMvc.perform(post("/api/answers/validate")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quizId\":" + quizId +
+                                ",\"input\":\"降低成本提高效率\",\"ignorePunctuation\":false," +
+                                "\"ignoreSpaces\":true,\"ignoreCase\":true}"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        JsonNode requiredOnlyResult = objectMapper.readTree(requiredOnlyWithoutPunctuation);
+        assertThat(requiredOnlyResult.get("valid").asBoolean()).isTrue();
+        assertThat(requiredOnlyResult.get("matches").findValue("partIndices")).hasSize(2);
 
         String exported = mockMvc.perform(get("/api/import-export/quiz/{id}/export", quizId)
                         .header("Authorization", "Bearer " + token))

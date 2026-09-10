@@ -1362,8 +1362,8 @@ renderGroupProgress()
 
 通过 SSH 免密登录，一键部署到云服务器：
 
-```powershell
-ssh -i ~/.ssh/your_deploy_key root@your_server_ip "cd /app/typing-quiz && git pull && docker build -t typing-quiz-app . && docker rm -f typing-quiz-app && docker run -d --network host --name typing-quiz-app -v ./data:/app/data typing-quiz-app"
+```bash
+./scripts/deploy-main.sh
 ```
 
 ### 常见问题处理
@@ -1402,9 +1402,9 @@ git pull
 |--------|-----|
 | 服务器地址 | your_server_ip |
 | SSH 密钥 | ~/.ssh/your_deploy_key |
-| 项目目录 | /app/typing-quiz |
-| 容器名称 | typing-quiz-app |
-| 端口映射 | 8080 (host 网络模式) |
+| 项目目录 | /opt/mindpop |
+| 运行方式 | systemd: mindpop.service |
+| 应用端口 | 8080（Nginx 反向代理） |
 
 ---
 

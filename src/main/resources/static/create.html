@@ -450,6 +450,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const editQuizId = urlParams.get('id');
         let currentQuizData = null;
+        let typingEditorMode = 'v2';
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (!Auth.isLoggedIn()) {
@@ -509,6 +510,8 @@
                     document.getElementById('quiz-group-select').value = quiz.groups[0].id;
                 }
                 if (quiz.quizType === 'TYPING' && quiz.answerList) {
+                    typingEditorMode = quiz.answerList.some(answer => answer.formatVersion === 2)
+                        ? 'v2' : 'legacy';
                     // 将答案数组转换为文本格式
                     const answersText = quiz.answerList.map(serializeTypingAnswerForEditor).join('\n');
                     document.getElementById('quiz-answers').value = answersText;
@@ -755,8 +758,11 @@
             while (index < text.length) {
                 if (text[index] === '{' && text[index + 1] === '{' && !isEscapedAt(text, index)) {
                     flushRequired();
-                    const end = text.indexOf('}}', index + 2);
-                    if (end < 0 || isEscapedAt(text, end)) {
+                    let end = text.indexOf('}}', index + 2);
+                    while (end >= 0 && isEscapedAt(text, end)) {
+                        end = text.indexOf('}}', end + 2);
+                    }
+                    if (end < 0) {
                         throw new Error(`第 ${lineNumber} 行存在未闭合的免输入标记`);
                     }
                     const context = unescapeTypingText(text.slice(index + 2, end));
@@ -798,6 +804,12 @@
             return { formatVersion: 2, content, comment: parsed.comment, parts };
         }
 
+        function parseLegacyTypingAnswer(line, lineNumber) {
+            const parsed = splitTypingComment(line);
+            if (!parsed.body) throw new Error(`第 ${lineNumber} 行答案不能为空`);
+            return { content: parsed.body, comment: parsed.comment };
+        }
+
         function escapeTypingText(text) {
             return String(text).replace(/[\\#{}|]/g, '\\$&');
         }
@@ -809,7 +821,10 @@
                 ).join('')).join('||');
                 return answer.comment ? `${body}#${escapeTypingText(answer.comment)}#` : body;
             }
-            return answer.comment ? `${answer.content}#${answer.comment}#` : answer.content;
+            const legacyContent = typingEditorMode === 'v2'
+                ? escapeTypingText(answer.content) : answer.content;
+            const legacyComment = answer.comment ? escapeTypingText(answer.comment) : null;
+            return legacyComment ? `${legacyContent}#${legacyComment}#` : legacyContent;
         }
 
         function wrapSelectionAsContext() {
@@ -822,6 +837,7 @@
                 alert('选区已经包含免输入标记，不能嵌套');
                 return;
             }
+            typingEditorMode = 'v2';
             el.value = el.value.slice(0, start) + '{{' + selected + '}}' + el.value.slice(end);
             el.focus();
             el.setSelectionRange(start + 2, start + 2 + selected.length);
@@ -832,6 +848,7 @@
             const el = document.getElementById('quiz-answers');
             const start = el.selectionStart;
             const end = el.selectionEnd;
+            typingEditorMode = 'v2';
             el.value = el.value.slice(0, start) + '||' + el.value.slice(end);
             el.focus();
             el.setSelectionRange(start + 2, start + 2);
@@ -848,6 +865,11 @@
             preview.replaceChildren();
             source.value.split('\n').filter(line => line.trim()).forEach((line, index) => {
                 const row = document.createElement('div');
+                if (typingEditorMode === 'legacy') {
+                    row.textContent = line;
+                    preview.appendChild(row);
+                    return;
+                }
                 try {
                     const answer = parseTypingAnswerWithComment(line, index + 1);
                     const required = answer.parts.map(part => part.segments.filter(s => s.kind === 'required').map(s => s.text).join('')).join(' / ');
@@ -920,7 +942,9 @@
                 const answersText = document.getElementById('quiz-answers').value;
                 try {
                     quizData.answerList = answersText.split('\n').filter(line => line.trim())
-                        .map((line, index) => parseTypingAnswerWithComment(line, index + 1));
+                        .map((line, index) => typingEditorMode === 'legacy'
+                            ? parseLegacyTypingAnswer(line, index + 1)
+                            : parseTypingAnswerWithComment(line, index + 1));
                 } catch (error) {
                     alert(error.message);
                     return;

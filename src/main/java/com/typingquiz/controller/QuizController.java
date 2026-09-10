@@ -106,8 +106,9 @@ public class QuizController {
      * GET /api/quizzes/{id}/answers
      */
     @GetMapping("/{id}/answers")
-    public ResponseEntity<List<AnswerDTO>> getQuizAnswers(@PathVariable Long id) {
+    public ResponseEntity<List<AnswerDTO>> getQuizAnswers(@PathVariable Long id, HttpServletRequest request) {
         try {
+            quizService.getQuizById(id, getUserIdFromRequest(request));
             List<Answer> answers = quizService.getQuizAnswers(id);
             List<AnswerDTO> response = quizService.toAnswerDTOList(answers);
             return ResponseEntity.ok(response);

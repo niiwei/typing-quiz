@@ -1,6 +1,6 @@
 # 01 — 建立可重复的隔离验证入口
 
-Status: ready-for-agent
+Status: complete
 Execution: complete
 
 **What to build:** 在不连接真实数据库的条件下，执行旧题创建、读取和校验基线，为后续功能提供可运行验收。

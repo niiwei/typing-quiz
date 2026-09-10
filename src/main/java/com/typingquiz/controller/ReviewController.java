@@ -203,7 +203,7 @@ public class ReviewController {
         QuizGroup group = quizGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("分组不存在"));
         if (!userId.equals(group.getUserId())) {
-            return ResponseEntity.status(403).build();
+            return ResponseEntity.notFound().build();
         }
 
         // 获取分组下的所有测验ID
