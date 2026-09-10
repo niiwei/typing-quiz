@@ -99,6 +99,7 @@ public class AgentApiController {
         Long userId = userId(request);
         if (dto.getQuizType() == QuizType.FILL_BLANK) return error(HttpStatus.UNPROCESSABLE_ENTITY, "UNSUPPORTED_QUIZ_TYPE", "Agent API v1 只支持 TYPING 写入");
         if (dto.getAnswerList() == null || dto.getAnswerList().isEmpty()) return error(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_QUIZ", "TYPING 必须至少包含一条答案");
+        if (dto.getAnswerList().stream().anyMatch(answer -> answer == null || answer.getContent() == null || answer.getContent().trim().isEmpty())) return error(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_QUIZ", "答案内容不能为空");
         try {
             Quiz quiz = quizService.createQuiz(dto, userId);
             return ResponseEntity.status(HttpStatus.CREATED).body(getQuiz(quiz.getId(), request).getBody());
@@ -125,8 +126,6 @@ public class AgentApiController {
             Quiz updated = quizService.updateQuiz(id, merged, userId);
             entityManager.flush();
             return getQuiz(updated.getId(), request);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            return conflict(ownedQuiz(id, userId));
         } catch (IllegalArgumentException e) {
             return error(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_QUIZ", e.getMessage());
         }

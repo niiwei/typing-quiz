@@ -212,8 +212,7 @@ public class QuizService {
         if (userId == null) throw new RuntimeException("需要登录后才能访问测验");
         logger.info("[QuizService.getQuizById] 查找测验 ID={}, userId={}", id, userId);
         
-        // 使用基础的 findById
-        Optional<Quiz> quizOpt = quizRepository.findById(id);
+        Optional<Quiz> quizOpt = quizRepository.findByIdAndUserId(id, userId);
         
         if (!quizOpt.isPresent()) {
             logger.warn("[QuizService.getQuizById] 数据库基础查询找不到测验 ID={}", id);
@@ -222,13 +221,6 @@ public class QuizService {
         
         Quiz quiz = quizOpt.get();
         logger.info("[QuizService.getQuizById] 找到测验: title={}, quizUserId={}", quiz.getTitle(), quiz.getUserId());
-        
-        // 验证用户身份
-        if (userId != null && quiz.getUserId() != null && !userId.equals(quiz.getUserId())) {
-            logger.error("[QuizService.getQuizById] 用户越权访问: userId={}, quizUserId={}, quizId={}", 
-                userId, quiz.getUserId(), id);
-            throw new RuntimeException("无权访问此测验");
-        }
         
         return quiz;
     }
