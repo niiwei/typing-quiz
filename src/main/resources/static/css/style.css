@@ -280,6 +280,26 @@ input[type="submit"]:hover {
     font-weight: 600;
 }
 
+.answer-item .answer-required {
+    color: var(--text-main);
+    font-weight: 600;
+    background: linear-gradient(transparent 48%, #fff0a8 48%);
+}
+
+.answer-item .answer-context {
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.dark-mode .answer-item .answer-required {
+    background: linear-gradient(transparent 48%, #6b4f00 48%);
+}
+
+.answer-item.missed .answer-required {
+    color: var(--error);
+    background: linear-gradient(transparent 48%, rgba(220, 38, 38, 0.18) 48%);
+}
+
 .answer-item .answer-part-placeholder {
     display: block;
     min-width: 4rem;
